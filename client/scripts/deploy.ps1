@@ -1,8 +1,18 @@
 param(
-    [string]$BuildRoot = ''
+    [string]$BuildRoot = '',
+    [string]$MriSdkRoot = '',
+    [string]$ParameterFile = '',
+    [switch]$QtOnly
 )
 
 $ErrorActionPreference = 'Stop'
+if ($QtOnly) {
+    if (-not [string]::IsNullOrWhiteSpace($MriSdkRoot) -or -not [string]::IsNullOrWhiteSpace($ParameterFile)) {
+        throw 'QtOnly cannot be combined with MRI runtime source parameters.'
+    }
+} elseif ([string]::IsNullOrWhiteSpace($MriSdkRoot) -or [string]::IsNullOrWhiteSpace($ParameterFile)) {
+    throw 'Provide both -MriSdkRoot and -ParameterFile, or explicitly use -QtOnly.'
+}
 $clientRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
     $BuildRoot = Join-Path $clientRoot 'build-release'
@@ -31,6 +41,11 @@ $guiTarget = Join-Path $distRoot 'scenario_nmr_client.exe'
 & 'C:\msys64\ucrt64\bin\windeployqt6.exe' --release --no-translations --compiler-runtime $guiTarget
 if ($LASTEXITCODE -ne 0) { throw "windeployqt6 failed with $LASTEXITCODE" }
 
+if (-not $QtOnly) {
+    & (Join-Path $PSScriptRoot 'stage-mri-runtime.ps1') -MriSdkRoot $MriSdkRoot -ParameterFile $ParameterFile -Destination (Join-Path $distRoot 'mri-runtime')
+    if ($LASTEXITCODE -ne 0) { throw "MRI runtime staging failed with $LASTEXITCODE" }
+}
+
 $objdump = 'C:\msys64\ucrt64\bin\objdump.exe'
 $ucrtBin = 'C:\msys64\ucrt64\bin'
 $queue = [System.Collections.Generic.Queue[string]]::new()
@@ -45,6 +60,7 @@ while ($queue.Count -gt 0) {
         Select-String 'DLL Name:\s*(.+)$' |
         ForEach-Object { $_.Matches[0].Groups[1].Value.Trim() }
     foreach ($import in $imports) {
+        if ($import -match '^(vcruntime|msvcp|concrt)\d.*\.dll$') { continue }
         $source = Join-Path $ucrtBin $import
         $destination = Join-Path $distRoot $import
         if ((Test-Path -LiteralPath $source) -and -not (Test-Path -LiteralPath $destination)) {

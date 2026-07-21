@@ -50,6 +50,7 @@ target_link_libraries(mri_sdk_verify PRIVATE Qt6::Core)
 
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
+    find_program(POWERSHELL_EXECUTABLE NAMES powershell.exe powershell REQUIRED)
 
     add_library(fake_mri_sdk SHARED
         tests/fake_mri_sdk.cpp
@@ -161,5 +162,11 @@ if(BUILD_TESTING)
     )
     set_tests_properties(gui_auto_connect_fake PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(
+        NAME stage_mri_runtime
+        COMMAND ${POWERSHELL_EXECUTABLE} -NoProfile -ExecutionPolicy Bypass -File
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_stage_mri_runtime.ps1"
     )
 endif()

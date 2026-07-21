@@ -1,0 +1,16 @@
+{
+  "mridll": {
+    "relativePath": "mridll.dll",
+    "sha256": "D32AF2B676A4956A3D9AB8707B49F47083328A5CE9236FBB5324E44C28054CE8"
+  },
+  "hwCfg": {
+    "relativePath": "hw_cfg",
+    "fileCount": 455,
+    "totalBytes": 206656,
+    "manifestSha256": "A8BFF731985A8886EEB53191A6AFD9F5F037931A841A50A4960738595FC45F6F"
+  },
+  "parameterFile": {
+    "fileName": "PTScan.par",
+    "sha256": "6FD62B50A56B802D070AE52737A57516FECE927FCE28BDA17979D4C046C36783"
+  }
+}
