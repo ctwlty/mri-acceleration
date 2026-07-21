@@ -17,10 +17,12 @@ public:
         reset = reinterpret_cast<void (*)()>(library.resolve("FakeReset"));
         setScanStatus = reinterpret_cast<void (*)(int)>(library.resolve("FakeSetScanStatus"));
         setRawMode = reinterpret_cast<void (*)(int)>(library.resolve("FakeSetRawMode"));
+        writeRaw = reinterpret_cast<void (*)()>(library.resolve("FakeWriteRaw"));
         calls = reinterpret_cast<const char* (*)()>(library.resolve("FakeCalls"));
         QVERIFY(reset);
         QVERIFY(setScanStatus);
         QVERIFY(setRawMode);
+        QVERIFY(writeRaw);
         QVERIFY(calls);
     }
 
@@ -28,6 +30,7 @@ public:
     void (*reset)() = nullptr;
     void (*setScanStatus)(int) = nullptr;
     void (*setRawMode)(int) = nullptr;
+    void (*writeRaw)() = nullptr;
     const char* (*calls)() = nullptr;
 };
 
@@ -63,6 +66,9 @@ private slots:
     void faultStatusAbortsAndTransitionsFault();
     void completedScanRequiresNewNonEmptyRawFile();
     void overwrittenRawFileIsAccepted();
+    void completedStatusWaitsForRawFile();
+    void abortWaitsForStoppedStatus();
+    void shutdownDoesNotRepeatAbort();
     void timeoutAbortsAndTransitionsFault();
 };
 
@@ -157,6 +163,30 @@ void DeviceBridgeTest::completedScanRequiresNewNonEmptyRawFile()
     fake.setRawMode(0);
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
+    MriSdkConfig config = createConfig(temp);
+    config.rawSettleTimeoutMs = 1;
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    QVERIFY(bridge.startScan().ok);
+
+    fake.setScanStatus(3);
+    bridge.refreshStatus();
+    QTest::qWait(5);
+    bridge.refreshStatus();
+
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Fault);
+    QCOMPARE(bridge.lastErrorResult().function, QStringLiteral("raw-verification"));
+}
+
+void DeviceBridgeTest::completedStatusWaitsForRawFile()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    fake.setRawMode(0);
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
     const MriSdkConfig config = createConfig(temp);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -165,9 +195,60 @@ void DeviceBridgeTest::completedScanRequiresNewNonEmptyRawFile()
 
     fake.setScanStatus(3);
     bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Scanning);
 
-    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Fault);
-    QCOMPARE(bridge.lastErrorResult().function, QStringLiteral("raw-verification"));
+    fake.writeRaw();
+    bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Ready);
+    QVERIFY(QFileInfo(bridge.lastRawFile()).size() > 0);
+}
+
+void DeviceBridgeTest::abortWaitsForStoppedStatus()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    QVERIFY(bridge.startScan().ok);
+
+    fake.setScanStatus(1);
+    bridge.abortScan();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Stopping);
+    bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Stopping);
+
+    fake.setScanStatus(0);
+    bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Ready);
+    QCOMPARE(QString::fromUtf8(fake.calls()).count(QStringLiteral("Abort")), 1);
+}
+
+void DeviceBridgeTest::shutdownDoesNotRepeatAbort()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp);
+    {
+        DeviceBridge bridge;
+        QVERIFY(bridge.loadSdk(sdkPath).ok);
+        QVERIFY(bridge.connectDevice(config).ok);
+        QVERIFY(bridge.startScan().ok);
+        fake.setScanStatus(1);
+        bridge.abortScan();
+        QCOMPARE(bridge.sessionState(), MriSdkSessionState::Stopping);
+    }
+
+    const QString calls = QString::fromUtf8(fake.calls());
+    QCOMPARE(calls.count(QStringLiteral("Abort")), 1);
+    QCOMPARE(calls.count(QStringLiteral("CloseSys")), 1);
 }
 
 void DeviceBridgeTest::overwrittenRawFileIsAccepted()

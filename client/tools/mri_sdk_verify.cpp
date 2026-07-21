@@ -131,7 +131,8 @@ int main(int argc, char* argv[])
         scanExitCode = 7;
         scanLoop.quit();
     });
-    hardTimeout.start(config.scanTimeoutMs + qMax(5000, config.pollIntervalMs * 2));
+    hardTimeout.start(config.scanTimeoutMs + config.rawSettleTimeoutMs
+        + qMax(5000, config.pollIntervalMs * 2));
     scanLoop.exec();
 
     if (scanExitCode != 0) {

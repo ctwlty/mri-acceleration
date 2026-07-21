@@ -56,6 +56,7 @@ private slots:
     void initializeStopsAndClosesOnFailure();
     void initializeClosesOnParameterFailure();
     void calibrationStatusValueDoesNotFailInitialization();
+    void calibrationFailureClosesInitialization();
     void prepareScanReloadsParameterAndChannel();
 };
 
@@ -213,6 +214,32 @@ void MriSdkLoaderTest::calibrationStatusValueDoesNotFailInitialization()
     QVERIFY2(result.ok, qPrintable(result.message));
     QCOMPARE(loader.sessionState(), MriSdkSessionState::Ready);
     QVERIFY(QString::fromUtf8(fake.calls()).contains(QStringLiteral("SetPreempCross:1")));
+}
+
+void MriSdkLoaderTest::calibrationFailureClosesInitialization()
+{
+    const QString fakeSdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(fakeSdkPath);
+    fake.reset();
+    fake.setFailure("SetAllGraAnalogDelay", 22);
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    MriSdkConfig config;
+    config.initPath = temp.filePath(QStringLiteral("init.ini"));
+    config.parameterPath = temp.filePath(QStringLiteral("PTScan.par"));
+    config.outputPath = temp.path();
+    writeFile(config.initPath);
+    writeFile(config.parameterPath);
+    MriSdkLoader loader;
+    QVERIFY(loader.load(fakeSdkPath).ok);
+
+    const MriSdkResult result = loader.initialize(config);
+
+    QVERIFY(!result.ok);
+    QCOMPARE(result.function, QStringLiteral("SetAllGraAnalogDelay"));
+    QCOMPARE(result.code, 22);
+    QCOMPARE(loader.sessionState(), MriSdkSessionState::Fault);
+    QVERIFY(QString::fromUtf8(fake.calls()).endsWith(QStringLiteral("SetAllGraAnalogDelay|CloseSys")));
 }
 
 void MriSdkLoaderTest::prepareScanReloadsParameterAndChannel()

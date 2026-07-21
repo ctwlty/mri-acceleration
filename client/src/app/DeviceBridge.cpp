@@ -26,9 +26,6 @@ DeviceBridge::DeviceBridge(QObject* parent)
 DeviceBridge::~DeviceBridge()
 {
     m_pollTimer.stop();
-    if (m_state == MriSdkSessionState::Scanning || m_state == MriSdkSessionState::Stopping) {
-        m_loader.abort();
-    }
     m_loader.shutdown();
 }
 
@@ -147,6 +144,8 @@ MriSdkResult DeviceBridge::startScan()
     m_rawFilesBeforeScan = rawFilesInOutput();
     m_lastRawFile.clear();
     m_sawActiveScan = false;
+    m_scanCompletionObserved = false;
+    m_rawSettleElapsed.invalidate();
     const int runCode = m_loader.run();
     if (runCode != 0) {
         return fail(QStringLiteral("run"), QStringLiteral("Run"), runCode,
@@ -185,10 +184,12 @@ void DeviceBridge::abortScan()
     }
     setSessionState(MriSdkSessionState::Stopping);
     m_loader.abort();
-    m_pollTimer.stop();
-    setScan(QStringLiteral("已终止"), QStringLiteral("0/0"));
-    setSessionState(MriSdkSessionState::Ready);
-    emit logAppended(QStringLiteral("Abort 已执行，设备会话返回就绪"));
+    m_stopElapsed.start();
+    if (!m_pollTimer.isActive()) {
+        m_pollTimer.start(qMax(1, m_config.pollIntervalMs));
+    }
+    setScan(QStringLiteral("正在终止"), m_scanProgress);
+    emit logAppended(QStringLiteral("Abort 已执行，等待设备停止"));
 }
 
 void DeviceBridge::refreshStatus()
@@ -208,6 +209,15 @@ void DeviceBridge::refreshStatus()
         return;
     }
 
+    if (m_state == MriSdkSessionState::Stopping
+        && m_stopElapsed.isValid()
+        && m_stopElapsed.elapsed() > m_config.stopTimeoutMs) {
+        m_pollTimer.stop();
+        fail(QStringLiteral("abort"), QStringLiteral("timeout"), -1,
+            QStringLiteral("Abort 后等待设备停止超时"));
+        return;
+    }
+
     const MriSdkStatus device = m_loader.status();
     m_temperatureState = QString::number(device.temperature, 'f', 1) + QStringLiteral(" C");
     emit temperatureChanged(m_temperatureState);
@@ -216,6 +226,25 @@ void DeviceBridge::refreshStatus()
         QStringLiteral("%1/%2").arg(device.currentScan).arg(device.totalScans));
 
     if (m_state == MriSdkSessionState::Ready) {
+        return;
+    }
+    if (m_state == MriSdkSessionState::Stopping) {
+        if (device.scan == 1 || device.scan == 2 || device.scan == 4) {
+            return;
+        }
+        if (device.scan == -1 || device.scan == 5 || device.scan == 6) {
+            m_pollTimer.stop();
+            fail(QStringLiteral("abort"), QStringLiteral("ScanStatus"), device.scan,
+                QStringLiteral("Abort 后设备返回异常状态 %1").arg(device.scan));
+            return;
+        }
+        if (device.scan == 0 || device.scan == 3) {
+            m_pollTimer.stop();
+            m_loader.markScanFinished();
+            setScan(QStringLiteral("已终止"), QStringLiteral("0/0"));
+            setSessionState(MriSdkSessionState::Ready);
+            emit logAppended(QStringLiteral("设备已停止，会话返回就绪"));
+        }
         return;
     }
     if (device.scan == 1 || device.scan == 2 || device.scan == 4) {
@@ -233,13 +262,23 @@ void DeviceBridge::refreshStatus()
         return;
     }
     if (device.scan == 0 || device.scan == 3) {
-        m_pollTimer.stop();
+        if (!m_scanCompletionObserved) {
+            m_scanCompletionObserved = true;
+            m_rawSettleElapsed.start();
+            m_loader.markScanFinished();
+        }
         const QString rawFile = findNewRawFile();
         if (rawFile.isEmpty()) {
+            if (m_rawSettleElapsed.elapsed() <= m_config.rawSettleTimeoutMs) {
+                setScan(QStringLiteral("等待 RAW 写盘"), m_scanProgress);
+                return;
+            }
+            m_pollTimer.stop();
             fail(QStringLiteral("scan"), QStringLiteral("raw-verification"), -1,
                 QStringLiteral("扫描完成，但未发现新增的非空 RAW 文件"));
             return;
         }
+        m_pollTimer.stop();
         m_lastRawFile = rawFile;
         setSessionState(MriSdkSessionState::Ready);
         setScan(QStringLiteral("完成"), QStringLiteral("%1/%2").arg(device.currentScan).arg(device.totalScans));

@@ -32,7 +32,7 @@ LOG SDK 初始化和基线校准完成，连接码=0，ScanStatus=0
 INITIALIZED connection=0 temperature=37.7188 scanStatus=0 current=0 total=0
 ```
 
-本 SDK 构建中 `SetPreempCross(1)` 返回 1，表示已应用的启用状态，不是失败码；与参考 Python 控制器一致，校准 setter 的返回值不按“仅 0 成功”解释。关键步骤 `Init`、`ConfigFile`、`SetOutputPath`、`SetParameterFile` 和 `Run` 仍严格检查返回码。
+本 SDK 构建中 `SetPreempCross(1)` 返回 1，表示已应用的启用状态，不是失败码。实机探针确认其余校准调用均返回 0；实现只对 `SetPreempCross` 接受 0/1，其余初始化、配置和校准步骤仍严格检查返回码。
 
 ## 真实扫描结果
 
@@ -42,15 +42,15 @@ INITIALIZED connection=0 temperature=37.7188 scanStatus=0 current=0 total=0
 LOG Run 已执行，开始轮询 ScanStatus
 LOG 扫描完成，RAW 文件：D:/mri_data/par0423-3/PTMRIData00_1.raw
 SCAN_COMPLETED raw=D:/mri_data/par0423-3/PTMRIData00_1.raw
-FINAL_REAL_SCAN_EXIT=0
+POST_REVIEW_REAL_SCAN_EXIT=0
 ```
 
 输出文件：
 
 - 路径：`D:\mri_data\par0423-3\PTMRIData00_1.raw`
 - 大小：5,374,219 字节
-- 最后写入：2026-07-21 15:44:25（本地时间）
-- SHA-256：`B88A417CE6944658A610554EAC172576C5918ADB716369D1E77F4B523095F227`
+- 最后写入：2026-07-21 16:00:36（本地时间）
+- SHA-256：`F5818CBC102C98F277981C6498DB82FA7E2CBC64B6308A3319FE677A86C8D6B3`
 
 设备使用固定 RAW 文件名并覆盖旧文件，因此验收逻辑比较路径、大小和修改时间，而不是只要求出现新文件名。
 
@@ -59,6 +59,8 @@ FINAL_REAL_SCAN_EXIT=0
 1. Qt `QFileInfo` 输出 `/` 路径分隔符，而旧 SDK 只接受 Windows `\`。同一最小探针使用 `\` 时 `Init=0`，使用 `/` 时 `Init=7 / GetLastErr=1009`。所有传给 SDK 的配置、参数和输出路径现已转换为原生 Windows 分隔符。
 2. `Run` 后首轮 `ScanStatus` 可能仍是旧的空闲值 0。状态机现在等待本次扫描观察到 1/2/4 活动态后，才接受 0 为完成；状态 3 仍可直接完成。
 3. 设备覆盖 `PTMRIData00_1.raw`。RAW 验证现在接受新增或元数据发生变化的非空文件。
+4. 用户 Abort 后保持 `Stopping` 并继续轮询，设备确认停止后才恢复 `Ready`；关闭路径保证同一会话不重复发送 Abort。
+5. 扫描完成与 RAW 文件最终写盘可能存在时间差。完成状态后使用有界等待窗口检查文件，不在首次缺失时立即误报失败。
 
 ## 自动化与部署验证
 

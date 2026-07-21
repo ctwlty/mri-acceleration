@@ -31,16 +31,15 @@ if ($Phase -eq 'Before') {
 if (-not (Test-Path -LiteralPath $StateFile -PathType Leaf)) {
     throw "Before snapshot is missing: $StateFile"
 }
-$before = @(Get-Content -Raw -LiteralPath $StateFile -Encoding UTF8 | ConvertFrom-Json)
+$before = Get-Content -Raw -LiteralPath $StateFile -Encoding UTF8 | ConvertFrom-Json
 $beforeSignatures = @{}
 foreach ($item in $before) {
     $beforeSignatures[$item.FullName] = "$($item.Length):$($item.LastWriteTimeUtcIso)"
 }
 $newRaw = @($snapshot | Where-Object {
-    $signature = "$($_.Length):$($_.LastWriteTimeUtcIso)"
     $_.Length -gt 0 -and (
         -not $beforeSignatures.ContainsKey($_.FullName) -or
-        $beforeSignatures[$_.FullName] -ne $signature)
+        $beforeSignatures[$_.FullName] -ne "$($_.Length):$($_.LastWriteTimeUtcIso)")
 })
 $resultFile = Join-Path $testOutput 'real-sdk-new-raw.json'
 $newRaw | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $resultFile -Encoding UTF8

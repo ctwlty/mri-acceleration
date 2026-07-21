@@ -38,6 +38,18 @@ void record(const char* functionName)
 {
     static_cast<void>(resultFor(functionName));
 }
+
+void writeRawFile()
+{
+    if (rawMode == 0 || outputPath.empty()) {
+        return;
+    }
+    const std::string separator = outputPath.back() == '/' || outputPath.back() == '\\' ? "" : "/";
+    std::ofstream raw(outputPath + separator + "PTMRIData_fake.raw", std::ios::binary);
+    if (rawMode == 1) {
+        raw << "MRI_RAW_TEST_DATA";
+    }
+}
 }
 
 MRI_EXPORT void FakeReset()
@@ -75,6 +87,14 @@ MRI_EXPORT void FakeSetScanStatus(int status)
 MRI_EXPORT void FakeSetRawMode(int mode)
 {
     rawMode = mode;
+}
+
+MRI_EXPORT void FakeWriteRaw()
+{
+    const int previousMode = rawMode;
+    rawMode = 1;
+    writeRawFile();
+    rawMode = previousMode;
 }
 
 MRI_EXPORT int Init(const char* value)
@@ -124,13 +144,7 @@ MRI_EXPORT int Run()
     }
     const char* autoComplete = std::getenv("FAKE_AUTO_COMPLETE");
     scanStatus = autoComplete && std::string(autoComplete) == "1" ? 3 : 1;
-    if (rawMode != 0 && !outputPath.empty()) {
-        const std::string separator = outputPath.back() == '/' || outputPath.back() == '\\' ? "" : "/";
-        std::ofstream raw(outputPath + separator + "PTMRIData_fake.raw", std::ios::binary);
-        if (rawMode == 1) {
-            raw << "MRI_RAW_TEST_DATA";
-        }
-    }
+    writeRawFile();
     return 0;
 }
 MRI_EXPORT void Abort() { record("Abort"); }

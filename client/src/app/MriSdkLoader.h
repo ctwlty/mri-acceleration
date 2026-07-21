@@ -31,6 +31,7 @@ public:
 
     MriSdkResult initialize(const MriSdkConfig& config);
     MriSdkResult prepareScan();
+    void markScanFinished();
     bool initialize(const QString& initPath, const QString& outputPath, const QString& parPath, bool saveMode);
     void shutdown();
     MriSdkStatus status() const;
@@ -118,6 +119,7 @@ private:
 
     MriSdkConfig m_config;
     bool m_systemOpen = false;
+    bool m_abortIssued = false;
 
     int m_demoScanStatus = 0;
     int m_demoScanCompleted = 0;

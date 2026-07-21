@@ -53,6 +53,8 @@ struct MriSdkConfig {
     int systemSelection = 3;
     int pollIntervalMs = 1000;
     int scanTimeoutMs = 30 * 60 * 1000;
+    int stopTimeoutMs = 30 * 1000;
+    int rawSettleTimeoutMs = 10 * 1000;
 };
 
 struct MriSdkStatus {

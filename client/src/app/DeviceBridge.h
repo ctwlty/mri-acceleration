@@ -72,8 +72,11 @@ private:
     MriSdkConfig m_config;
     QTimer m_pollTimer;
     QElapsedTimer m_scanElapsed;
+    QElapsedTimer m_stopElapsed;
+    QElapsedTimer m_rawSettleElapsed;
     QHash<QString, QString> m_rawFilesBeforeScan;
     bool m_sawActiveScan = false;
+    bool m_scanCompletionObserved = false;
     MriSdkSessionState m_state = MriSdkSessionState::Unloaded;
     MriSdkResult m_lastErrorResult;
     QString m_lastRawFile;

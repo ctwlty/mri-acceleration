@@ -92,6 +92,7 @@ void MriSdkLoader::unload()
     m_getTemperature = nullptr;
     m_getConnectStatus = nullptr;
     m_systemOpen = false;
+    m_abortIssued = false;
     m_mode = Mode::Demo;
     m_sessionState = MriSdkSessionState::Unloaded;
 }
@@ -191,20 +192,28 @@ MriSdkResult MriSdkLoader::initialize(const MriSdkConfig& config)
     step = checked(QStringLiteral("SetParameterFile"), m_setParameterFile(parameterPath.constData(), false));
     if (!step.ok) return step;
     m_setSystemSel(config.systemSelection);
-    // These calibration APIs return the applied state/value on this SDK build
-    // (for example SetPreempCross(1) returns 1), not a zero-only error code.
-    // The verified reference controller intentionally does not reject them.
-    m_setAllPreempValue();
-    m_setAllGraAnalogDelay();
-    m_setSingleGraGmax(0, 2240.0f);
-    m_setSingleGraGmax(1, 2080.0f);
-    m_setSingleGraGmax(2, 2980.0f);
-    m_setPreempCross(1);
-    m_setPreempValue(0, 6, 200.0f);
-    m_setPreempValue(0, 7, 500.0f);
-    m_setPreempValue(0, 8, 800.0f);
-    m_setPreempValue(0, 9, 1000.0f);
+    step = checked(QStringLiteral("SetAllPreempValue"), m_setAllPreempValue());
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetAllGraAnalogDelay"), m_setAllGraAnalogDelay());
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(0, 2240.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(1, 2080.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(2, 2980.0f));
+    if (!step.ok) return step;
+    code = m_setPreempCross(1);
+    if (code != 0 && code != 1) return failure(QStringLiteral("SetPreempCross"), code);
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 6, 200.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 7, 500.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 8, 800.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 9, 1000.0f));
+    if (!step.ok) return step;
 
+    m_abortIssued = false;
     m_sessionState = MriSdkSessionState::Ready;
     return MriSdkResult::success(QStringLiteral("initialize"));
 }
@@ -246,8 +255,11 @@ bool MriSdkLoader::initialize(const QString& initPath, const QString& outputPath
 void MriSdkLoader::shutdown()
 {
     if (m_mode == Mode::Real && m_systemOpen && m_closeSys) {
-        if (m_abort) {
+        if ((m_sessionState == MriSdkSessionState::Scanning
+                || m_sessionState == MriSdkSessionState::Stopping)
+            && m_abort && !m_abortIssued) {
             m_abort();
+            m_abortIssued = true;
         }
         m_closeSys();
         m_systemOpen = false;
@@ -353,7 +365,12 @@ int MriSdkLoader::run()
         m_demoCurrentScanNo = 1;
         return 0;
     }
-    return m_run ? m_run() : -1;
+    const int code = m_run ? m_run() : -1;
+    if (code == 0) {
+        m_abortIssued = false;
+        m_sessionState = MriSdkSessionState::Scanning;
+    }
+    return code;
 }
 
 void MriSdkLoader::abort()
@@ -364,8 +381,18 @@ void MriSdkLoader::abort()
         m_demoCurrentScanNo = 0;
         return;
     }
-    if (m_abort) {
+    if (m_abort && !m_abortIssued) {
         m_abort();
+        m_abortIssued = true;
+        m_sessionState = MriSdkSessionState::Stopping;
+    }
+}
+
+void MriSdkLoader::markScanFinished()
+{
+    if (m_mode == Mode::Real && m_systemOpen) {
+        m_abortIssued = false;
+        m_sessionState = MriSdkSessionState::Ready;
     }
 }
 
