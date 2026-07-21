@@ -15,7 +15,7 @@ std::string calls;
 std::string failureFunction;
 int failureCode = 0;
 int scanStatus = 0;
-int connectionStatus = 1;
+int connectionStatus = 0;
 int rawMode = 1;
 std::string outputPath;
 std::string initPath;
@@ -65,7 +65,7 @@ MRI_EXPORT void FakeReset()
     failureFunction.clear();
     failureCode = 0;
     scanStatus = 0;
-    connectionStatus = 1;
+    connectionStatus = 0;
     rawMode = 1;
     outputPath.clear();
     initPath.clear();

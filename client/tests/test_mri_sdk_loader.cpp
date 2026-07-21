@@ -134,7 +134,7 @@ void MriSdkLoaderTest::initializeUsesVerifiedCalibrationSequence()
 #endif
 
     const MriSdkStatus status = loader.status();
-    QCOMPARE(status.connection, 1);
+    QCOMPARE(status.connection, 0);
     QCOMPARE(status.temperature, 31.4);
     QCOMPARE(status.scan, 0);
     QCOMPARE(status.currentScan, 0);

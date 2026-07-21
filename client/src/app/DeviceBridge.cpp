@@ -13,6 +13,13 @@
 
 namespace {
 std::atomic<quint64> nextBridgeInstanceId{1};
+
+constexpr int kMriConnectionSuccess = 0;
+
+bool isMriConnectionReady(int connectionStatus)
+{
+    return connectionStatus == kMriConnectionSuccess;
+}
 }
 
 DeviceBridge::DeviceBridge(QObject* parent)
@@ -159,7 +166,7 @@ PrecheckResult DeviceBridge::precheck()
         result.message = QStringLiteral("Run HOLD: select the verified PTScan baseline mode");
     } else if (!m_identityProof.isValid()) {
         result.message = QStringLiteral("runtime and PTScan identity are not verified");
-    } else if (device.connection == 0) {
+    } else if (!isMriConnectionReady(device.connection)) {
         result.message = QStringLiteral("device connection is not ready");
     } else if (device.scan != 0) {
         result.message = QStringLiteral("device ScanStatus is not idle");
@@ -224,7 +231,7 @@ MriSdkResult DeviceBridge::startScan(const PrecheckTicket& ticket)
             QStringLiteral("verified baseline identity changed before run"));
     }
     const MriSdkStatus device = m_loader.status();
-    if (device.connection == 0 || device.scan != 0 || !outputPathIsWritable()) {
+    if (!isMriConnectionReady(device.connection) || device.scan != 0 || !outputPathIsWritable()) {
         invalidatePrecheck(QStringLiteral("precheck conditions changed"));
         return reject(QStringLiteral("run"), QStringLiteral("preflight"), QStringLiteral("precheck conditions changed"));
     }
