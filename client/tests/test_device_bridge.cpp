@@ -59,8 +59,10 @@ private slots:
     void initTestCase();
     void runIsRejectedBeforeReady();
     void successfulScanTransitionsReadyScanningReady();
+    void initialIdleStatusWaitsForActiveScan();
     void faultStatusAbortsAndTransitionsFault();
     void completedScanRequiresNewNonEmptyRawFile();
+    void overwrittenRawFileIsAccepted();
     void timeoutAbortsAndTransitionsFault();
 };
 
@@ -102,6 +104,31 @@ void DeviceBridgeTest::successfulScanTransitionsReadyScanningReady()
     QVERIFY(states.count() >= 3);
 }
 
+void DeviceBridgeTest::initialIdleStatusWaitsForActiveScan()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    QVERIFY(bridge.startScan().ok);
+
+    fake.setScanStatus(0);
+    bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Scanning);
+
+    fake.setScanStatus(1);
+    bridge.refreshStatus();
+    fake.setScanStatus(0);
+    bridge.refreshStatus();
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Ready);
+    QVERIFY(QFileInfo(bridge.lastRawFile()).size() > 0);
+}
+
 void DeviceBridgeTest::faultStatusAbortsAndTransitionsFault()
 {
     const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
@@ -141,6 +168,29 @@ void DeviceBridgeTest::completedScanRequiresNewNonEmptyRawFile()
 
     QCOMPARE(bridge.sessionState(), MriSdkSessionState::Fault);
     QCOMPARE(bridge.lastErrorResult().function, QStringLiteral("raw-verification"));
+}
+
+void DeviceBridgeTest::overwrittenRawFileIsAccepted()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp);
+    const QString fixedRaw = temp.filePath(QStringLiteral("PTMRIData_fake.raw"));
+    writeFile(fixedRaw);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+
+    QVERIFY(bridge.startScan().ok);
+    fake.setScanStatus(3);
+    bridge.refreshStatus();
+
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Ready);
+    QCOMPARE(QFileInfo(bridge.lastRawFile()).absoluteFilePath(), QFileInfo(fixedRaw).absoluteFilePath());
+    QVERIFY(QFileInfo(fixedRaw).size() > 4);
 }
 
 void DeviceBridgeTest::timeoutAbortsAndTransitionsFault()

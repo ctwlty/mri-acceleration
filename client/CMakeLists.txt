@@ -34,6 +34,20 @@ target_include_directories(scenario_nmr_client PRIVATE src)
 
 target_link_libraries(scenario_nmr_client PRIVATE Qt6::Widgets)
 
+qt_add_executable(mri_sdk_verify
+    tools/mri_sdk_verify.cpp
+    src/app/DeviceBridge.cpp
+    src/app/DeviceBridge.h
+    src/app/MriSdkLoader.cpp
+    src/app/MriSdkLoader.h
+    src/app/MriSdkTypes.h
+    src/app/ProtocolMapper.cpp
+    src/app/ProtocolMapper.h
+    src/app/SceneTemplate.h
+)
+target_include_directories(mri_sdk_verify PRIVATE src)
+target_link_libraries(mri_sdk_verify PRIVATE Qt6::Core)
+
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
 
@@ -99,6 +113,17 @@ if(BUILD_TESTING)
 
     add_test(NAME device_actions COMMAND test_device_actions)
     set_tests_properties(device_actions PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(
+        NAME sdk_verify_fake
+        COMMAND ${CMAKE_COMMAND}
+            "-DVERIFIER=$<TARGET_FILE:mri_sdk_verify>"
+            "-DFAKE_SDK=$<TARGET_FILE:fake_mri_sdk>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_sdk_verify_test.cmake"
+    )
+    set_tests_properties(sdk_verify_fake PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 endif()

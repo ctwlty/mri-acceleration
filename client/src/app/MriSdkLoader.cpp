@@ -164,9 +164,14 @@ MriSdkResult MriSdkLoader::initialize(const MriSdkConfig& config)
         return code == 0 ? MriSdkResult::success(QStringLiteral("initialize")) : failure(functionName, code);
     };
 
-    const QByteArray initPath = QFileInfo(config.initPath).absoluteFilePath().toLocal8Bit();
-    const QByteArray outputPath = QDir(config.outputPath).absolutePath().toLocal8Bit();
-    const QByteArray parameterPath = QFileInfo(config.parameterPath).absoluteFilePath().toLocal8Bit();
+    // The vendor DLL derives sibling hardware files from these strings and only
+    // recognizes native Windows separators. QFileInfo normally returns '/'.
+    const QByteArray initPath = QDir::toNativeSeparators(
+        QFileInfo(config.initPath).absoluteFilePath()).toLocal8Bit();
+    const QByteArray outputPath = QDir::toNativeSeparators(
+        QDir(config.outputPath).absolutePath()).toLocal8Bit();
+    const QByteArray parameterPath = QDir::toNativeSeparators(
+        QFileInfo(config.parameterPath).absoluteFilePath()).toLocal8Bit();
 
     int code = m_init(initPath.constData());
     if (code != 0) {
@@ -186,26 +191,19 @@ MriSdkResult MriSdkLoader::initialize(const MriSdkConfig& config)
     step = checked(QStringLiteral("SetParameterFile"), m_setParameterFile(parameterPath.constData(), false));
     if (!step.ok) return step;
     m_setSystemSel(config.systemSelection);
-    step = checked(QStringLiteral("SetAllPreempValue"), m_setAllPreempValue());
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetAllGraAnalogDelay"), m_setAllGraAnalogDelay());
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(0, 2240.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(1, 2080.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(2, 2980.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetPreempCross"), m_setPreempCross(1));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 6, 200.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 7, 500.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 8, 800.0f));
-    if (!step.ok) return step;
-    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 9, 1000.0f));
-    if (!step.ok) return step;
+    // These calibration APIs return the applied state/value on this SDK build
+    // (for example SetPreempCross(1) returns 1), not a zero-only error code.
+    // The verified reference controller intentionally does not reject them.
+    m_setAllPreempValue();
+    m_setAllGraAnalogDelay();
+    m_setSingleGraGmax(0, 2240.0f);
+    m_setSingleGraGmax(1, 2080.0f);
+    m_setSingleGraGmax(2, 2980.0f);
+    m_setPreempCross(1);
+    m_setPreempValue(0, 6, 200.0f);
+    m_setPreempValue(0, 7, 500.0f);
+    m_setPreempValue(0, 8, 800.0f);
+    m_setPreempValue(0, 9, 1000.0f);
 
     m_sessionState = MriSdkSessionState::Ready;
     return MriSdkResult::success(QStringLiteral("initialize"));
@@ -218,7 +216,8 @@ MriSdkResult MriSdkLoader::prepareScan()
         return MriSdkResult::failure(QStringLiteral("prepare"), QStringLiteral("precondition"), -1, m_error);
     }
 
-    const QByteArray parameterPath = QFileInfo(m_config.parameterPath).absoluteFilePath().toLocal8Bit();
+    const QByteArray parameterPath = QDir::toNativeSeparators(
+        QFileInfo(m_config.parameterPath).absoluteFilePath()).toLocal8Bit();
     int code = m_setParameterFile(parameterPath.constData(), false);
     if (code != 0) {
         setError(QStringLiteral("SetParameterFile 失败，返回码 %1").arg(code));

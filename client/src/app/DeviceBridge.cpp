@@ -146,6 +146,7 @@ MriSdkResult DeviceBridge::startScan()
 
     m_rawFilesBeforeScan = rawFilesInOutput();
     m_lastRawFile.clear();
+    m_sawActiveScan = false;
     const int runCode = m_loader.run();
     if (runCode != 0) {
         return fail(QStringLiteral("run"), QStringLiteral("Run"), runCode,
@@ -218,6 +219,7 @@ void DeviceBridge::refreshStatus()
         return;
     }
     if (device.scan == 1 || device.scan == 2 || device.scan == 4) {
+        m_sawActiveScan = true;
         return;
     }
     if (device.scan == -1 || device.scan == 5 || device.scan == 6) {
@@ -225,6 +227,9 @@ void DeviceBridge::refreshStatus()
         m_pollTimer.stop();
         fail(QStringLiteral("scan"), QStringLiteral("ScanStatus"), device.scan,
             QStringLiteral("扫描异常，状态码 %1，已执行 Abort").arg(device.scan));
+        return;
+    }
+    if (device.scan == 0 && !m_sawActiveScan) {
         return;
     }
     if (device.scan == 0 || device.scan == 3) {
@@ -320,13 +325,16 @@ MriSdkResult DeviceBridge::fail(
     return m_lastErrorResult;
 }
 
-QSet<QString> DeviceBridge::rawFilesInOutput() const
+QHash<QString, QString> DeviceBridge::rawFilesInOutput() const
 {
-    QSet<QString> files;
+    QHash<QString, QString> files;
     const QFileInfoList entries = QDir(m_config.outputPath).entryInfoList(
         QStringList {QStringLiteral("*.raw")}, QDir::Files, QDir::Time);
     for (const QFileInfo& entry : entries) {
-        files.insert(entry.absoluteFilePath());
+        const QString signature = QStringLiteral("%1:%2")
+                                      .arg(entry.size())
+                                      .arg(entry.lastModified().toMSecsSinceEpoch());
+        files.insert(entry.absoluteFilePath(), signature);
     }
     return files;
 }
@@ -336,7 +344,11 @@ QString DeviceBridge::findNewRawFile() const
     const QFileInfoList entries = QDir(m_config.outputPath).entryInfoList(
         QStringList {QStringLiteral("*.raw")}, QDir::Files, QDir::Time);
     for (const QFileInfo& entry : entries) {
-        if (!m_rawFilesBeforeScan.contains(entry.absoluteFilePath()) && entry.size() > 0) {
+        const QString signature = QStringLiteral("%1:%2")
+                                      .arg(entry.size())
+                                      .arg(entry.lastModified().toMSecsSinceEpoch());
+        if (entry.size() > 0
+            && m_rawFilesBeforeScan.value(entry.absoluteFilePath()) != signature) {
             return entry.absoluteFilePath();
         }
     }

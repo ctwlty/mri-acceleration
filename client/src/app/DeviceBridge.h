@@ -6,7 +6,7 @@
 
 #include <QElapsedTimer>
 #include <QObject>
-#include <QSet>
+#include <QHash>
 #include <QTimer>
 
 class DeviceBridge : public QObject {
@@ -65,14 +65,15 @@ private:
     void setSessionState(MriSdkSessionState state);
     MriSdkResult reject(const QString& stage, const QString& function, const QString& message);
     MriSdkResult fail(const QString& stage, const QString& function, int code, const QString& message);
-    QSet<QString> rawFilesInOutput() const;
+    QHash<QString, QString> rawFilesInOutput() const;
     QString findNewRawFile() const;
 
     MriSdkLoader m_loader;
     MriSdkConfig m_config;
     QTimer m_pollTimer;
     QElapsedTimer m_scanElapsed;
-    QSet<QString> m_rawFilesBeforeScan;
+    QHash<QString, QString> m_rawFilesBeforeScan;
+    bool m_sawActiveScan = false;
     MriSdkSessionState m_state = MriSdkSessionState::Unloaded;
     MriSdkResult m_lastErrorResult;
     QString m_lastRawFile;

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -16,6 +17,8 @@ int failureCode = 0;
 int scanStatus = 0;
 int rawMode = 1;
 std::string outputPath;
+std::string initPath;
+std::string parameterPath;
 
 void appendCall(const std::string& call)
 {
@@ -45,6 +48,8 @@ MRI_EXPORT void FakeReset()
     scanStatus = 0;
     rawMode = 1;
     outputPath.clear();
+    initPath.clear();
+    parameterPath.clear();
 }
 
 MRI_EXPORT void FakeSetFailure(const char* functionName, int code)
@@ -58,6 +63,10 @@ MRI_EXPORT const char* FakeCalls()
     return calls.c_str();
 }
 
+MRI_EXPORT const char* FakeInitPath() { return initPath.c_str(); }
+MRI_EXPORT const char* FakeOutputPath() { return outputPath.c_str(); }
+MRI_EXPORT const char* FakeParameterPath() { return parameterPath.c_str(); }
+
 MRI_EXPORT void FakeSetScanStatus(int status)
 {
     scanStatus = status;
@@ -68,14 +77,22 @@ MRI_EXPORT void FakeSetRawMode(int mode)
     rawMode = mode;
 }
 
-MRI_EXPORT int Init(const char*) { return resultFor("Init"); }
+MRI_EXPORT int Init(const char* value)
+{
+    initPath = value ? value : "";
+    return resultFor("Init");
+}
 MRI_EXPORT int ConfigFile(const char*) { return resultFor("ConfigFile"); }
 MRI_EXPORT int SetOutputPath(const char* value)
 {
     outputPath = value ? value : "";
     return resultFor("SetOutputPath");
 }
-MRI_EXPORT int SetParameterFile(const char*, bool) { return resultFor("SetParameterFile"); }
+MRI_EXPORT int SetParameterFile(const char* value, bool)
+{
+    parameterPath = value ? value : "";
+    return resultFor("SetParameterFile");
+}
 MRI_EXPORT void SetSaveMode(int value) { appendCall("SetSaveMode:" + std::to_string(value)); }
 MRI_EXPORT void SetSystemSel(int value) { appendCall("SetSystemSel:" + std::to_string(value)); }
 MRI_EXPORT int SetChannelValid(const char* value) { return resultFor("SetChannelValid", "SetChannelValid:" + std::string(value ? value : "")); }
@@ -105,7 +122,8 @@ MRI_EXPORT int Run()
     if (result != 0) {
         return result;
     }
-    scanStatus = 1;
+    const char* autoComplete = std::getenv("FAKE_AUTO_COMPLETE");
+    scanStatus = autoComplete && std::string(autoComplete) == "1" ? 3 : 1;
     if (rawMode != 0 && !outputPath.empty()) {
         const std::string separator = outputPath.back() == '/' || outputPath.back() == '\\' ? "" : "/";
         std::ofstream raw(outputPath + separator + "PTMRIData_fake.raw", std::ios::binary);

@@ -17,15 +17,24 @@ public:
         reset = reinterpret_cast<void (*)()>(library.resolve("FakeReset"));
         setFailure = reinterpret_cast<void (*)(const char*, int)>(library.resolve("FakeSetFailure"));
         calls = reinterpret_cast<const char* (*)()>(library.resolve("FakeCalls"));
+        initPath = reinterpret_cast<const char* (*)()>(library.resolve("FakeInitPath"));
+        outputPath = reinterpret_cast<const char* (*)()>(library.resolve("FakeOutputPath"));
+        parameterPath = reinterpret_cast<const char* (*)()>(library.resolve("FakeParameterPath"));
         QVERIFY(reset);
         QVERIFY(setFailure);
         QVERIFY(calls);
+        QVERIFY(initPath);
+        QVERIFY(outputPath);
+        QVERIFY(parameterPath);
     }
 
     QLibrary library;
     void (*reset)() = nullptr;
     void (*setFailure)(const char*, int) = nullptr;
     const char* (*calls)() = nullptr;
+    const char* (*initPath)() = nullptr;
+    const char* (*outputPath)() = nullptr;
+    const char* (*parameterPath)() = nullptr;
 };
 
 void writeFile(const QString& path)
@@ -46,6 +55,7 @@ private slots:
     void initializeUsesVerifiedCalibrationSequence();
     void initializeStopsAndClosesOnFailure();
     void initializeClosesOnParameterFailure();
+    void calibrationStatusValueDoesNotFailInitialization();
     void prepareScanReloadsParameterAndChannel();
 };
 
@@ -116,6 +126,11 @@ void MriSdkLoaderTest::initializeUsesVerifiedCalibrationSequence()
         "SetPreempCross:1|SetPreempValue:0:6:200|SetPreempValue:0:7:500|"
         "SetPreempValue:0:8:800|SetPreempValue:0:9:1000");
     QVERIFY(QString::fromUtf8(fake.calls()).startsWith(expected));
+#ifdef Q_OS_WIN
+    QVERIFY(!QString::fromLocal8Bit(fake.initPath()).contains('/'));
+    QVERIFY(!QString::fromLocal8Bit(fake.outputPath()).contains('/'));
+    QVERIFY(!QString::fromLocal8Bit(fake.parameterPath()).contains('/'));
+#endif
 
     const MriSdkStatus status = loader.status();
     QCOMPARE(status.connection, 1);
@@ -174,6 +189,30 @@ void MriSdkLoaderTest::initializeClosesOnParameterFailure()
     QCOMPARE(result.function, QStringLiteral("SetParameterFile"));
     QCOMPARE(result.code, 7);
     QVERIFY(QString::fromUtf8(fake.calls()).endsWith(QStringLiteral("SetParameterFile|CloseSys")));
+}
+
+void MriSdkLoaderTest::calibrationStatusValueDoesNotFailInitialization()
+{
+    const QString fakeSdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(fakeSdkPath);
+    fake.reset();
+    fake.setFailure("SetPreempCross", 1);
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    MriSdkConfig config;
+    config.initPath = temp.filePath(QStringLiteral("init.ini"));
+    config.parameterPath = temp.filePath(QStringLiteral("PTScan.par"));
+    config.outputPath = temp.path();
+    writeFile(config.initPath);
+    writeFile(config.parameterPath);
+    MriSdkLoader loader;
+    QVERIFY(loader.load(fakeSdkPath).ok);
+
+    const MriSdkResult result = loader.initialize(config);
+
+    QVERIFY2(result.ok, qPrintable(result.message));
+    QCOMPARE(loader.sessionState(), MriSdkSessionState::Ready);
+    QVERIFY(QString::fromUtf8(fake.calls()).contains(QStringLiteral("SetPreempCross:1")));
 }
 
 void MriSdkLoaderTest::prepareScanReloadsParameterAndChannel()
