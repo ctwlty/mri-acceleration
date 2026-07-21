@@ -1,6 +1,7 @@
 #include "MriSdkLoader.h"
 
 #include <QFileInfo>
+#include <QDir>
 #include <QtMath>
 #include <QtGlobal>
 
@@ -57,6 +58,7 @@ MriSdkResult MriSdkLoader::load(const QString& dllPath)
 
 void MriSdkLoader::unload()
 {
+    shutdown();
 #ifdef Q_OS_WIN
     if (m_handle) {
         FreeLibrary(static_cast<HMODULE>(m_handle));
@@ -74,6 +76,12 @@ void MriSdkLoader::unload()
     m_setTxCenterFre = nullptr;
     m_setChannelValue = nullptr;
     m_saveParameterFile = nullptr;
+    m_setOutputPrefix = nullptr;
+    m_setAllPreempValue = nullptr;
+    m_setAllGraAnalogDelay = nullptr;
+    m_setSingleGraGmax = nullptr;
+    m_setPreempCross = nullptr;
+    m_setPreempValue = nullptr;
     m_run = nullptr;
     m_abort = nullptr;
     m_closeSys = nullptr;
@@ -83,6 +91,7 @@ void MriSdkLoader::unload()
     m_getCurrentScanNo = nullptr;
     m_getTemperature = nullptr;
     m_getConnectStatus = nullptr;
+    m_systemOpen = false;
     m_mode = Mode::Demo;
     m_sessionState = MriSdkSessionState::Unloaded;
 }
@@ -112,50 +121,156 @@ QString MriSdkLoader::dllPath() const
     return m_dllPath;
 }
 
+MriSdkResult MriSdkLoader::initialize(const MriSdkConfig& config)
+{
+    if (!isLoaded()) {
+        setError(QStringLiteral("SDK 尚未成功加载"));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("initialize"), QStringLiteral("precondition"), -1, m_error);
+    }
+
+    const QFileInfo initFile(config.initPath);
+    if (!initFile.isFile()) {
+        setError(QStringLiteral("初始化文件不存在：%1").arg(config.initPath));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("initialize"), QStringLiteral("Init"), -1, m_error);
+    }
+    const QFileInfo parameterFile(config.parameterPath);
+    if (!parameterFile.isFile()) {
+        setError(QStringLiteral("参数文件不存在：%1").arg(config.parameterPath));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("initialize"), QStringLiteral("SetParameterFile"), -1, m_error);
+    }
+    if (!QDir(config.outputPath).exists()) {
+        setError(QStringLiteral("输出目录不存在：%1").arg(config.outputPath));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("initialize"), QStringLiteral("SetOutputPath"), -1, m_error);
+    }
+
+    m_sessionState = MriSdkSessionState::Initializing;
+    m_error.clear();
+    m_config = config;
+
+    auto failure = [this](const QString& functionName, int code) {
+        setError(QStringLiteral("%1 失败，返回码 %2").arg(functionName).arg(code));
+        if (m_systemOpen && m_closeSys) {
+            m_closeSys();
+            m_systemOpen = false;
+        }
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("initialize"), functionName, code, m_error);
+    };
+    auto checked = [&failure](const QString& functionName, int code) -> MriSdkResult {
+        return code == 0 ? MriSdkResult::success(QStringLiteral("initialize")) : failure(functionName, code);
+    };
+
+    const QByteArray initPath = QFileInfo(config.initPath).absoluteFilePath().toLocal8Bit();
+    const QByteArray outputPath = QDir(config.outputPath).absolutePath().toLocal8Bit();
+    const QByteArray parameterPath = QFileInfo(config.parameterPath).absoluteFilePath().toLocal8Bit();
+
+    int code = m_init(initPath.constData());
+    if (code != 0) {
+        return failure(QStringLiteral("Init"), code);
+    }
+    m_systemOpen = true;
+
+    MriSdkResult step = checked(QStringLiteral("ConfigFile"), m_configFile(initPath.constData()));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetOutputPath"), m_setOutputPath(outputPath.constData()));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetChannelValid"), m_setChannelValid("1"));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetOutputPrefix"), m_setOutputPrefix(config.outputPrefix.constData()));
+    if (!step.ok) return step;
+    m_setSaveMode(1);
+    step = checked(QStringLiteral("SetParameterFile"), m_setParameterFile(parameterPath.constData(), false));
+    if (!step.ok) return step;
+    m_setSystemSel(config.systemSelection);
+    step = checked(QStringLiteral("SetAllPreempValue"), m_setAllPreempValue());
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetAllGraAnalogDelay"), m_setAllGraAnalogDelay());
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(0, 2240.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(1, 2080.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetSingleGraGmax"), m_setSingleGraGmax(2, 2980.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempCross"), m_setPreempCross(1));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 6, 200.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 7, 500.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 8, 800.0f));
+    if (!step.ok) return step;
+    step = checked(QStringLiteral("SetPreempValue"), m_setPreempValue(0, 9, 1000.0f));
+    if (!step.ok) return step;
+
+    m_sessionState = MriSdkSessionState::Ready;
+    return MriSdkResult::success(QStringLiteral("initialize"));
+}
+
+MriSdkResult MriSdkLoader::prepareScan()
+{
+    if (m_sessionState != MriSdkSessionState::Ready) {
+        setError(QStringLiteral("设备未处于可扫描状态"));
+        return MriSdkResult::failure(QStringLiteral("prepare"), QStringLiteral("precondition"), -1, m_error);
+    }
+
+    const QByteArray parameterPath = QFileInfo(m_config.parameterPath).absoluteFilePath().toLocal8Bit();
+    int code = m_setParameterFile(parameterPath.constData(), false);
+    if (code != 0) {
+        setError(QStringLiteral("SetParameterFile 失败，返回码 %1").arg(code));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("prepare"), QStringLiteral("SetParameterFile"), code, m_error);
+    }
+    code = m_setChannelValid("1");
+    if (code != 0) {
+        setError(QStringLiteral("SetChannelValid 失败，返回码 %1").arg(code));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("prepare"), QStringLiteral("SetChannelValid"), code, m_error);
+    }
+    return MriSdkResult::success(QStringLiteral("prepare"));
+}
+
 bool MriSdkLoader::initialize(const QString& initPath, const QString& outputPath, const QString& parPath, bool saveMode)
 {
-    if (m_mode == Mode::Demo) {
-        m_demoScanStatus = 0;
-        m_demoScanCompleted = 0;
-        m_demoCurrentScanNo = 0;
-        m_demoTotalScanNo = 8;
-        return true;
-    }
-
-    if (!m_init || !m_configFile || !m_setOutputPath || !m_setParameterFile || !m_setSaveMode) {
-        setError(QStringLiteral("SDK 函数未完成绑定"));
-        return false;
-    }
-
-    if (m_init(initPath.toLocal8Bit().constData()) != 0) {
-        setError(QStringLiteral("Init 失败"));
-        return false;
-    }
-    if (m_configFile(initPath.toLocal8Bit().constData()) != 0) {
-        setError(QStringLiteral("ConfigFile 失败"));
-        return false;
-    }
-    if (m_setOutputPath(outputPath.toLocal8Bit().constData()) != 0) {
-        setError(QStringLiteral("SetOutputPath 失败"));
-        return false;
-    }
-    if (m_setParameterFile(parPath.toLocal8Bit().constData(), false) != 0) {
-        setError(QStringLiteral("SetParameterFile 失败"));
-        return false;
-    }
-    m_setSaveMode(saveMode ? 1 : 0);
-    return true;
+    Q_UNUSED(saveMode);
+    MriSdkConfig config;
+    config.initPath = initPath;
+    config.outputPath = outputPath;
+    config.parameterPath = parPath;
+    return initialize(config).ok;
 }
 
 void MriSdkLoader::shutdown()
 {
-    if (m_mode == Mode::Real && m_closeSys) {
-        m_abort();
+    if (m_mode == Mode::Real && m_systemOpen && m_closeSys) {
+        if (m_abort) {
+            m_abort();
+        }
         m_closeSys();
+        m_systemOpen = false;
+        m_sessionState = MriSdkSessionState::Closed;
     }
     m_demoScanStatus = 0;
     m_demoScanCompleted = 0;
     m_demoCurrentScanNo = 0;
+}
+
+MriSdkStatus MriSdkLoader::status() const
+{
+    MriSdkStatus value;
+    if (!isLoaded()) {
+        return value;
+    }
+    value.connection = m_getConnectStatus ? m_getConnectStatus(0) : 0;
+    value.temperature = m_getTemperature ? m_getTemperature() : 0.0;
+    value.scan = m_scanStatus ? m_scanStatus() : (m_scanCompleted ? m_scanCompleted() : 0);
+    value.currentScan = m_getCurrentScanNo ? m_getCurrentScanNo() : 0;
+    value.totalScans = m_getTotalScanNo ? m_getTotalScanNo() : 0;
+    return value;
 }
 
 int MriSdkLoader::connectStatus(int boxType) const
@@ -298,6 +413,12 @@ bool MriSdkLoader::bindAll()
         && bind("SetTxCenterFre", m_setTxCenterFre)
         && bind("SetChannelValue", m_setChannelValue)
         && bind("SaveParameterFile", m_saveParameterFile)
+        && bind("SetOutputPrefix", m_setOutputPrefix)
+        && bind("SetAllPreempValue", m_setAllPreempValue)
+        && bind("SetAllGraAnalogDelay", m_setAllGraAnalogDelay)
+        && bind("SetSingleGraGmax", m_setSingleGraGmax)
+        && bind("SetPreempCross", m_setPreempCross)
+        && bind("SetPreempValue", m_setPreempValue)
         && bind("Run", m_run)
         && bind("Abort", m_abort)
         && bind("CloseSys", m_closeSys)

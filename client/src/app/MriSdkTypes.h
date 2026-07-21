@@ -51,3 +51,11 @@ struct MriSdkConfig {
     QByteArray outputPrefix = "PTMRIData";
     int systemSelection = 3;
 };
+
+struct MriSdkStatus {
+    int connection = 0;
+    double temperature = 0.0;
+    int scan = 0;
+    int currentScan = 0;
+    int totalScans = 0;
+};

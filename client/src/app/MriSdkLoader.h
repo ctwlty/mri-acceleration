@@ -29,8 +29,11 @@ public:
     QString lastError() const;
     QString dllPath() const;
 
+    MriSdkResult initialize(const MriSdkConfig& config);
+    MriSdkResult prepareScan();
     bool initialize(const QString& initPath, const QString& outputPath, const QString& parPath, bool saveMode);
     void shutdown();
+    MriSdkStatus status() const;
     int connectStatus(int boxType = 0) const;
     double temperature() const;
     int scanStatus() const;
@@ -58,6 +61,12 @@ private:
     using SetTxCenterFreFunc = int (*)(int, int, int, double);
     using SetChannelValueFunc = void (*)(int, float);
     using SaveParameterFileFunc = int (*)(const char*);
+    using SetOutputPrefixFunc = int (*)(const char*);
+    using SetAllPreempValueFunc = int (*)();
+    using SetAllGraAnalogDelayFunc = int (*)();
+    using SetSingleGraGmaxFunc = int (*)(int, float);
+    using SetPreempCrossFunc = int (*)(int);
+    using SetPreempValueFunc = int (*)(int, int, float);
     using RunFunc = int (*)();
     using AbortFunc = void (*)();
     using CloseSysFunc = void (*)();
@@ -91,6 +100,12 @@ private:
     SetTxCenterFreFunc m_setTxCenterFre = nullptr;
     SetChannelValueFunc m_setChannelValue = nullptr;
     SaveParameterFileFunc m_saveParameterFile = nullptr;
+    SetOutputPrefixFunc m_setOutputPrefix = nullptr;
+    SetAllPreempValueFunc m_setAllPreempValue = nullptr;
+    SetAllGraAnalogDelayFunc m_setAllGraAnalogDelay = nullptr;
+    SetSingleGraGmaxFunc m_setSingleGraGmax = nullptr;
+    SetPreempCrossFunc m_setPreempCross = nullptr;
+    SetPreempValueFunc m_setPreempValue = nullptr;
     RunFunc m_run = nullptr;
     AbortFunc m_abort = nullptr;
     CloseSysFunc m_closeSys = nullptr;
@@ -100,6 +115,9 @@ private:
     GetCurrentScanNoFunc m_getCurrentScanNo = nullptr;
     GetTemperatureFunc m_getTemperature = nullptr;
     GetConnectStatusFunc m_getConnectStatus = nullptr;
+
+    MriSdkConfig m_config;
+    bool m_systemOpen = false;
 
     int m_demoScanStatus = 0;
     int m_demoScanCompleted = 0;
