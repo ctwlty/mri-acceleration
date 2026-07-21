@@ -68,6 +68,7 @@ private slots:
     void overwrittenRawFileIsAccepted();
     void completedStatusWaitsForRawFile();
     void abortWaitsForStoppedStatus();
+    void abortTimeoutWhileActiveTransitionsFault();
     void shutdownDoesNotRepeatAbort();
     void completionAtTimeoutBoundaryIsAccepted();
     void rawSettlingContinuesPastScanTimeout();
@@ -228,6 +229,29 @@ void DeviceBridgeTest::abortWaitsForStoppedStatus()
     bridge.refreshStatus();
     QCOMPARE(bridge.sessionState(), MriSdkSessionState::Ready);
     QCOMPARE(QString::fromUtf8(fake.calls()).count(QStringLiteral("Abort")), 1);
+}
+
+void DeviceBridgeTest::abortTimeoutWhileActiveTransitionsFault()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    MriSdkConfig config = createConfig(temp);
+    config.stopTimeoutMs = 1;
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    QVERIFY(bridge.startScan().ok);
+    fake.setScanStatus(1);
+    bridge.abortScan();
+    QTest::qWait(5);
+
+    bridge.refreshStatus();
+
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Fault);
+    QCOMPARE(bridge.lastErrorResult().function, QStringLiteral("timeout"));
 }
 
 void DeviceBridgeTest::shutdownDoesNotRepeatAbort()

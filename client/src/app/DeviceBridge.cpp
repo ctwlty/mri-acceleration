@@ -211,9 +211,6 @@ void DeviceBridge::refreshStatus()
         return;
     }
     if (m_state == MriSdkSessionState::Stopping) {
-        if (device.scan == 1 || device.scan == 2 || device.scan == 4) {
-            return;
-        }
         if (device.scan == -1 || device.scan == 5 || device.scan == 6) {
             m_pollTimer.stop();
             fail(QStringLiteral("abort"), QStringLiteral("ScanStatus"), device.scan,
