@@ -10,6 +10,12 @@
 #include <QJsonParseError>
 #include <QTemporaryFile>
 
+#include <algorithm>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 namespace {
 struct RuntimeExpectations {
     QString dllSha256;
@@ -52,9 +58,33 @@ QString fileHash(const QString& path)
     return QString::fromLatin1(QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha256).toHex().toUpper());
 }
 
+struct DirectoryManifestRecord {
+    QString relativePath;
+    QString record;
+};
+
+bool invariantRelativePathLess(const DirectoryManifestRecord& left, const DirectoryManifestRecord& right)
+{
+#ifdef Q_OS_WIN
+    return CompareStringEx(
+               LOCALE_NAME_INVARIANT,
+               NORM_IGNORECASE,
+               reinterpret_cast<LPCWCH>(left.relativePath.utf16()),
+               left.relativePath.size(),
+               reinterpret_cast<LPCWCH>(right.relativePath.utf16()),
+               right.relativePath.size(),
+               nullptr,
+               nullptr,
+               0)
+        == CSTR_LESS_THAN;
+#else
+    return QString::localeAwareCompare(left.relativePath, right.relativePath) < 0;
+#endif
+}
+
 QString directoryManifestHash(const QString& directoryPath)
 {
-    QStringList records;
+    QList<DirectoryManifestRecord> entries;
     QDirIterator iterator(
         directoryPath,
         QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
@@ -64,12 +94,19 @@ QString directoryManifestHash(const QString& directoryPath)
         const QFileInfo fileInfo(iterator.next());
         QString relativePath = directory.relativeFilePath(fileInfo.filePath());
         relativePath.replace(QLatin1Char('/'), QLatin1Char('\\'));
-        records.append(QStringLiteral("%1|%2|%3")
-                           .arg(relativePath)
-                           .arg(fileInfo.size())
-                           .arg(fileHash(fileInfo.filePath())));
+        entries.append({
+            relativePath,
+            QStringLiteral("%1|%2|%3")
+                .arg(relativePath)
+                .arg(fileInfo.size())
+                .arg(fileHash(fileInfo.filePath()))});
     }
-    records.sort(Qt::CaseInsensitive);
+    std::stable_sort(entries.begin(), entries.end(), invariantRelativePathLess);
+    QStringList records;
+    records.reserve(entries.size());
+    for (const auto& entry : entries) {
+        records.append(entry.record);
+    }
     return QString::fromLatin1(
         QCryptographicHash::hash(records.join(QLatin1Char('\n')).toUtf8(), QCryptographicHash::Sha256)
             .toHex()

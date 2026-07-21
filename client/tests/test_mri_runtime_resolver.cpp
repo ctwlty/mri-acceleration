@@ -10,6 +10,8 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
+#include <algorithm>
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -26,19 +28,46 @@ QByteArray sha256(const QString& path)
 
 QByteArray directoryManifestSha256(const QString& directoryPath)
 {
-    QStringList records;
+    struct Entry {
+        QString relativePath;
+        QString record;
+    };
+    QList<Entry> entries;
     QDirIterator iterator(directoryPath, QDir::Files | QDir::Hidden | QDir::System, QDirIterator::Subdirectories);
     const QDir directory(directoryPath);
     while (iterator.hasNext()) {
         const QFileInfo fileInfo(iterator.next());
         QString relativePath = directory.relativeFilePath(fileInfo.filePath());
         relativePath.replace(QLatin1Char('/'), QLatin1Char('\\'));
-        records.append(QStringLiteral("%1|%2|%3")
-                           .arg(relativePath)
-                           .arg(fileInfo.size())
-                           .arg(QString::fromLatin1(sha256(fileInfo.filePath()))));
+        entries.append({
+            relativePath,
+            QStringLiteral("%1|%2|%3")
+                .arg(relativePath)
+                .arg(fileInfo.size())
+                .arg(QString::fromLatin1(sha256(fileInfo.filePath())))});
     }
-    records.sort(Qt::CaseInsensitive);
+    std::stable_sort(entries.begin(), entries.end(), [](const Entry& left, const Entry& right) {
+#ifdef Q_OS_WIN
+        return CompareStringEx(
+                   LOCALE_NAME_INVARIANT,
+                   NORM_IGNORECASE,
+                   reinterpret_cast<LPCWCH>(left.relativePath.utf16()),
+                   left.relativePath.size(),
+                   reinterpret_cast<LPCWCH>(right.relativePath.utf16()),
+                   right.relativePath.size(),
+                   nullptr,
+                   nullptr,
+                   0)
+            == CSTR_LESS_THAN;
+#else
+        return QString::localeAwareCompare(left.relativePath, right.relativePath) < 0;
+#endif
+    });
+    QStringList records;
+    records.reserve(entries.size());
+    for (const auto& entry : entries) {
+        records.append(entry.record);
+    }
     return QCryptographicHash::hash(records.join(QLatin1Char('\n')).toUtf8(),
                                     QCryptographicHash::Sha256)
         .toHex()
@@ -160,11 +189,15 @@ void MriRuntimeResolverTest::usesCanonicalHardwareManifestHash()
     const QString hiddenPath = QDir(hwCfgPath).filePath(QStringLiteral(".hidden.cfg"));
     writeFile(hiddenPath, "hidden=1");
     setHidden(hiddenPath);
+    writeFile(QDir(hwCfgPath).filePath(QStringLiteral("rx_0.1.hw")), "one");
+    writeFile(QDir(hwCfgPath).filePath(QStringLiteral("rx_0.10.hw")), "ten");
+    writeFile(QDir(hwCfgPath).filePath(QStringLiteral("rx_0.2.hw")), "two");
+    writeFile(QDir(hwCfgPath).filePath(QStringLiteral("rx1_info.hw")), "filter");
     fixture.expectations.initSha256 = QString::fromLatin1(sha256(fixture.initPath));
-    fixture.expectations.hwCfgFileCount = 3;
-    fixture.expectations.hwCfgTotalBytes = 27;
+    fixture.expectations.hwCfgFileCount = 7;
+    fixture.expectations.hwCfgTotalBytes = 42;
     fixture.expectations.hwCfgManifestSha256 =
-        QStringLiteral("1B611088F0D8B2C58D14A35942CF9F50DE058BDEB7C12A6D167FCFF24A61DA47");
+        QStringLiteral("281B806B88A15E830C6D168D4930ADB363F49C29AA1379ED13C18BC4F057B706");
     writeManifest(fixture, fixture.expectations);
 
     const MriRuntimePaths paths = MriRuntimeResolver::resolveForTesting(temp.path(), {}, fixture.expectations);
