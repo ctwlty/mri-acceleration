@@ -1,7 +1,0 @@
-E:\luowangjun\testDLL\testDLL\bin\Release\testDLL.exe.config
-E:\luowangjun\testDLL\testDLL\bin\Release\testDLL.exe
-E:\luowangjun\testDLL\testDLL\bin\Release\testDLL.pdb
-E:\luowangjun\testDLL\testDLL\bin\Release\NMRDLL.dll
-E:\luowangjun\testDLL\testDLL\bin\Release\NMRDLL.pdb
-E:\luowangjun\testDLL\testDLL\obj\Release\testDLL.exe
-E:\luowangjun\testDLL\testDLL\obj\Release\testDLL.pdb

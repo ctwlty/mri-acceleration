@@ -1,0 +1,59 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Build outputs
+build/
+client/build/
+cmake-build-*/
+*.o
+*.obj
+*.a
+*.dylib
+*.so
+*.app/
+
+# Windows/.NET build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+*.exe
+*.pdb
+*.dll
+*.lib
+
+# Local SDK/runtime bundles
+local_sdk/
+sdk/
+SDK/
+vendor_sdk/
+third_party_sdk/
+**/mridll.dll
+**/NMRDLL.dll
+
+# Runtime/generated scan data
+dry_run_params/
+demo_output/
+rawData/
+rawData*/
+*.raw
+*.fid
+*.nii
+*.nii.gz
+*.dat
+
+# Logs and caches
+Log/
+log/
+logs/
+log_data/
+*.log
+__pycache__/
+*.pyc
+
+# Local IDE settings
+.vscode/
+.idea/

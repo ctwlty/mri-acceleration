@@ -1,6 +1,0 @@
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\bin\x64\Debug\NMRDLL.dll
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\bin\x64\Debug\NMRDLL.pdb
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\x64\Debug\NMRDLL.csproj.AssemblyReference.cache
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\x64\Debug\NMRDLL.csproj.CoreCompileInputs.cache
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\x64\Debug\NMRDLL.dll
-C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\x64\Debug\NMRDLL.pdb
