@@ -27,6 +27,7 @@ private slots:
     void handleTargetChanged();
     void handleTemplateSearchChanged();
     void handleSceneChanged();
+    void handleExecutionGateChanged();
     void handleConnect();
     void handleLoadSdk();
     void handlePrecheck();
@@ -64,6 +65,7 @@ private:
     void setOperationChain(const SceneTemplate& scene);
 
     QComboBox* m_primarySceneCombo = nullptr;
+    QComboBox* m_executionGateCombo = nullptr;
     QComboBox* m_targetCombo = nullptr;
     QLineEdit* m_templateSearchEdit = nullptr;
     QListWidget* m_sceneList = nullptr;

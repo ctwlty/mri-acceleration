@@ -188,6 +188,27 @@ bool ensureWritableOutput(const QString& outputPath, QString& error)
     return true;
 }
 
+bool hasVerifiedBaselineIdentity(const MriRuntimePaths& paths, const RuntimeExpectations& expectations)
+{
+    const QDir hwCfgDir(QFileInfo(paths.initPath).absoluteDir());
+    qint64 totalBytes = 0;
+    int fileCount = 0;
+    QDirIterator iterator(
+        hwCfgDir.absolutePath(),
+        QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    while (iterator.hasNext()) {
+        totalBytes += QFileInfo(iterator.next()).size();
+        ++fileCount;
+    }
+    return fileHash(paths.sdkPath) == expectations.dllSha256
+        && fileHash(paths.initPath) == expectations.initSha256
+        && fileHash(paths.parameterPath) == expectations.parameterSha256
+        && fileCount == expectations.hwCfgFileCount
+        && totalBytes == expectations.hwCfgTotalBytes
+        && directoryManifestHash(hwCfgDir.absolutePath()) == expectations.hwCfgManifestSha256;
+}
+
 MriRuntimePaths resolveWithExpectations(
     const QString& applicationDir,
     const MriRuntimeOverrides& overrides,
@@ -216,6 +237,7 @@ MriRuntimePaths resolveWithExpectations(
         || !ensureWritableOutput(paths.outputPath, paths.error)) {
         return paths;
     }
+    paths.verifiedRuntimeAndParameterIdentity = hasVerifiedBaselineIdentity(paths, expectations);
     return paths;
 }
 }

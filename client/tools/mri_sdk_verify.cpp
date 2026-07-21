@@ -117,7 +117,12 @@ int main(int argc, char* argv[])
             }
         });
 
-    result = bridge.startScan();
+    bridge.selectExecutionGate(ExecutionGate::VerifiedBaseline);
+    if (!bridge.precheck().passed) {
+        err << "ERROR baseline precheck failed" << Qt::endl;
+        return 5;
+    }
+    result = bridge.startScan(bridge.executionContext());
     if (!result.ok) {
         err << "ERROR run function=" << result.function << " code=" << result.code
             << " message=" << result.message << Qt::endl;

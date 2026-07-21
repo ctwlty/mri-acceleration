@@ -16,6 +16,7 @@ struct MriRuntimePaths {
     QString parameterPath;
     QString outputPath;
     QString error;
+    bool verifiedRuntimeAndParameterIdentity = false;
 
     bool isValid() const;
 };

@@ -1,6 +1,9 @@
 #include "DeviceActionAvailability.h"
 
-DeviceActionAvailability actionsForState(MriSdkSessionState state)
+DeviceActionAvailability actionsForState(
+    MriSdkSessionState state,
+    ExecutionGate gate,
+    bool hasFreshPrecheck)
 {
     switch (state) {
     case MriSdkSessionState::Unloaded:
@@ -10,7 +13,7 @@ DeviceActionAvailability actionsForState(MriSdkSessionState state)
     case MriSdkSessionState::Loaded:
         return {true, true, false, false};
     case MriSdkSessionState::Ready:
-        return {true, false, true, false};
+        return {true, false, gate == ExecutionGate::VerifiedBaseline && hasFreshPrecheck, false};
     case MriSdkSessionState::Scanning:
         return {false, false, false, true};
     case MriSdkSessionState::Initializing:

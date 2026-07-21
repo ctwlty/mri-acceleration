@@ -105,6 +105,9 @@ MainWindow::MainWindow(const QString& bundledRuntimeDirectory, QWidget* parent)
     connect(m_bridge, &DeviceBridge::sdkStatusChanged, this, &MainWindow::updateSdkStatus);
     connect(m_bridge, &DeviceBridge::sdkDiagnosticChanged, this, &MainWindow::updateSdkDiagnostic);
     connect(m_bridge, &DeviceBridge::sessionStateChanged, this, &MainWindow::updateSessionState);
+    connect(m_bridge, &DeviceBridge::executionAuthorizationChanged, this, [this]() {
+        updateSessionState(m_bridge->sessionState());
+    });
     connect(m_bridge, &DeviceBridge::rawFileReady, this, [this](const QString& filePath) {
         appendLog(QStringLiteral("RAW 验收通过：%1").arg(filePath));
     });
@@ -180,6 +183,13 @@ QWidget* MainWindow::buildLeftPane()
     m_primarySceneCombo->setObjectName("PrimarySceneCombo");
     m_primarySceneCombo->setMaxVisibleItems(12);
 
+    auto* executionGateLabel = new QLabel(QStringLiteral("设备执行模式"), filterPanel);
+    executionGateLabel->setObjectName("MutedLabel");
+    m_executionGateCombo = new QComboBox(filterPanel);
+    m_executionGateCombo->setObjectName("ExecutionGateCombo");
+    m_executionGateCombo->addItem(QStringLiteral("科研场景（Run HOLD）"), static_cast<int>(ExecutionGate::Hold));
+    m_executionGateCombo->addItem(QStringLiteral("设备基线（已实机验证 PTScan）"), static_cast<int>(ExecutionGate::VerifiedBaseline));
+
     auto* targetLabel = new QLabel(QStringLiteral("检测对象"), filterPanel);
     targetLabel->setObjectName("MutedLabel");
     m_targetCombo = new QComboBox(filterPanel);
@@ -195,10 +205,12 @@ QWidget* MainWindow::buildLeftPane()
 
     filterLayout->addWidget(primaryLabel, 0, 0);
     filterLayout->addWidget(m_primarySceneCombo, 0, 1);
-    filterLayout->addWidget(targetLabel, 1, 0);
-    filterLayout->addWidget(m_targetCombo, 1, 1);
-    filterLayout->addWidget(searchLabel, 2, 0);
-    filterLayout->addWidget(m_templateSearchEdit, 2, 1);
+    filterLayout->addWidget(executionGateLabel, 1, 0);
+    filterLayout->addWidget(m_executionGateCombo, 1, 1);
+    filterLayout->addWidget(targetLabel, 2, 0);
+    filterLayout->addWidget(m_targetCombo, 2, 1);
+    filterLayout->addWidget(searchLabel, 3, 0);
+    filterLayout->addWidget(m_templateSearchEdit, 3, 1);
     filterLayout->setColumnStretch(1, 1);
     layout->addWidget(filterPanel);
 
@@ -253,6 +265,7 @@ QWidget* MainWindow::buildLeftPane()
     layout->addStretch();
 
     connect(m_primarySceneCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handlePrimarySceneChanged);
+    connect(m_executionGateCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handleExecutionGateChanged);
     connect(m_targetCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handleTargetChanged);
     connect(m_templateSearchEdit, &QLineEdit::textChanged, this, &MainWindow::handleTemplateSearchChanged);
     connect(m_sceneList, &QListWidget::currentRowChanged, this, &MainWindow::handleSceneChanged);
@@ -666,7 +679,14 @@ void MainWindow::handleTemplateSearchChanged()
 
 void MainWindow::handleSceneChanged()
 {
+    m_bridge->invalidatePrecheck(QStringLiteral("scientific scene changed"));
     applyScene(currentScene());
+}
+
+void MainWindow::handleExecutionGateChanged()
+{
+    const auto gate = static_cast<ExecutionGate>(m_executionGateCombo->currentData().toInt());
+    m_bridge->selectExecutionGate(gate);
 }
 
 MriSdkResult MainWindow::loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config)
@@ -734,7 +754,7 @@ void MainWindow::handleDryRun()
 
 void MainWindow::handleStart()
 {
-    static_cast<void>(m_bridge->startScan());
+    static_cast<void>(m_bridge->startScan(m_bridge->executionContext()));
 }
 
 void MainWindow::handlePause()
@@ -818,7 +838,10 @@ void MainWindow::updateSdkDiagnostic(const QString& status, const QString& fileP
 
 void MainWindow::updateSessionState(MriSdkSessionState state)
 {
-    const DeviceActionAvailability actions = actionsForState(state);
+    const DeviceActionAvailability actions = actionsForState(
+        state,
+        m_bridge->executionContext().gate,
+        m_bridge->precheckResult().passed);
     if (m_loadSdkButton) m_loadSdkButton->setEnabled(actions.canLoadSdk);
     if (m_connectButton) m_connectButton->setEnabled(actions.canConnect);
     if (m_startButton) m_startButton->setEnabled(actions.canRun);

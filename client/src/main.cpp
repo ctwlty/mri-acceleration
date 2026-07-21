@@ -107,6 +107,7 @@ int main(int argc, char* argv[])
             config.initPath = runtimePaths.initPath;
             config.parameterPath = runtimePaths.parameterPath;
             config.outputPath = runtimePaths.outputPath;
+            config.verifiedRuntimeAndParameterIdentity = runtimePaths.verifiedRuntimeAndParameterIdentity;
             QTimer::singleShot(0, &window, [&window, runtimePaths, config]() {
                 const MriSdkResult result = window.loadSdkAndConnect(runtimePaths.sdkPath, config);
                 if (!result.ok) {

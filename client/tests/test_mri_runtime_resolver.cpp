@@ -120,6 +120,7 @@ class MriRuntimeResolverTest : public QObject {
 private slots:
     void resolvesBundledDefaultsAndCreatesOutputDirectory();
     void overridesOnlySpecifiedField();
+    void verifiesResolvedIdentityAfterOverrides();
     void rejectsMissingOrInvalidManifest();
     void overridesBypassOnlyMatchingBundledManifestEntry();
     void rejectsTamperedDllEvenWhenManifestIsRewritten();
@@ -142,6 +143,26 @@ void MriRuntimeResolverTest::resolvesBundledDefaultsAndCreatesOutputDirectory()
     QCOMPARE(paths.parameterPath, fixture.parPath);
     QCOMPARE(paths.outputPath, QDir(temp.path()).filePath(QStringLiteral("mri-output")));
     QVERIFY(QFileInfo(paths.outputPath).isDir());
+    QVERIFY(paths.verifiedRuntimeAndParameterIdentity);
+}
+
+void MriRuntimeResolverTest::verifiesResolvedIdentityAfterOverrides()
+{
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const RuntimeFixture fixture = createBundledRuntime(temp.path());
+    MriRuntimeOverrides overrides;
+    overrides.sdkPath = temp.filePath(QStringLiteral("copies/mridll.dll"));
+    overrides.initPath = temp.filePath(QStringLiteral("copies/hw_cfg/init.ini"));
+    overrides.parameterPath = temp.filePath(QStringLiteral("copies/PTScan.par"));
+    writeFile(overrides.sdkPath, "fake sdk");
+    writeFile(overrides.initPath, "fake init");
+    writeFile(overrides.parameterPath, "fake parameters");
+
+    const MriRuntimePaths paths = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, fixture.expectations);
+
+    QVERIFY2(paths.isValid(), qPrintable(paths.error));
+    QVERIFY(paths.verifiedRuntimeAndParameterIdentity);
 }
 
 void MriRuntimeResolverTest::overridesOnlySpecifiedField()

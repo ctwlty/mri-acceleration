@@ -9,6 +9,14 @@
 #include <QHash>
 #include <QTimer>
 
+struct PrecheckResult {
+    bool passed = false;
+    int connection = 0;
+    double temperature = 0.0;
+    int scanStatus = 0;
+    QString message;
+};
+
 class DeviceBridge : public QObject {
     Q_OBJECT
 
@@ -20,10 +28,11 @@ public:
     bool initialize(const QString& initPath, const QString& outputPath, const QString& parPath);
     MriSdkResult connectDevice(const MriSdkConfig& config);
     void connectDevice();
-    void precheck();
+    PrecheckResult precheck();
     void dryRunScene(const SceneTemplate& scene);
-    MriSdkResult startScan();
-    void startScan(const SceneTemplate& scene);
+    MriSdkResult startScan(const ExecutionContext& context);
+    void selectExecutionGate(ExecutionGate gate);
+    void invalidatePrecheck(const QString& reason);
     void pauseScan();
     void resumeScan();
     void abortScan();
@@ -40,6 +49,8 @@ public:
     QString sdkModeLabel() const;
     QString sdkPathLabel() const;
     QString lastError() const;
+    ExecutionContext executionContext() const;
+    PrecheckResult precheckResult() const;
 
 public slots:
     void refreshStatus();
@@ -56,6 +67,7 @@ signals:
     void operationFailed(const MriSdkResult& result);
     void rawFileReady(const QString& filePath);
     void deviceStatusChanged(const MriSdkStatus& status);
+    void executionAuthorizationChanged();
 
 private:
     void syncSdkStatus();
@@ -67,6 +79,7 @@ private:
     MriSdkResult fail(const QString& stage, const QString& function, int code, const QString& message);
     QHash<QString, QString> rawFilesInOutput() const;
     QString findNewRawFile() const;
+    bool outputPathIsWritable() const;
 
     MriSdkLoader m_loader;
     MriSdkConfig m_config;
@@ -91,4 +104,6 @@ private:
     QString m_lastError;
     QString m_lastDryRunStatus;
     QString m_lastDryRunPath;
+    ExecutionContext m_executionContext;
+    PrecheckResult m_precheckResult;
 };

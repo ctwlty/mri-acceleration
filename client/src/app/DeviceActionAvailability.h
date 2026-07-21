@@ -9,4 +9,7 @@ struct DeviceActionAvailability {
     bool canAbort = false;
 };
 
-DeviceActionAvailability actionsForState(MriSdkSessionState state);
+DeviceActionAvailability actionsForState(
+    MriSdkSessionState state,
+    ExecutionGate gate = ExecutionGate::Hold,
+    bool hasFreshPrecheck = false);

@@ -4,6 +4,17 @@
 #include <QMetaType>
 #include <QString>
 
+enum class ExecutionGate {
+    Hold,
+    VerifiedBaseline,
+    VerifiedScene
+};
+
+struct ExecutionContext {
+    ExecutionGate gate = ExecutionGate::Hold;
+    bool verifiedRuntimeAndParameterIdentity = false;
+};
+
 enum class MriSdkSessionState {
     Unloaded,
     Loaded,
@@ -55,6 +66,7 @@ struct MriSdkConfig {
     int scanTimeoutMs = 30 * 60 * 1000;
     int stopTimeoutMs = 30 * 1000;
     int rawSettleTimeoutMs = 10 * 1000;
+    bool verifiedRuntimeAndParameterIdentity = false;
 };
 
 struct MriSdkStatus {

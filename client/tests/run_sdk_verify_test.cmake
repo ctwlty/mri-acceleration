@@ -5,6 +5,7 @@ if(NOT DEFINED FAKE_SDK OR NOT EXISTS "${FAKE_SDK}")
     message(FATAL_ERROR "Fake SDK is missing: ${FAKE_SDK}")
 endif()
 
+# This verifier check intentionally stops at initialization; it must not authorize a fake Run.
 set(test_root "${CMAKE_CURRENT_BINARY_DIR}/sdk-verify-test")
 file(MAKE_DIRECTORY "${test_root}/output")
 file(WRITE "${test_root}/init.ini" "test")
@@ -13,15 +14,11 @@ file(WRITE "${test_root}/PTScan.par" "test")
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E env
         "PATH=C:/msys64/ucrt64/bin;$ENV{PATH}"
-        "FAKE_AUTO_COMPLETE=1"
         "${VERIFIER}"
         --sdk "${FAKE_SDK}"
         --init "${test_root}/init.ini"
         --par "${test_root}/PTScan.par"
         --output "${test_root}/output"
-        --scan
-        --poll-ms 1
-        --timeout-ms 5000
     RESULT_VARIABLE verifier_result
     OUTPUT_VARIABLE verifier_output
     ERROR_VARIABLE verifier_error
@@ -33,9 +30,4 @@ if(NOT verifier_result EQUAL 0)
         "stdout:\n${verifier_output}\n"
         "stderr:\n${verifier_error}")
 endif()
-
-file(GLOB raw_files "${test_root}/output/*.raw")
-list(LENGTH raw_files raw_count)
-if(raw_count LESS 1)
-    message(FATAL_ERROR "Native SDK verifier did not produce a RAW file")
-endif()
+# End native verifier initialization check.

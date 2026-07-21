@@ -63,6 +63,7 @@ static SceneTemplate makeTemplate(
     scene.presetVersion = QStringLiteral("presetVersion=2");
     scene.adaptationStatus = QStringLiteral("待设备适配");
     scene.runGate = QStringLiteral("HOLD");
+    scene.executionGate = ExecutionGate::Hold;
     scene.parameterStatus = QStringLiteral("开发预设");
     scene.parameterDetails = parameterDetails;
     scene.sdkMappingStatus = QStringLiteral("待序列字段映射");

@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QTemporaryFile>
 #include <QStringList>
 
 DeviceBridge::DeviceBridge(QObject* parent)
@@ -31,6 +32,7 @@ DeviceBridge::~DeviceBridge()
 
 MriSdkResult DeviceBridge::loadSdk(const QString& dllPath)
 {
+    invalidatePrecheck(QStringLiteral("SDK changed"));
     m_pollTimer.stop();
     const MriSdkResult result = m_loader.load(dllPath);
     m_sdkPathLabel = dllPath.isEmpty() ? QStringLiteral("未选择 DLL") : QFileInfo(dllPath).absoluteFilePath();
@@ -65,11 +67,13 @@ bool DeviceBridge::initialize(const QString& initPath, const QString& outputPath
 
 MriSdkResult DeviceBridge::connectDevice(const MriSdkConfig& config)
 {
+    invalidatePrecheck(QStringLiteral("configuration changed"));
     if (m_state != MriSdkSessionState::Loaded) {
         return reject(QStringLiteral("connect"), QStringLiteral("precondition"), QStringLiteral("请先成功加载 SDK"));
     }
 
     m_config = config;
+    m_executionContext = {ExecutionGate::Hold, config.verifiedRuntimeAndParameterIdentity};
     setSessionState(MriSdkSessionState::Initializing);
     const MriSdkResult result = m_loader.initialize(config);
     if (!result.ok) {
@@ -104,18 +108,44 @@ void DeviceBridge::connectDevice()
     emit logAppended(QStringLiteral("请先加载 SDK 并完成初始化"));
 }
 
-void DeviceBridge::precheck()
+PrecheckResult DeviceBridge::precheck()
 {
+    invalidatePrecheck(QStringLiteral("precheck renewed"));
+    PrecheckResult result;
     if (m_state != MriSdkSessionState::Ready) {
-        emit logAppended(QStringLiteral("预检失败：设备尚未就绪"));
-        return;
+        result.message = QStringLiteral("device is not ready");
+        m_precheckResult = result;
+        emit executionAuthorizationChanged();
+        emit logAppended(QStringLiteral("Precheck failed: %1").arg(result.message));
+        return result;
     }
     const MriSdkStatus device = m_loader.status();
+    result.connection = device.connection;
+    result.temperature = device.temperature;
+    result.scanStatus = device.scan;
     emit deviceStatusChanged(device);
-    emit logAppended(QStringLiteral("预检：连接码=%1，温度=%2 C，ScanStatus=%3")
-                         .arg(device.connection)
-                         .arg(device.temperature, 0, 'f', 1)
-                         .arg(device.scan));
+    if (m_executionContext.gate != ExecutionGate::VerifiedBaseline) {
+        result.message = QStringLiteral("Run HOLD: select the verified PTScan baseline mode");
+    } else if (!m_executionContext.verifiedRuntimeAndParameterIdentity) {
+        result.message = QStringLiteral("runtime and PTScan identity are not verified");
+    } else if (device.connection == 0) {
+        result.message = QStringLiteral("device connection is not ready");
+    } else if (device.scan != 0) {
+        result.message = QStringLiteral("device ScanStatus is not idle");
+    } else if (!outputPathIsWritable()) {
+        result.message = QStringLiteral("output directory is not writable");
+    } else {
+        result.passed = true;
+        result.message = QStringLiteral("verified baseline precheck passed");
+    }
+    m_precheckResult = result;
+    emit executionAuthorizationChanged();
+    emit logAppended(QStringLiteral("Precheck: connection=%1, temperature=%2 C, ScanStatus=%3; %4")
+                         .arg(result.connection)
+                         .arg(result.temperature, 0, 'f', 1)
+                         .arg(result.scanStatus)
+                         .arg(result.message));
+    return result;
 }
 
 void DeviceBridge::dryRunScene(const SceneTemplate& scene)
@@ -130,11 +160,20 @@ void DeviceBridge::dryRunScene(const SceneTemplate& scene)
                          : QStringLiteral("SDK DRY_RUN 失败：%1").arg(result.summary));
 }
 
-MriSdkResult DeviceBridge::startScan()
+MriSdkResult DeviceBridge::startScan(const ExecutionContext& context)
 {
     if (m_state != MriSdkSessionState::Ready) {
         return reject(QStringLiteral("run"), QStringLiteral("precondition"), QStringLiteral("设备未处于可扫描状态"));
     }
+
+    if (context.gate != m_executionContext.gate
+        || context.verifiedRuntimeAndParameterIdentity != m_executionContext.verifiedRuntimeAndParameterIdentity
+        || context.gate != ExecutionGate::VerifiedBaseline
+        || !m_precheckResult.passed) {
+        return reject(QStringLiteral("run"), QStringLiteral("execution-gate"),
+            QStringLiteral("Run HOLD: a fresh verified baseline precheck is required"));
+    }
+    invalidatePrecheck(QStringLiteral("scan started"));
 
     MriSdkResult result = m_loader.prepareScan();
     if (!result.ok) {
@@ -160,10 +199,26 @@ MriSdkResult DeviceBridge::startScan()
     return MriSdkResult::success(QStringLiteral("run"));
 }
 
-void DeviceBridge::startScan(const SceneTemplate& scene)
+void DeviceBridge::selectExecutionGate(ExecutionGate gate)
 {
-    Q_UNUSED(scene);
-    static_cast<void>(startScan());
+    m_executionContext.gate = gate;
+    invalidatePrecheck(QStringLiteral("execution mode changed"));
+}
+
+bool DeviceBridge::outputPathIsWritable() const
+{
+    if (!QDir().mkpath(m_config.outputPath)) {
+        return false;
+    }
+    QTemporaryFile probe(QDir(m_config.outputPath).filePath(QStringLiteral(".mri-precheck-write-XXXXXX")));
+    return probe.open();
+}
+
+void DeviceBridge::invalidatePrecheck(const QString& reason)
+{
+    m_precheckResult = {};
+    m_precheckResult.message = reason;
+    emit executionAuthorizationChanged();
 }
 
 void DeviceBridge::pauseScan()
@@ -182,6 +237,7 @@ void DeviceBridge::abortScan()
         emit logAppended(QStringLiteral("当前没有可终止的扫描"));
         return;
     }
+    invalidatePrecheck(QStringLiteral("scan aborted"));
     setSessionState(MriSdkSessionState::Stopping);
     m_loader.abort();
     m_stopElapsed.start();
@@ -262,6 +318,7 @@ void DeviceBridge::refreshStatus()
         }
         m_pollTimer.stop();
         m_lastRawFile = rawFile;
+        invalidatePrecheck(QStringLiteral("scan completed"));
         setSessionState(MriSdkSessionState::Ready);
         setScan(QStringLiteral("完成"), QStringLiteral("%1/%2").arg(device.currentScan).arg(device.totalScans));
         emit rawFileReady(m_lastRawFile);
@@ -290,6 +347,8 @@ QString DeviceBridge::scanProgress() const { return m_scanProgress; }
 QString DeviceBridge::sdkModeLabel() const { return m_sdkModeLabel; }
 QString DeviceBridge::sdkPathLabel() const { return m_sdkPathLabel; }
 QString DeviceBridge::lastError() const { return m_lastError; }
+ExecutionContext DeviceBridge::executionContext() const { return m_executionContext; }
+PrecheckResult DeviceBridge::precheckResult() const { return m_precheckResult; }
 
 void DeviceBridge::syncSdkStatus()
 {
@@ -344,6 +403,7 @@ MriSdkResult DeviceBridge::fail(
     int code,
     const QString& message)
 {
+    invalidatePrecheck(QStringLiteral("device fault"));
     m_lastErrorResult = MriSdkResult::failure(stage, function, code, message);
     m_lastError = message;
     m_abnormalState = message;

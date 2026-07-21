@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MriSdkTypes.h"
+
 #include <QString>
 
 struct SceneTemplate {
@@ -25,6 +27,7 @@ struct SceneTemplate {
     QString presetVersion;
     QString adaptationStatus;
     QString runGate;
+    ExecutionGate executionGate = ExecutionGate::Hold;
     QString parameterStatus;
     QString parameterDetails;
     QString sdkMappingStatus;
