@@ -661,6 +661,24 @@ void MainWindow::handleSceneChanged()
     applyScene(currentScene());
 }
 
+MriSdkResult MainWindow::loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config)
+{
+    const MriSdkResult loadResult = m_bridge->loadSdk(dllPath);
+    if (!loadResult.ok) {
+        return loadResult;
+    }
+
+    m_selectedDllPath = QFileInfo(dllPath).absoluteFilePath();
+    appendLog(QStringLiteral("Auto-connect: init=%1, par=%2, output=%3")
+                  .arg(config.initPath, config.parameterPath, config.outputPath));
+    return m_bridge->connectDevice(config);
+}
+
+MriSdkSessionState MainWindow::deviceSessionState() const
+{
+    return m_bridge->sessionState();
+}
+
 void MainWindow::handleConnect()
 {
     if (m_selectedDllPath.isEmpty()) {

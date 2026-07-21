@@ -30,6 +30,20 @@ Start-Process client\dist\scenario_nmr_client.exe
 
 部署脚本调用 `windeployqt6`，并对部署后的 GUI 执行 3 秒离屏启动冒烟测试。
 
+要让 Qt 程序启动后直接加载 SDK 并建链，使用：
+
+```powershell
+Start-Process client\dist\scenario_nmr_client.exe -ArgumentList @(
+  '--auto-connect',
+  '--sdk', 'C:\path\to\mridll.dll',
+  '--init', 'C:\path\to\hw_cfg\init.ini',
+  '--par', 'C:\MRIScanner\Scan\PTScan.par',
+  '--output', 'D:\mri_data\par0423-3'
+)
+```
+
+`--init` 可省略，此时默认使用 DLL 相邻的 `hw_cfg\init.ini`。自动建链成功后 GUI 保持运行，由用户在界面中发起采集或急停。
+
 ## 真实 SDK 操作
 
 1. 点击“加载 SDK”，选择参考运行目录中的 `mridll.dll`。
@@ -59,4 +73,4 @@ client\dist\mri_sdk_verify.exe `
 
 ## 自动测试
 
-Debug 构建运行四个 CTest 目标：严格 DLL 加载、初始化与校准序列、设备状态机、按钮状态映射，以及假 SDK 原生端到端扫描。测试 DLL 不连接真实设备。
+Debug 构建运行六个 CTest 目标：严格 DLL 加载、初始化与校准序列、设备状态机、按钮状态映射、主窗口自动建链、GUI 进程级启动，以及假 SDK 原生端到端扫描。测试 DLL 不连接真实设备。进程级测试还会确认自动建链只初始化一次、不会在启动时误触发采集，且 GUI 事件循环持续运行。

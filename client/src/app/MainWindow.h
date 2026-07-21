@@ -18,6 +18,8 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    MriSdkResult loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config);
+    MriSdkSessionState deviceSessionState() const;
 
 private slots:
     void handlePrimarySceneChanged();

@@ -26,6 +26,12 @@ void appendCall(const std::string& call)
         calls += '|';
     }
     calls += call;
+
+    const char* callLog = std::getenv("FAKE_CALL_LOG");
+    if (callLog && *callLog) {
+        std::ofstream log(callLog, std::ios::app);
+        log << call << '\n';
+    }
 }
 
 int resultFor(const char* functionName, const std::string& call = {})

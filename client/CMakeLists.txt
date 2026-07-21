@@ -99,6 +99,25 @@ if(BUILD_TESTING)
     target_include_directories(test_device_actions PRIVATE src)
     target_link_libraries(test_device_actions PRIVATE Qt6::Core Qt6::Test)
 
+    qt_add_executable(test_main_window
+        tests/test_main_window.cpp
+        src/app/DeviceActionAvailability.cpp
+        src/app/DeviceActionAvailability.h
+        src/app/DeviceBridge.cpp
+        src/app/DeviceBridge.h
+        src/app/MainWindow.cpp
+        src/app/MainWindow.h
+        src/app/MriSdkLoader.cpp
+        src/app/MriSdkLoader.h
+        src/app/ProtocolMapper.cpp
+        src/app/ProtocolMapper.h
+        src/app/SceneCatalog.cpp
+        src/app/SceneCatalog.h
+        src/app/SceneTemplate.h
+    )
+    target_include_directories(test_main_window PRIVATE src)
+    target_link_libraries(test_main_window PRIVATE Qt6::Widgets Qt6::Test)
+
     add_test(NAME mri_sdk_loader COMMAND test_mri_sdk_loader)
     set_tests_properties(mri_sdk_loader PROPERTIES
         ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>;FAKE_INCOMPLETE_MRI_SDK_PATH=$<TARGET_FILE:fake_incomplete_mri_sdk>"
@@ -116,6 +135,12 @@ if(BUILD_TESTING)
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 
+    add_test(NAME main_window COMMAND test_main_window)
+    set_tests_properties(main_window PROPERTIES
+        ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>;QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
     add_test(
         NAME sdk_verify_fake
         COMMAND ${CMAKE_COMMAND}
@@ -124,6 +149,17 @@ if(BUILD_TESTING)
             -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_sdk_verify_test.cmake"
     )
     set_tests_properties(sdk_verify_fake PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(
+        NAME gui_auto_connect_fake
+        COMMAND ${CMAKE_COMMAND}
+            "-DGUI=$<TARGET_FILE:scenario_nmr_client>"
+            "-DFAKE_SDK=$<TARGET_FILE:fake_mri_sdk>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_gui_auto_connect_test.cmake"
+    )
+    set_tests_properties(gui_auto_connect_fake PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 endif()
