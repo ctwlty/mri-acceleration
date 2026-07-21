@@ -23,7 +23,8 @@ DeviceBridge::DeviceBridge(QObject* parent)
 
 bool DeviceBridge::loadSdk(const QString& dllPath)
 {
-    const bool ok = m_loader.load(dllPath);
+    const auto result = m_loader.load(dllPath);
+    const bool ok = result.ok;
     m_sdkModeLabel = m_loader.mode() == MriSdkLoader::Mode::Real ? QStringLiteral("Real SDK") : QStringLiteral("Demo");
     m_sdkPathLabel = m_loader.dllPath().isEmpty() ? QStringLiteral("未选择 DLL") : m_loader.dllPath();
     m_lastError = m_loader.lastError();

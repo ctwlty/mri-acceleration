@@ -18,39 +18,40 @@ MriSdkLoader::~MriSdkLoader()
     unload();
 }
 
-bool MriSdkLoader::load(const QString& dllPath)
+MriSdkResult MriSdkLoader::load(const QString& dllPath)
 {
     unload();
     m_error.clear();
     m_dllPath = dllPath;
     if (dllPath.isEmpty()) {
-        m_mode = Mode::Demo;
-        applyDemoState();
-        return true;
+        setError(QStringLiteral("未选择 mridll.dll"));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("load"), QStringLiteral("LoadLibrary"), -1, m_error);
     }
 
 #ifdef Q_OS_WIN
-    const QByteArray utf8 = QFileInfo(dllPath).absoluteFilePath().toLocal8Bit();
-    m_handle = reinterpret_cast<void*>(LoadLibraryA(utf8.constData()));
+    const QString absolutePath = QFileInfo(dllPath).absoluteFilePath();
+    m_handle = reinterpret_cast<void*>(LoadLibraryW(reinterpret_cast<const wchar_t*>(absolutePath.utf16())));
     if (!m_handle) {
-        setError(QStringLiteral("加载 mridll.dll 失败：%1").arg(dllPath));
-        m_mode = Mode::Demo;
-        applyDemoState();
-        return true;
+        const int errorCode = static_cast<int>(GetLastError());
+        setError(QStringLiteral("加载 mridll.dll 失败：%1（Windows 错误 %2）").arg(absolutePath).arg(errorCode));
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("load"), QStringLiteral("LoadLibrary"), errorCode, m_error);
     }
     if (!bindAll()) {
+        const QString bindError = m_error;
         unload();
-        m_mode = Mode::Demo;
-        applyDemoState();
-        return true;
+        setError(bindError);
+        m_sessionState = MriSdkSessionState::Fault;
+        return MriSdkResult::failure(QStringLiteral("bind"), QStringLiteral("GetProcAddress"), -1, m_error);
     }
     m_mode = Mode::Real;
-    return true;
+    m_sessionState = MriSdkSessionState::Loaded;
+    return MriSdkResult::success(QStringLiteral("load"));
 #else
     setError(QStringLiteral("当前平台不支持 Windows DLL 加载"));
-    m_mode = Mode::Demo;
-    applyDemoState();
-    return false;
+    m_sessionState = MriSdkSessionState::Fault;
+    return MriSdkResult::failure(QStringLiteral("load"), QStringLiteral("LoadLibrary"), -1, m_error);
 #endif
 }
 
@@ -82,11 +83,18 @@ void MriSdkLoader::unload()
     m_getCurrentScanNo = nullptr;
     m_getTemperature = nullptr;
     m_getConnectStatus = nullptr;
+    m_mode = Mode::Demo;
+    m_sessionState = MriSdkSessionState::Unloaded;
 }
 
 bool MriSdkLoader::isLoaded() const
 {
     return m_mode == Mode::Real && m_handle;
+}
+
+MriSdkSessionState MriSdkLoader::sessionState() const
+{
+    return m_sessionState;
 }
 
 MriSdkLoader::Mode MriSdkLoader::mode() const

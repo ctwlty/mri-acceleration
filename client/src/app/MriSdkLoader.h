@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MriSdkTypes.h"
 #include "SceneTemplate.h"
 
 #include <QString>
@@ -20,9 +21,10 @@ public:
     MriSdkLoader();
     ~MriSdkLoader();
 
-    bool load(const QString& dllPath);
+    MriSdkResult load(const QString& dllPath);
     void unload();
     bool isLoaded() const;
+    MriSdkSessionState sessionState() const;
     Mode mode() const;
     QString lastError() const;
     QString dllPath() const;
@@ -76,6 +78,7 @@ private:
     QString m_dllPath;
     QString m_error;
     Mode m_mode = Mode::Demo;
+    MriSdkSessionState m_sessionState = MriSdkSessionState::Unloaded;
 
     InitFunc m_init = nullptr;
     ConfigFileFunc m_configFile = nullptr;
