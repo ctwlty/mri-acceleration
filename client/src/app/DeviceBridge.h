@@ -17,6 +17,18 @@ struct PrecheckResult {
     QString message;
 };
 
+class PrecheckTicket {
+public:
+    bool isValid() const { return m_id != 0; }
+private:
+    quint64 m_id = 0;
+    quint64 m_generation = 0;
+    quint64 m_issuerId = 0;
+    ExecutionGate m_gate = ExecutionGate::Hold;
+    BaselineIdentityProof m_identityProof;
+    friend class DeviceBridge;
+};
+
 class DeviceBridge : public QObject {
     Q_OBJECT
 
@@ -30,9 +42,9 @@ public:
     void connectDevice();
     PrecheckResult precheck();
     void dryRunScene(const SceneTemplate& scene);
-    MriSdkResult startScan(const ExecutionContext& context);
+    MriSdkResult startScan(const PrecheckTicket& ticket);
     void selectExecutionGate(ExecutionGate gate);
-    void invalidatePrecheck(const QString& reason);
+    void sceneChanged();
     void pauseScan();
     void resumeScan();
     void abortScan();
@@ -49,7 +61,7 @@ public:
     QString sdkModeLabel() const;
     QString sdkPathLabel() const;
     QString lastError() const;
-    ExecutionContext executionContext() const;
+    PrecheckTicket precheckTicket() const;
     PrecheckResult precheckResult() const;
 
 public slots:
@@ -80,6 +92,7 @@ private:
     QHash<QString, QString> rawFilesInOutput() const;
     QString findNewRawFile() const;
     bool outputPathIsWritable() const;
+    void invalidatePrecheck(const QString& reason);
 
     MriSdkLoader m_loader;
     MriSdkConfig m_config;
@@ -106,4 +119,8 @@ private:
     QString m_lastDryRunPath;
     ExecutionContext m_executionContext;
     PrecheckResult m_precheckResult;
+    PrecheckTicket m_precheckTicket;
+    quint64 m_generation = 1;
+    quint64 m_nextTicketId = 1;
+    quint64 m_instanceId = 0;
 };

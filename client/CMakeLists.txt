@@ -104,6 +104,7 @@ if(BUILD_TESTING)
     )
     target_include_directories(test_mri_sdk_loader PRIVATE src)
     target_link_libraries(test_mri_sdk_loader PRIVATE Qt6::Core Qt6::Test)
+    add_dependencies(test_mri_sdk_loader fake_mri_sdk fake_incomplete_mri_sdk)
 
     qt_add_executable(test_device_bridge
         tests/test_device_bridge.cpp
@@ -118,6 +119,8 @@ if(BUILD_TESTING)
     )
     target_include_directories(test_device_bridge PRIVATE src)
     target_link_libraries(test_device_bridge PRIVATE Qt6::Core Qt6::Test)
+    target_compile_definitions(test_device_bridge PRIVATE MRI_RUNTIME_RESOLVER_TESTING)
+    add_dependencies(test_device_bridge fake_mri_sdk)
 
     qt_add_executable(test_device_actions
         tests/test_device_actions.cpp
@@ -154,6 +157,9 @@ if(BUILD_TESTING)
     )
     target_include_directories(test_main_window PRIVATE src)
     target_link_libraries(test_main_window PRIVATE Qt6::Widgets Qt6::Test)
+    add_dependencies(test_main_window fake_mri_sdk)
+    add_dependencies(mri_sdk_verify fake_mri_sdk)
+    add_dependencies(scenario_nmr_client_test fake_mri_sdk)
 
     add_test(NAME mri_sdk_loader COMMAND test_mri_sdk_loader)
     set_tests_properties(mri_sdk_loader PROPERTIES

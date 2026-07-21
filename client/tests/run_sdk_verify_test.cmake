@@ -31,3 +31,23 @@ if(NOT verifier_result EQUAL 0)
         "stderr:\n${verifier_error}")
 endif()
 # End native verifier initialization check.
+
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+        "PATH=C:/msys64/ucrt64/bin;$ENV{PATH}"
+        "${VERIFIER}"
+        --sdk "${FAKE_SDK}"
+        --init "${test_root}/init.ini"
+        --par "${test_root}/PTScan.par"
+        --output "${test_root}/output"
+        --scan
+    RESULT_VARIABLE scan_result
+    OUTPUT_VARIABLE scan_output
+    ERROR_VARIABLE scan_error
+)
+
+if(scan_result EQUAL 0 OR NOT scan_error MATCHES "Unknown option 'scan'")
+    message(FATAL_ERROR
+        "The verifier must reject the removed unsafe --scan option\n"
+        "result: ${scan_result}\nstdout:\n${scan_output}\nstderr:\n${scan_error}")
+endif()

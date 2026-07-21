@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MriSdkTypes.h"
+
 #include <QString>
 
 struct MriRuntimeOverrides {
@@ -16,7 +18,7 @@ struct MriRuntimePaths {
     QString parameterPath;
     QString outputPath;
     QString error;
-    bool verifiedRuntimeAndParameterIdentity = false;
+    BaselineIdentityProof identityProof;
 
     bool isValid() const;
 };
@@ -42,4 +44,7 @@ public:
         const MriRuntimeOverrides& overrides,
         const MriRuntimeExpectations& expectations);
 #endif
+
+private:
+    static BaselineIdentityProof mintIdentityProof();
 };

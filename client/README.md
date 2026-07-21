@@ -69,7 +69,7 @@ client\dist\mri_sdk_verify.exe `
   --output "D:\mri_data\par0423-3"
 ```
 
-执行一次基线扫描时追加 `--scan`。工具在异常或超时时调用 Abort，并以非零退出码结束。
+该验收工具只做加载和初始化，不提供 `--scan`，也不会调用 Run 或 Abort。扫描只能由 GUI 中经过运行包身份验证和当次预检后授权。
 
 ## 自动测试
 

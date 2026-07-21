@@ -143,7 +143,7 @@ void MriRuntimeResolverTest::resolvesBundledDefaultsAndCreatesOutputDirectory()
     QCOMPARE(paths.parameterPath, fixture.parPath);
     QCOMPARE(paths.outputPath, QDir(temp.path()).filePath(QStringLiteral("mri-output")));
     QVERIFY(QFileInfo(paths.outputPath).isDir());
-    QVERIFY(paths.verifiedRuntimeAndParameterIdentity);
+    QVERIFY(paths.identityProof.isValid());
 }
 
 void MriRuntimeResolverTest::verifiesResolvedIdentityAfterOverrides()
@@ -162,7 +162,7 @@ void MriRuntimeResolverTest::verifiesResolvedIdentityAfterOverrides()
     const MriRuntimePaths paths = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, fixture.expectations);
 
     QVERIFY2(paths.isValid(), qPrintable(paths.error));
-    QVERIFY(paths.verifiedRuntimeAndParameterIdentity);
+    QVERIFY(paths.identityProof.isValid());
 }
 
 void MriRuntimeResolverTest::overridesOnlySpecifiedField()

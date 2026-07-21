@@ -15,6 +15,7 @@ std::string calls;
 std::string failureFunction;
 int failureCode = 0;
 int scanStatus = 0;
+int connectionStatus = 1;
 int rawMode = 1;
 std::string outputPath;
 std::string initPath;
@@ -64,6 +65,7 @@ MRI_EXPORT void FakeReset()
     failureFunction.clear();
     failureCode = 0;
     scanStatus = 0;
+    connectionStatus = 1;
     rawMode = 1;
     outputPath.clear();
     initPath.clear();
@@ -88,6 +90,10 @@ MRI_EXPORT const char* FakeParameterPath() { return parameterPath.c_str(); }
 MRI_EXPORT void FakeSetScanStatus(int status)
 {
     scanStatus = status;
+}
+MRI_EXPORT void FakeSetConnectionStatus(int status)
+{
+    connectionStatus = status;
 }
 
 MRI_EXPORT void FakeSetRawMode(int mode)
@@ -160,4 +166,4 @@ MRI_EXPORT int ScanCompleted() { record("ScanCompleted"); return scanStatus == 3
 MRI_EXPORT int GetTotalScanNo() { record("GetTotalScanNo"); return 8; }
 MRI_EXPORT int GetCurrentScanNo() { record("GetCurrentScanNo"); return 0; }
 MRI_EXPORT double GetTemperature() { record("GetTemperature"); return 31.4; }
-MRI_EXPORT int GetConnectStatus(int) { record("GetConnectStatus"); return 1; }
+MRI_EXPORT int GetConnectStatus(int) { record("GetConnectStatus"); return connectionStatus; }

@@ -679,7 +679,7 @@ void MainWindow::handleTemplateSearchChanged()
 
 void MainWindow::handleSceneChanged()
 {
-    m_bridge->invalidatePrecheck(QStringLiteral("scientific scene changed"));
+    m_bridge->sceneChanged();
     applyScene(currentScene());
 }
 
@@ -754,7 +754,7 @@ void MainWindow::handleDryRun()
 
 void MainWindow::handleStart()
 {
-    static_cast<void>(m_bridge->startScan(m_bridge->executionContext()));
+    static_cast<void>(m_bridge->startScan(m_bridge->precheckTicket()));
 }
 
 void MainWindow::handlePause()
@@ -840,7 +840,7 @@ void MainWindow::updateSessionState(MriSdkSessionState state)
 {
     const DeviceActionAvailability actions = actionsForState(
         state,
-        m_bridge->executionContext().gate,
+        m_executionGateCombo ? static_cast<ExecutionGate>(m_executionGateCombo->currentData().toInt()) : ExecutionGate::Hold,
         m_bridge->precheckResult().passed);
     if (m_loadSdkButton) m_loadSdkButton->setEnabled(actions.canLoadSdk);
     if (m_connectButton) m_connectButton->setEnabled(actions.canConnect);

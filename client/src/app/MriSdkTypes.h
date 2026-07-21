@@ -4,6 +4,24 @@
 #include <QMetaType>
 #include <QString>
 
+class MriRuntimeResolver;
+
+class BaselineIdentityProof {
+public:
+    BaselineIdentityProof() = default;
+    bool isValid() const { return m_token != 0; }
+#ifdef MRI_RUNTIME_RESOLVER_TESTING
+    static BaselineIdentityProof testOnly()
+    {
+        return BaselineIdentityProof(1);
+    }
+#endif
+private:
+    explicit BaselineIdentityProof(quint64 token) : m_token(token) {}
+    quint64 m_token = 0;
+    friend class MriRuntimeResolver;
+};
+
 enum class ExecutionGate {
     Hold,
     VerifiedBaseline,
@@ -12,7 +30,7 @@ enum class ExecutionGate {
 
 struct ExecutionContext {
     ExecutionGate gate = ExecutionGate::Hold;
-    bool verifiedRuntimeAndParameterIdentity = false;
+    BaselineIdentityProof identityProof;
 };
 
 enum class MriSdkSessionState {
@@ -66,7 +84,7 @@ struct MriSdkConfig {
     int scanTimeoutMs = 30 * 60 * 1000;
     int stopTimeoutMs = 30 * 1000;
     int rawSettleTimeoutMs = 10 * 1000;
-    bool verifiedRuntimeAndParameterIdentity = false;
+    BaselineIdentityProof identityProof;
 };
 
 struct MriSdkStatus {

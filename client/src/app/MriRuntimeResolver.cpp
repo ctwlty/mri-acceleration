@@ -237,7 +237,6 @@ MriRuntimePaths resolveWithExpectations(
         || !ensureWritableOutput(paths.outputPath, paths.error)) {
         return paths;
     }
-    paths.verifiedRuntimeAndParameterIdentity = hasVerifiedBaselineIdentity(paths, expectations);
     return paths;
 }
 }
@@ -249,7 +248,16 @@ bool MriRuntimePaths::isValid() const
 
 MriRuntimePaths MriRuntimeResolver::resolve(const QString& applicationDir, const MriRuntimeOverrides& overrides)
 {
-    return resolveWithExpectations(applicationDir, overrides, productionExpectations());
+    MriRuntimePaths paths = resolveWithExpectations(applicationDir, overrides, productionExpectations());
+    if (paths.isValid() && hasVerifiedBaselineIdentity(paths, productionExpectations())) {
+        paths.identityProof = mintIdentityProof();
+    }
+    return paths;
+}
+
+BaselineIdentityProof MriRuntimeResolver::mintIdentityProof()
+{
+    return BaselineIdentityProof(1);
 }
 
 #ifdef MRI_RUNTIME_RESOLVER_TESTING
@@ -258,7 +266,7 @@ MriRuntimePaths MriRuntimeResolver::resolveForTesting(
     const MriRuntimeOverrides& overrides,
     const MriRuntimeExpectations& expectations)
 {
-    return resolveWithExpectations(
+    MriRuntimePaths paths = resolveWithExpectations(
         applicationDir,
         overrides,
         RuntimeExpectations{
@@ -268,5 +276,11 @@ MriRuntimePaths MriRuntimeResolver::resolveForTesting(
             expectations.hwCfgFileCount,
             expectations.hwCfgTotalBytes,
             expectations.hwCfgManifestSha256.toUpper()});
+    if (paths.isValid() && hasVerifiedBaselineIdentity(paths, RuntimeExpectations{
+            expectations.dllSha256.toUpper(), expectations.initSha256.toUpper(), expectations.parameterSha256.toUpper(),
+            expectations.hwCfgFileCount, expectations.hwCfgTotalBytes, expectations.hwCfgManifestSha256.toUpper()})) {
+        paths.identityProof = mintIdentityProof();
+    }
+    return paths;
 }
 #endif
