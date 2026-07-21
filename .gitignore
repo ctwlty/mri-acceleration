@@ -57,3 +57,6 @@ __pycache__/
 # Local IDE settings
 .vscode/
 .idea/
+
+# Isolated development worktrees
+.worktrees/
