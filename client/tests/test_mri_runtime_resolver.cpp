@@ -31,13 +31,15 @@ QByteArray directoryManifestSha256(const QString& directoryPath)
     const QDir directory(directoryPath);
     while (iterator.hasNext()) {
         const QFileInfo fileInfo(iterator.next());
+        QString relativePath = directory.relativeFilePath(fileInfo.filePath());
+        relativePath.replace(QLatin1Char('/'), QLatin1Char('\\'));
         records.append(QStringLiteral("%1|%2|%3")
-                           .arg(QDir::fromNativeSeparators(directory.relativeFilePath(fileInfo.filePath())))
+                           .arg(relativePath)
                            .arg(fileInfo.size())
                            .arg(QString::fromLatin1(sha256(fileInfo.filePath()))));
     }
-    records.sort();
-    return QCryptographicHash::hash((records.join(QLatin1Char('\n')) + QLatin1Char('\n')).toUtf8(),
+    records.sort(Qt::CaseInsensitive);
+    return QCryptographicHash::hash(records.join(QLatin1Char('\n')).toUtf8(),
                                     QCryptographicHash::Sha256)
         .toHex()
         .toUpper();
@@ -122,6 +124,7 @@ private slots:
     void overridesOnlySpecifiedField();
     void verifiesResolvedIdentityAfterOverrides();
     void rejectsMissingOrInvalidManifest();
+    void usesCanonicalHardwareManifestHash();
     void overridesBypassOnlyMatchingBundledManifestEntry();
     void rejectsTamperedDllEvenWhenManifestIsRewritten();
     void rejectsTamperedParameterAsset();
@@ -144,6 +147,30 @@ void MriRuntimeResolverTest::resolvesBundledDefaultsAndCreatesOutputDirectory()
     QCOMPARE(paths.outputPath, QDir(temp.path()).filePath(QStringLiteral("mri-output")));
     QVERIFY(QFileInfo(paths.outputPath).isDir());
     QVERIFY(paths.identityProof.isValid());
+}
+
+void MriRuntimeResolverTest::usesCanonicalHardwareManifestHash()
+{
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    RuntimeFixture fixture = createBundledRuntime(temp.path());
+    writeFile(fixture.initPath, "controller=1");
+    const QString hwCfgPath = QDir(fixture.runtimeDir).filePath(QStringLiteral("hw_cfg"));
+    writeFile(QDir(hwCfgPath).filePath(QStringLiteral("nested/calibration.cfg")), "gain=42");
+    const QString hiddenPath = QDir(hwCfgPath).filePath(QStringLiteral(".hidden.cfg"));
+    writeFile(hiddenPath, "hidden=1");
+    setHidden(hiddenPath);
+    fixture.expectations.initSha256 = QString::fromLatin1(sha256(fixture.initPath));
+    fixture.expectations.hwCfgFileCount = 3;
+    fixture.expectations.hwCfgTotalBytes = 27;
+    fixture.expectations.hwCfgManifestSha256 =
+        QStringLiteral("1B611088F0D8B2C58D14A35942CF9F50DE058BDEB7C12A6D167FCFF24A61DA47");
+    writeManifest(fixture, fixture.expectations);
+
+    const MriRuntimePaths paths = MriRuntimeResolver::resolveForTesting(temp.path(), {}, fixture.expectations);
+
+    QVERIFY2(paths.isValid(), qPrintable(paths.error));
+    QCOMPARE(QString::fromLatin1(directoryManifestSha256(hwCfgPath)), fixture.expectations.hwCfgManifestSha256);
 }
 
 void MriRuntimeResolverTest::verifiesResolvedIdentityAfterOverrides()

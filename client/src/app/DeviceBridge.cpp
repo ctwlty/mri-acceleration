@@ -95,6 +95,7 @@ MriSdkResult DeviceBridge::connectDevice(const MriSdkConfig& config)
     m_config = config;
     m_identityProof = config.identityProof;
     m_executionSelection = {ExecutionSelectionKind::ScientificScene, {}, ExecutionGate::Hold};
+    emit executionAuthorizationChanged();
     setSessionState(MriSdkSessionState::Initializing);
     const MriSdkResult result = m_loader.initialize(config);
     if (!result.ok) {
@@ -414,6 +415,7 @@ QString DeviceBridge::sdkPathLabel() const { return m_sdkPathLabel; }
 QString DeviceBridge::lastError() const { return m_lastError; }
 PrecheckTicket DeviceBridge::precheckTicket() const { return m_precheckTicket; }
 PrecheckResult DeviceBridge::precheckResult() const { return m_precheckResult; }
+ExecutionGate DeviceBridge::executionGate() const { return m_executionSelection.gate; }
 
 void DeviceBridge::syncSdkStatus()
 {

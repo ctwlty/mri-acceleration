@@ -106,6 +106,11 @@ MainWindow::MainWindow(const QString& bundledRuntimeDirectory, QWidget* parent)
     connect(m_bridge, &DeviceBridge::sdkDiagnosticChanged, this, &MainWindow::updateSdkDiagnostic);
     connect(m_bridge, &DeviceBridge::sessionStateChanged, this, &MainWindow::updateSessionState);
     connect(m_bridge, &DeviceBridge::executionAuthorizationChanged, this, [this]() {
+        if (m_executionGateCombo) {
+            const QSignalBlocker blocker(m_executionGateCombo);
+            m_executionGateCombo->setCurrentIndex(
+                m_executionGateCombo->findData(static_cast<int>(m_bridge->executionGate())));
+        }
         updateSessionState(m_bridge->sessionState());
     });
     connect(m_bridge, &DeviceBridge::rawFileReady, this, [this](const QString& filePath) {

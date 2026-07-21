@@ -62,14 +62,16 @@ QString directoryManifestHash(const QString& directoryPath)
     const QDir directory(directoryPath);
     while (iterator.hasNext()) {
         const QFileInfo fileInfo(iterator.next());
+        QString relativePath = directory.relativeFilePath(fileInfo.filePath());
+        relativePath.replace(QLatin1Char('/'), QLatin1Char('\\'));
         records.append(QStringLiteral("%1|%2|%3")
-                           .arg(QDir::fromNativeSeparators(directory.relativeFilePath(fileInfo.filePath())))
+                           .arg(relativePath)
                            .arg(fileInfo.size())
                            .arg(fileHash(fileInfo.filePath())));
     }
-    records.sort();
+    records.sort(Qt::CaseInsensitive);
     return QString::fromLatin1(
-        QCryptographicHash::hash((records.join(QLatin1Char('\n')) + QLatin1Char('\n')).toUtf8(), QCryptographicHash::Sha256)
+        QCryptographicHash::hash(records.join(QLatin1Char('\n')).toUtf8(), QCryptographicHash::Sha256)
             .toHex()
             .toUpper());
 }

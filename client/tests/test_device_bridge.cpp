@@ -105,7 +105,7 @@ MriSdkConfig createConfig(QTemporaryDir& temp, const QString& sdkPath)
     expectations.parameterSha256 = sha256(config.parameterPath);
     expectations.hwCfgFileCount = 1;
     expectations.hwCfgTotalBytes = QFileInfo(config.initPath).size();
-    const QString record = QStringLiteral("init.ini|%1|%2\n")
+    const QString record = QStringLiteral("init.ini|%1|%2")
                                .arg(expectations.hwCfgTotalBytes)
                                .arg(expectations.initSha256);
     expectations.hwCfgManifestSha256 = QString::fromLatin1(

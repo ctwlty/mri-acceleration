@@ -65,6 +65,7 @@ public:
     QString lastError() const;
     PrecheckTicket precheckTicket() const;
     PrecheckResult precheckResult() const;
+    ExecutionGate executionGate() const;
 
 public slots:
     void refreshStatus();

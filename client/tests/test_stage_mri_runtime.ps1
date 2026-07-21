@@ -14,12 +14,16 @@ function Get-Sha256([string]$Path) {
 
 function Get-DirectoryManifestSha256([string]$Path) {
     $records = Get-ChildItem -LiteralPath $Path -Recurse -File -Force |
-        Sort-Object { $_.FullName.Substring($Path.Length).TrimStart('\', '/') } |
         ForEach-Object {
-            $relativePath = $_.FullName.Substring($Path.Length).TrimStart('\', '/').Replace('\', '/')
-            "{0}|{1}|{2}" -f $relativePath, $_.Length, (Get-Sha256 $_.FullName)
-        }
-    $payload = [System.Text.Encoding]::UTF8.GetBytes(($records -join "`n") + "`n")
+            $relativePath = $_.FullName.Substring($Path.Length).TrimStart('\', '/').Replace('/', '\')
+            [pscustomobject]@{
+                RelativePath = $relativePath
+                Record = "{0}|{1}|{2}" -f $relativePath, $_.Length, (Get-Sha256 $_.FullName)
+            }
+        } |
+        Sort-Object RelativePath |
+        Select-Object -ExpandProperty Record
+    $payload = [System.Text.Encoding]::UTF8.GetBytes($records -join "`n")
     $sha256 = [System.Security.Cryptography.SHA256]::Create()
     try {
         return ([System.BitConverter]::ToString($sha256.ComputeHash($payload))).Replace('-', '')
@@ -42,6 +46,20 @@ function Invoke-StagingExpectFailure([string]$MriSdkRoot, [string]$ParameterFile
     Assert-True (($output | Out-String) -match [regex]::Escape($ExpectedText)) "Expected error containing '$ExpectedText', got: $output"
 }
 
+function Invoke-DefaultManifestExpectFailure([string]$MriSdkRoot, [string]$ParameterFile, [string]$Destination, [string]$ExpectedText) {
+    $savedErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $stageScript `
+            -MriSdkRoot $MriSdkRoot -ParameterFile $ParameterFile -Destination $Destination 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $savedErrorActionPreference
+    }
+    Assert-True ($exitCode -ne 0) 'Expected staging to fail.'
+    Assert-True (($output | Out-String) -match [regex]::Escape($ExpectedText)) "Expected error containing '$ExpectedText', got: $output"
+}
+
 try {
     $sdkRoot = Join-Path $tempRoot 'sdk'
     $hwCfgRoot = Join-Path $sdkRoot 'hw_cfg'
@@ -49,14 +67,20 @@ try {
     New-Item -ItemType Directory -Force -Path $hwCfgRoot, (Join-Path $hwCfgRoot 'nested'), $profileRoot | Out-Null
     [System.IO.File]::WriteAllText((Join-Path $sdkRoot 'mridll.dll'), 'fake runtime dll', [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $sdkRoot 'mridll.dll.backup_20250303'), 'backup dll', [System.Text.Encoding]::ASCII)
-    [System.IO.File]::WriteAllText((Join-Path $hwCfgRoot 'controller.ini'), 'controller=1', [System.Text.Encoding]::ASCII)
+    [System.IO.File]::WriteAllText((Join-Path $hwCfgRoot 'init.ini'), 'controller=1', [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $hwCfgRoot 'nested\calibration.cfg'), 'gain=42', [System.Text.Encoding]::ASCII)
+    $hiddenFile = Join-Path $hwCfgRoot '.hidden.cfg'
+    [System.IO.File]::WriteAllText($hiddenFile, 'hidden=1', [System.Text.Encoding]::ASCII)
+    (Get-Item -LiteralPath $hiddenFile).Attributes = [System.IO.FileAttributes]::Hidden
     $parameterFile = Join-Path $profileRoot 'PTScan.par'
     [System.IO.File]::WriteAllText($parameterFile, 'PTScan', [System.Text.Encoding]::ASCII)
     [System.IO.File]::WriteAllText((Join-Path $profileRoot 'unused.par'), 'unused', [System.Text.Encoding]::ASCII)
 
     $manifestPath = Join-Path $tempRoot 'fake-manifest.json'
     $hwFiles = @(Get-ChildItem -LiteralPath $hwCfgRoot -Recurse -File -Force)
+    $knownFixtureHash = Get-DirectoryManifestSha256 $hwCfgRoot
+    Assert-True ($knownFixtureHash -eq '1B611088F0D8B2C58D14A35942CF9F50DE058BDEB7C12A6D167FCFF24A61DA47') `
+        "Canonical fixture manifest changed: $knownFixtureHash"
     $manifest = [ordered]@{
         mridll = [ordered]@{ relativePath = 'mridll.dll'; sha256 = Get-Sha256 (Join-Path $sdkRoot 'mridll.dll') }
         hwCfg = [ordered]@{
@@ -64,19 +88,22 @@ try {
             fileCount = $hwFiles.Count
             totalBytes = [int64](($hwFiles | Measure-Object -Property Length -Sum).Sum)
             manifestSha256 = Get-DirectoryManifestSha256 $hwCfgRoot
-            initSha256 = Get-Sha256 (Join-Path $hwCfgRoot 'controller.ini')
+            initSha256 = Get-Sha256 (Join-Path $hwCfgRoot 'init.ini')
         }
         parameterFile = [ordered]@{ fileName = 'PTScan.par'; sha256 = Get-Sha256 $parameterFile }
     }
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 
     $destination = Join-Path $tempRoot 'staged'
+    Invoke-DefaultManifestExpectFailure (Join-Path $tempRoot 'missing-sdk') $parameterFile `
+        (Join-Path $tempRoot 'default-manifest-output') 'MRI SDK root does not exist'
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $stageScript `
         -MriSdkRoot $sdkRoot -ParameterFile $parameterFile -Destination $destination -ManifestPath $manifestPath
     Assert-True ($LASTEXITCODE -eq 0) 'Staging should succeed for verified fake assets.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'mridll.dll')) 'Staged DLL is missing.'
-    Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\controller.ini')) 'Staged hw_cfg content is missing.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\init.ini')) 'Staged hw_cfg content is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\nested\calibration.cfg')) 'Staged nested hw_cfg content is missing.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\.hidden.cfg')) 'Staged hidden hw_cfg content is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'profiles\PTScan.par')) 'Staged parameter file is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json')) 'Staged runtime manifest is missing.'
     Assert-True ((Get-Content -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json') -Raw | ConvertFrom-Json).mridll.sha256 -eq $manifest.mridll.sha256) 'Staged runtime manifest must preserve the verified DLL hash.'

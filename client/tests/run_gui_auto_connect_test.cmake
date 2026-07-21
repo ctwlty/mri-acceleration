@@ -19,7 +19,7 @@ file(SHA256 "${runtime_root}/mridll.dll" sdk_hash)
 file(SHA256 "${runtime_root}/hw_cfg/init.ini" init_hash)
 string(TOUPPER "${init_hash}" init_hash)
 file(SIZE "${runtime_root}/hw_cfg/init.ini" init_size)
-string(SHA256 hw_cfg_hash "init.ini|${init_size}|${init_hash}\n")
+string(SHA256 hw_cfg_hash "init.ini|${init_size}|${init_hash}")
 file(SHA256 "${runtime_root}/profiles/PTScan.par" par_hash)
 set(test_expectations "${sdk_hash}|${init_hash}|${par_hash}|1|${init_size}|${hw_cfg_hash}")
 file(WRITE "${runtime_root}/mri-runtime-manifest.json"

@@ -2,10 +2,13 @@ param(
     [Parameter(Mandatory = $true)][string]$MriSdkRoot,
     [Parameter(Mandatory = $true)][string]$ParameterFile,
     [Parameter(Mandatory = $true)][string]$Destination,
-    [string]$ManifestPath = (Join-Path $PSScriptRoot '..\runtime\mri-runtime-manifest.json')
+    [string]$ManifestPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $PSScriptRoot '..\runtime\mri-runtime-manifest.json'
+}
 
 function Get-Sha256([string]$Path) {
     return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToUpperInvariant()
@@ -13,12 +16,16 @@ function Get-Sha256([string]$Path) {
 
 function Get-DirectoryManifestSha256([string]$Path) {
     $records = Get-ChildItem -LiteralPath $Path -Recurse -File -Force |
-        Sort-Object { $_.FullName.Substring($Path.Length).TrimStart('\', '/') } |
         ForEach-Object {
-            $relativePath = $_.FullName.Substring($Path.Length).TrimStart('\', '/').Replace('\', '/')
-            "{0}|{1}|{2}" -f $relativePath, $_.Length, (Get-Sha256 $_.FullName)
-        }
-    $payload = [System.Text.Encoding]::UTF8.GetBytes(($records -join "`n") + "`n")
+            $relativePath = $_.FullName.Substring($Path.Length).TrimStart('\', '/').Replace('/', '\')
+            [pscustomobject]@{
+                RelativePath = $relativePath
+                Record = "{0}|{1}|{2}" -f $relativePath, $_.Length, (Get-Sha256 $_.FullName)
+            }
+        } |
+        Sort-Object RelativePath |
+        Select-Object -ExpandProperty Record
+    $payload = [System.Text.Encoding]::UTF8.GetBytes($records -join "`n")
     $sha256 = [System.Security.Cryptography.SHA256]::Create()
     try {
         return ([System.BitConverter]::ToString($sha256.ComputeHash($payload))).Replace('-', '')
