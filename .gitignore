@@ -7,6 +7,9 @@ Thumbs.db
 # Build outputs
 build/
 client/build/
+client/build-release/
+client/dist/
+client/test-output/
 cmake-build-*/
 *.o
 *.obj
