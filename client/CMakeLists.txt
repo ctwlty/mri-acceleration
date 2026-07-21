@@ -67,6 +67,8 @@ qt_add_executable(mri_sdk_verify
     src/app/DeviceBridge.h
     src/app/MriSdkLoader.cpp
     src/app/MriSdkLoader.h
+    src/app/MriRuntimeResolver.cpp
+    src/app/MriRuntimeResolver.h
     src/app/MriSdkTypes.h
     src/app/ProtocolMapper.cpp
     src/app/ProtocolMapper.h
@@ -112,6 +114,8 @@ if(BUILD_TESTING)
         src/app/DeviceBridge.h
         src/app/MriSdkLoader.cpp
         src/app/MriSdkLoader.h
+        src/app/MriRuntimeResolver.cpp
+        src/app/MriRuntimeResolver.h
         src/app/MriSdkTypes.h
         src/app/ProtocolMapper.cpp
         src/app/ProtocolMapper.h
@@ -149,6 +153,8 @@ if(BUILD_TESTING)
         src/app/MainWindow.h
         src/app/MriSdkLoader.cpp
         src/app/MriSdkLoader.h
+        src/app/MriRuntimeResolver.cpp
+        src/app/MriRuntimeResolver.h
         src/app/ProtocolMapper.cpp
         src/app/ProtocolMapper.h
         src/app/SceneCatalog.cpp

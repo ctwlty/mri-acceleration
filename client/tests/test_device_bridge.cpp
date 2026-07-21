@@ -1,6 +1,8 @@
 #include "app/DeviceBridge.h"
+#include "app/MriRuntimeResolver.h"
 #include "app/MriSdkTypes.h"
 
+#include <QCryptographicHash>
 #include <QFile>
 #include <QDir>
 #include <QLibrary>
@@ -8,6 +10,10 @@
 #include <QTemporaryDir>
 #include <QtTest>
 #include <type_traits>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 static_assert(!std::is_aggregate_v<BaselineIdentityProof>);
 static_assert(!std::is_constructible_v<BaselineIdentityProof, quint64>);
@@ -60,28 +66,62 @@ private:
 
 void writeFile(const QString& path)
 {
+    QDir().mkpath(QFileInfo(path).absolutePath());
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly));
     QVERIFY(file.write("test") > 0);
 }
 
-MriSdkConfig createConfig(QTemporaryDir& temp)
+QString sha256(const QString& path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return QString::fromLatin1(QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha256).toHex().toUpper());
+}
+
+void markHidden(const QString& path)
+{
+#ifdef Q_OS_WIN
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()), FILE_ATTRIBUTE_HIDDEN));
+#else
+    Q_UNUSED(path);
+#endif
+}
+
+MriSdkConfig createConfig(QTemporaryDir& temp, const QString& sdkPath)
 {
     MriSdkConfig config;
-    config.initPath = temp.filePath(QStringLiteral("init.ini"));
-    config.parameterPath = temp.filePath(QStringLiteral("PTScan.par"));
-    config.outputPath = temp.path();
+    config.initPath = temp.filePath(QStringLiteral("hw_cfg/init.ini"));
+    config.parameterPath = temp.filePath(QStringLiteral("profiles/PTScan.par"));
+    config.outputPath = temp.filePath(QStringLiteral("output"));
     config.pollIntervalMs = 60000;
     config.scanTimeoutMs = 60000;
-    config.identityProof = BaselineIdentityProof::testOnly();
     writeFile(config.initPath);
     writeFile(config.parameterPath);
+    QDir().mkpath(config.outputPath);
+    MriRuntimeExpectations expectations;
+    expectations.dllSha256 = sha256(sdkPath);
+    expectations.initSha256 = sha256(config.initPath);
+    expectations.parameterSha256 = sha256(config.parameterPath);
+    expectations.hwCfgFileCount = 1;
+    expectations.hwCfgTotalBytes = QFileInfo(config.initPath).size();
+    const QString record = QStringLiteral("init.ini|%1|%2\n")
+                               .arg(expectations.hwCfgTotalBytes)
+                               .arg(expectations.initSha256);
+    expectations.hwCfgManifestSha256 = QString::fromLatin1(
+        QCryptographicHash::hash(record.toUtf8(), QCryptographicHash::Sha256).toHex().toUpper());
+    MriRuntimeOverrides overrides;
+    overrides.sdkPath = sdkPath;
+    overrides.initPath = config.initPath;
+    overrides.parameterPath = config.parameterPath;
+    overrides.outputPath = config.outputPath;
+    config.identityProof = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, expectations).identityProof;
     return config;
 }
 
 void authorizeVerifiedBaseline(DeviceBridge& bridge)
 {
-    bridge.selectExecutionGate(ExecutionGate::VerifiedBaseline);
+    bridge.selectVerifiedBaseline();
     QVERIFY(bridge.precheck().passed);
 }
 }
@@ -111,6 +151,12 @@ private slots:
     void staleTicketsNeverIssueAnotherRun();
     void ticketCannotCrossBridgeInstances();
     void terminalTransitionsInvalidateTicket();
+    void proofCannotDetachFromResolvedPaths();
+    void rejectsDllReplacementBeforeVerifiedLoad();
+    void rejectsInitReplacementBeforePrecheck();
+    void rejectsParameterReplacementBeforeRun();
+    void rejectsHiddenHwCfgAdditionBeforeRun();
+    void scientificSelectionCannotReuseBaselineTicket();
 };
 
 void DeviceBridgeTest::initTestCase()
@@ -135,7 +181,7 @@ void DeviceBridgeTest::successfulScanTransitionsReadyScanningReady()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QSignalSpy states(&bridge, &DeviceBridge::sessionStateChanged);
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -160,7 +206,7 @@ void DeviceBridgeTest::initialIdleStatusWaitsForActiveScan()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -186,7 +232,7 @@ void DeviceBridgeTest::faultStatusAbortsAndTransitionsFault()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -208,7 +254,7 @@ void DeviceBridgeTest::completedScanRequiresNewNonEmptyRawFile()
     fake.setRawMode(0);
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    MriSdkConfig config = createConfig(temp);
+    MriSdkConfig config = createConfig(temp, sdkPath);
     config.rawSettleTimeoutMs = 1;
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -233,7 +279,7 @@ void DeviceBridgeTest::completedStatusWaitsForRawFile()
     fake.setRawMode(0);
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -257,7 +303,7 @@ void DeviceBridgeTest::abortWaitsForStoppedStatus()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -283,7 +329,7 @@ void DeviceBridgeTest::abortTimeoutWhileActiveTransitionsFault()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    MriSdkConfig config = createConfig(temp);
+    MriSdkConfig config = createConfig(temp, sdkPath);
     config.stopTimeoutMs = 1;
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -307,7 +353,7 @@ void DeviceBridgeTest::shutdownDoesNotRepeatAbort()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     {
         DeviceBridge bridge;
         QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -331,7 +377,7 @@ void DeviceBridgeTest::completionAtTimeoutBoundaryIsAccepted()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    MriSdkConfig config = createConfig(temp);
+    MriSdkConfig config = createConfig(temp, sdkPath);
     config.scanTimeoutMs = 1;
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -357,7 +403,7 @@ void DeviceBridgeTest::rawSettlingContinuesPastScanTimeout()
     fake.setRawMode(0);
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    MriSdkConfig config = createConfig(temp);
+    MriSdkConfig config = createConfig(temp, sdkPath);
     config.scanTimeoutMs = 1;
     config.rawSettleTimeoutMs = 1000;
     DeviceBridge bridge;
@@ -386,8 +432,8 @@ void DeviceBridgeTest::overwrittenRawFileIsAccepted()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
-    const QString fixedRaw = temp.filePath(QStringLiteral("PTMRIData_fake.raw"));
+    const MriSdkConfig config = createConfig(temp, sdkPath);
+    const QString fixedRaw = QDir(config.outputPath).filePath(QStringLiteral("PTMRIData_fake.raw"));
     writeFile(fixedRaw);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -410,7 +456,7 @@ void DeviceBridgeTest::timeoutAbortsAndTransitionsFault()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    MriSdkConfig config = createConfig(temp);
+    MriSdkConfig config = createConfig(temp, sdkPath);
     config.scanTimeoutMs = 1;
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
@@ -433,11 +479,11 @@ void DeviceBridgeTest::verifiedBaselineRequiresFreshPrecheck()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
-    bridge.selectExecutionGate(ExecutionGate::VerifiedBaseline);
+    bridge.selectVerifiedBaseline();
 
     QVERIFY(!bridge.startScan({}).ok);
     QVERIFY(bridge.precheck().passed);
@@ -453,7 +499,7 @@ void DeviceBridgeTest::precheckInvalidatesOnModeSceneAndRunChanges()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -469,10 +515,14 @@ void DeviceBridgeTest::precheckInvalidatesOnModeSceneAndRunChanges()
         beforeReconfigure.count(QStringLiteral("Abort")));
     QVERIFY(!bridge.precheckResult().passed);
     authorizeVerifiedBaseline(bridge);
-    bridge.sceneChanged();
+    SceneTemplate scene;
+    scene.name = QStringLiteral("scene-one");
+    scene.executionGate = ExecutionGate::Hold;
+    bridge.selectScientificScene(scene);
     QVERIFY(!bridge.precheckResult().passed);
     authorizeVerifiedBaseline(bridge);
-    bridge.selectExecutionGate(ExecutionGate::Hold);
+    scene.name = QStringLiteral("scene-two");
+    bridge.selectScientificScene(scene);
     QVERIFY(!bridge.precheckResult().passed);
     authorizeVerifiedBaseline(bridge);
     QVERIFY(bridge.startScan(bridge.precheckTicket()).ok);
@@ -500,7 +550,7 @@ void DeviceBridgeTest::runRechecksBusyStatusBeforeSdkWrites()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge bridge;
     QVERIFY(bridge.loadSdk(sdkPath).ok);
     QVERIFY(bridge.connectDevice(config).ok);
@@ -524,26 +574,28 @@ void DeviceBridgeTest::staleTicketsNeverIssueAnotherRun()
     };
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
 
     auto prepare = [&](DeviceBridge& bridge, const MriSdkConfig& selectedConfig) {
         if (!bridge.loadSdk(sdkPath).ok || !bridge.connectDevice(selectedConfig).ok) {
             return false;
         }
-        bridge.selectExecutionGate(ExecutionGate::VerifiedBaseline);
+        bridge.selectVerifiedBaseline();
         return bridge.precheck().passed;
     };
 
     {
         fake.reset(); DeviceBridge bridge; QVERIFY(prepare(bridge, config));
         const PrecheckTicket ticket = bridge.precheckTicket();
-        bridge.selectExecutionGate(ExecutionGate::Hold); const QString calls = QString::fromUtf8(fake.calls());
+        SceneTemplate scene; scene.name = QStringLiteral("mode-hold"); scene.executionGate = ExecutionGate::Hold;
+        bridge.selectScientificScene(scene); const QString calls = QString::fromUtf8(fake.calls());
         QVERIFY(!bridge.startScan(ticket).ok); expectNoRun(calls);
     }
     {
         fake.reset(); DeviceBridge bridge; QVERIFY(prepare(bridge, config));
         const PrecheckTicket ticket = bridge.precheckTicket();
-        bridge.sceneChanged(); const QString calls = QString::fromUtf8(fake.calls());
+        SceneTemplate scene; scene.name = QStringLiteral("changed-scene"); scene.executionGate = ExecutionGate::Hold;
+        bridge.selectScientificScene(scene); const QString calls = QString::fromUtf8(fake.calls());
         QVERIFY(!bridge.startScan(ticket).ok); expectNoRun(calls);
     }
     {
@@ -584,7 +636,7 @@ void DeviceBridgeTest::ticketCannotCrossBridgeInstances()
     fake.reset();
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
     DeviceBridge first;
     DeviceBridge second;
     QVERIFY(first.loadSdk(sdkPath).ok);
@@ -606,7 +658,7 @@ void DeviceBridgeTest::terminalTransitionsInvalidateTicket()
     FakeSdkControl fake(sdkPath);
     QTemporaryDir temp;
     QVERIFY(temp.isValid());
-    const MriSdkConfig config = createConfig(temp);
+    const MriSdkConfig config = createConfig(temp, sdkPath);
 
     auto expectOldTicketRejected = [&fake](DeviceBridge& bridge, const PrecheckTicket& ticket) {
         const int runs = QString::fromUtf8(fake.calls()).count(QStringLiteral("Run"));
@@ -660,6 +712,135 @@ void DeviceBridgeTest::terminalTransitionsInvalidateTicket()
         QCOMPARE(QString::fromUtf8(fake.calls()).count(QStringLiteral("Abort")), 1);
         expectOldTicketRejected(bridge, ticket);
     }
+}
+
+void DeviceBridgeTest::proofCannotDetachFromResolvedPaths()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath);
+    fake.reset();
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    MriSdkConfig detached = createConfig(temp, sdkPath);
+    const QString detachedSdk = temp.filePath(QStringLiteral("detached/mridll.dll"));
+    QVERIFY(QDir().mkpath(QFileInfo(detachedSdk).absolutePath()));
+    QVERIFY(QFile::copy(sdkPath, detachedSdk));
+    DeviceBridge sdkBridge;
+    QVERIFY(!sdkBridge.loadSdk(detachedSdk, detached.identityProof).ok);
+    detached.initPath = temp.filePath(QStringLiteral("detached/init.ini"));
+    detached.parameterPath = temp.filePath(QStringLiteral("detached/PTScan.par"));
+    writeFile(detached.initPath);
+    writeFile(detached.parameterPath);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath).ok);
+
+    const MriSdkResult connectResult = bridge.connectDevice(detached);
+    bridge.selectVerifiedBaseline();
+    const PrecheckResult precheckResult = bridge.precheck();
+    const MriSdkResult runResult = bridge.startScan(bridge.precheckTicket());
+
+    QVERIFY(!connectResult.ok || !precheckResult.passed);
+    QVERIFY(!runResult.ok);
+    QVERIFY(!QString::fromUtf8(fake.calls()).contains(QStringLiteral("Run")));
+}
+
+void DeviceBridgeTest::rejectsDllReplacementBeforeVerifiedLoad()
+{
+    const QString sourceSdk = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const QString copiedSdk = temp.filePath(QStringLiteral("runtime/mridll.dll"));
+    QVERIFY(QDir().mkpath(QFileInfo(copiedSdk).absolutePath()));
+    QVERIFY(QFile::copy(sourceSdk, copiedSdk));
+    const MriSdkConfig config = createConfig(temp, copiedSdk);
+    QFile replaced(copiedSdk);
+    QVERIFY(replaced.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(replaced.write("replaced") > 0);
+    replaced.close();
+    DeviceBridge bridge;
+
+    const MriSdkResult result = bridge.loadSdk(copiedSdk, config.identityProof);
+
+    QVERIFY(!result.ok);
+    QCOMPARE(bridge.sessionState(), MriSdkSessionState::Unloaded);
+}
+
+void DeviceBridgeTest::rejectsInitReplacementBeforePrecheck()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath); fake.reset();
+    QTemporaryDir temp; QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp, sdkPath);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath, config.identityProof).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    bridge.selectVerifiedBaseline();
+    QFile init(config.initPath); QVERIFY(init.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(init.write("changed init") > 0); init.close();
+
+    QVERIFY(!bridge.precheck().passed);
+    QVERIFY(!bridge.startScan(bridge.precheckTicket()).ok);
+    QVERIFY(!QString::fromUtf8(fake.calls()).contains(QStringLiteral("Run")));
+}
+
+void DeviceBridgeTest::rejectsParameterReplacementBeforeRun()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath); fake.reset();
+    QTemporaryDir temp; QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp, sdkPath);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath, config.identityProof).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    authorizeVerifiedBaseline(bridge);
+    const PrecheckTicket ticket = bridge.precheckTicket();
+    QFile parameter(config.parameterPath); QVERIFY(parameter.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QVERIFY(parameter.write("changed parameter") > 0); parameter.close();
+
+    QVERIFY(!bridge.startScan(ticket).ok);
+    QVERIFY(!QString::fromUtf8(fake.calls()).contains(QStringLiteral("Run")));
+}
+
+void DeviceBridgeTest::rejectsHiddenHwCfgAdditionBeforeRun()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath); fake.reset();
+    QTemporaryDir temp; QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp, sdkPath);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath, config.identityProof).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    authorizeVerifiedBaseline(bridge);
+    const PrecheckTicket ticket = bridge.precheckTicket();
+    const QString hidden = QFileInfo(config.initPath).absoluteDir().filePath(QStringLiteral("hidden.cfg"));
+    writeFile(hidden); markHidden(hidden);
+
+    QVERIFY(!bridge.startScan(ticket).ok);
+    QVERIFY(!QString::fromUtf8(fake.calls()).contains(QStringLiteral("Run")));
+}
+
+void DeviceBridgeTest::scientificSelectionCannotReuseBaselineTicket()
+{
+    const QString sdkPath = qEnvironmentVariable("FAKE_MRI_SDK_PATH");
+    FakeSdkControl fake(sdkPath); fake.reset();
+    QTemporaryDir temp; QVERIFY(temp.isValid());
+    const MriSdkConfig config = createConfig(temp, sdkPath);
+    DeviceBridge bridge;
+    QVERIFY(bridge.loadSdk(sdkPath, config.identityProof).ok);
+    QVERIFY(bridge.connectDevice(config).ok);
+    bridge.selectVerifiedBaseline();
+    QVERIFY(bridge.precheck().passed);
+    const PrecheckTicket baselineTicket = bridge.precheckTicket();
+    SceneTemplate scientific;
+    scientific.name = QStringLiteral("scientific-hold-scene");
+    scientific.executionGate = ExecutionGate::Hold;
+
+    bridge.selectScientificScene(scientific);
+    QVERIFY(!bridge.startScan(baselineTicket).ok);
+    QVERIFY(!bridge.precheck().passed);
+    QVERIFY(!bridge.startScan(bridge.precheckTicket()).ok);
+    bridge.selectVerifiedBaseline();
+    QVERIFY(bridge.precheck().passed);
 }
 
 QTEST_MAIN(DeviceBridgeTest)

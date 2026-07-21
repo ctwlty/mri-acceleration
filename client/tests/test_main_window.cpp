@@ -1,6 +1,8 @@
 #include "app/MainWindow.h"
 
 #include <QFile>
+#include <QComboBox>
+#include <QListWidget>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -18,6 +20,7 @@ class MainWindowTest : public QObject {
 
 private slots:
     void sdkCanBeLoadedAndConnectedWithoutFileDialog();
+    void selectingScientificSceneForcesRunHoldMode();
 };
 
 void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
@@ -38,6 +41,23 @@ void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
 
     QVERIFY2(result.ok, qPrintable(result.message));
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Ready);
+}
+
+void MainWindowTest::selectingScientificSceneForcesRunHoldMode()
+{
+    MainWindow window;
+    auto* gate = window.findChild<QComboBox*>(QStringLiteral("ExecutionGateCombo"));
+    auto* scenes = window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
+    QVERIFY(gate);
+    QVERIFY(scenes);
+    QVERIFY(scenes->count() > 0);
+    gate->setCurrentIndex(gate->findData(static_cast<int>(ExecutionGate::VerifiedBaseline)));
+    QCOMPARE(static_cast<ExecutionGate>(gate->currentData().toInt()), ExecutionGate::VerifiedBaseline);
+
+    scenes->setCurrentRow(-1);
+    scenes->setCurrentRow(0);
+
+    QCOMPARE(static_cast<ExecutionGate>(gate->currentData().toInt()), ExecutionGate::Hold);
 }
 
 QTEST_MAIN(MainWindowTest)

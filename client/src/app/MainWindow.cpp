@@ -679,19 +679,29 @@ void MainWindow::handleTemplateSearchChanged()
 
 void MainWindow::handleSceneChanged()
 {
-    m_bridge->sceneChanged();
-    applyScene(currentScene());
+    const SceneTemplate scene = currentScene();
+    if (m_executionGateCombo) {
+        const QSignalBlocker blocker(m_executionGateCombo);
+        m_executionGateCombo->setCurrentIndex(
+            m_executionGateCombo->findData(static_cast<int>(scene.executionGate)));
+    }
+    m_bridge->selectScientificScene(scene);
+    applyScene(scene);
 }
 
 void MainWindow::handleExecutionGateChanged()
 {
     const auto gate = static_cast<ExecutionGate>(m_executionGateCombo->currentData().toInt());
-    m_bridge->selectExecutionGate(gate);
+    if (gate == ExecutionGate::VerifiedBaseline) {
+        m_bridge->selectVerifiedBaseline();
+    } else {
+        m_bridge->selectScientificScene(currentScene());
+    }
 }
 
 MriSdkResult MainWindow::loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config)
 {
-    const MriSdkResult loadResult = m_bridge->loadSdk(dllPath);
+    const MriSdkResult loadResult = m_bridge->loadSdk(dllPath, config.identityProof);
     if (!loadResult.ok) {
         return loadResult;
     }

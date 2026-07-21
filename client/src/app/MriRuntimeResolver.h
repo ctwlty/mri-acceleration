@@ -4,6 +4,8 @@
 
 #include <QString>
 
+class DeviceBridge;
+
 struct MriRuntimeOverrides {
     QString sdkPath;
     QString initPath;
@@ -46,5 +48,21 @@ public:
 #endif
 
 private:
-    static BaselineIdentityProof mintIdentityProof();
+    static bool verifyBaselineIdentityNow(
+        const QString& sdkPath,
+        const MriSdkConfig& config,
+        const BaselineIdentityProof& proof);
+    static bool verifyBaselineIdentityNow(
+        const QString& sdkPath,
+        const BaselineIdentityProof& proof);
+    static bool proofMatchesActualIdentity(const BaselineIdentityProof& proof);
+    static BaselineIdentityProof mintIdentityProof(
+        const MriRuntimePaths& paths,
+        const QString& dllSha256,
+        const QString& initSha256,
+        const QString& parameterSha256,
+        int hwCfgFileCount,
+        qint64 hwCfgTotalBytes,
+        const QString& hwCfgManifestSha256);
+    friend class DeviceBridge;
 };

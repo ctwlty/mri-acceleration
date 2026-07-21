@@ -24,6 +24,8 @@ private:
     quint64 m_id = 0;
     quint64 m_generation = 0;
     quint64 m_issuerId = 0;
+    ExecutionSelectionKind m_selectionKind = ExecutionSelectionKind::ScientificScene;
+    QString m_selectionId;
     ExecutionGate m_gate = ExecutionGate::Hold;
     BaselineIdentityProof m_identityProof;
     friend class DeviceBridge;
@@ -36,15 +38,15 @@ public:
     explicit DeviceBridge(QObject* parent = nullptr);
     ~DeviceBridge() override;
 
-    MriSdkResult loadSdk(const QString& dllPath);
+    MriSdkResult loadSdk(const QString& dllPath, const BaselineIdentityProof& identityProof = {});
     bool initialize(const QString& initPath, const QString& outputPath, const QString& parPath);
     MriSdkResult connectDevice(const MriSdkConfig& config);
     void connectDevice();
     PrecheckResult precheck();
     void dryRunScene(const SceneTemplate& scene);
     MriSdkResult startScan(const PrecheckTicket& ticket);
-    void selectExecutionGate(ExecutionGate gate);
-    void sceneChanged();
+    void selectVerifiedBaseline();
+    void selectScientificScene(const SceneTemplate& scene);
     void pauseScan();
     void resumeScan();
     void abortScan();
@@ -117,7 +119,8 @@ private:
     QString m_lastError;
     QString m_lastDryRunStatus;
     QString m_lastDryRunPath;
-    ExecutionContext m_executionContext;
+    BaselineIdentityProof m_identityProof;
+    ExecutionSelection m_executionSelection;
     PrecheckResult m_precheckResult;
     PrecheckTicket m_precheckTicket;
     quint64 m_generation = 1;

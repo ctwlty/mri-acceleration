@@ -37,6 +37,12 @@ QString absolutePath(const QString& path)
     return QFileInfo(path).absoluteFilePath();
 }
 
+QString canonicalIdentityPath(const QString& path)
+{
+    const QString canonical = QFileInfo(path).canonicalFilePath();
+    return QDir::cleanPath(canonical.isEmpty() ? absolutePath(path) : canonical);
+}
+
 QString fileHash(const QString& path)
 {
     QFile file(path);
@@ -209,6 +215,37 @@ bool hasVerifiedBaselineIdentity(const MriRuntimePaths& paths, const RuntimeExpe
         && directoryManifestHash(hwCfgDir.absolutePath()) == expectations.hwCfgManifestSha256;
 }
 
+}
+
+bool MriRuntimeResolver::proofMatchesActualIdentity(const BaselineIdentityProof& proof)
+{
+    const QDir hwCfgDir(proof.m_hwCfgPath);
+    qint64 totalBytes = 0;
+    int fileCount = 0;
+    QDirIterator iterator(
+        hwCfgDir.absolutePath(),
+        QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    while (iterator.hasNext()) {
+        totalBytes += QFileInfo(iterator.next()).size();
+        ++fileCount;
+    }
+    return proof.isValid()
+        && canonicalIdentityPath(proof.m_sdkPath) == proof.m_sdkPath
+        && canonicalIdentityPath(proof.m_initPath) == proof.m_initPath
+        && canonicalIdentityPath(proof.m_hwCfgPath) == proof.m_hwCfgPath
+        && canonicalIdentityPath(proof.m_parameterPath) == proof.m_parameterPath
+        && fileHash(proof.m_sdkPath) == proof.m_dllSha256
+        && fileHash(proof.m_initPath) == proof.m_initSha256
+        && fileHash(proof.m_parameterPath) == proof.m_parameterSha256
+        && hwCfgDir.exists()
+        && fileCount == proof.m_hwCfgFileCount
+        && totalBytes == proof.m_hwCfgTotalBytes
+        && directoryManifestHash(proof.m_hwCfgPath) == proof.m_hwCfgManifestSha256;
+}
+
+namespace {
+
 MriRuntimePaths resolveWithExpectations(
     const QString& applicationDir,
     const MriRuntimeOverrides& overrides,
@@ -250,14 +287,49 @@ MriRuntimePaths MriRuntimeResolver::resolve(const QString& applicationDir, const
 {
     MriRuntimePaths paths = resolveWithExpectations(applicationDir, overrides, productionExpectations());
     if (paths.isValid() && hasVerifiedBaselineIdentity(paths, productionExpectations())) {
-        paths.identityProof = mintIdentityProof();
+        const RuntimeExpectations& expectations = productionExpectations();
+        paths.identityProof = mintIdentityProof(paths, expectations.dllSha256, expectations.initSha256,
+            expectations.parameterSha256, expectations.hwCfgFileCount, expectations.hwCfgTotalBytes,
+            expectations.hwCfgManifestSha256);
     }
     return paths;
 }
 
-BaselineIdentityProof MriRuntimeResolver::mintIdentityProof()
+bool MriRuntimeResolver::verifyBaselineIdentityNow(
+    const QString& sdkPath,
+    const MriSdkConfig& config,
+    const BaselineIdentityProof& proof)
 {
-    return BaselineIdentityProof(1);
+    return canonicalIdentityPath(sdkPath) == proof.m_sdkPath
+        && canonicalIdentityPath(config.initPath) == proof.m_initPath
+        && canonicalIdentityPath(QFileInfo(config.initPath).absolutePath()) == proof.m_hwCfgPath
+        && canonicalIdentityPath(config.parameterPath) == proof.m_parameterPath
+        && proofMatchesActualIdentity(proof);
+}
+
+bool MriRuntimeResolver::verifyBaselineIdentityNow(
+    const QString& sdkPath,
+    const BaselineIdentityProof& proof)
+{
+    return canonicalIdentityPath(sdkPath) == proof.m_sdkPath && proofMatchesActualIdentity(proof);
+}
+
+BaselineIdentityProof MriRuntimeResolver::mintIdentityProof(
+    const MriRuntimePaths& paths,
+    const QString& dllSha256,
+    const QString& initSha256,
+    const QString& parameterSha256,
+    int hwCfgFileCount,
+    qint64 hwCfgTotalBytes,
+    const QString& hwCfgManifestSha256)
+{
+    return BaselineIdentityProof(
+        canonicalIdentityPath(paths.sdkPath),
+        canonicalIdentityPath(paths.initPath),
+        canonicalIdentityPath(QFileInfo(paths.initPath).absolutePath()),
+        canonicalIdentityPath(paths.parameterPath),
+        dllSha256.toUpper(), initSha256.toUpper(), parameterSha256.toUpper(),
+        hwCfgFileCount, hwCfgTotalBytes, hwCfgManifestSha256.toUpper());
 }
 
 #ifdef MRI_RUNTIME_RESOLVER_TESTING
@@ -279,7 +351,9 @@ MriRuntimePaths MriRuntimeResolver::resolveForTesting(
     if (paths.isValid() && hasVerifiedBaselineIdentity(paths, RuntimeExpectations{
             expectations.dllSha256.toUpper(), expectations.initSha256.toUpper(), expectations.parameterSha256.toUpper(),
             expectations.hwCfgFileCount, expectations.hwCfgTotalBytes, expectations.hwCfgManifestSha256.toUpper()})) {
-        paths.identityProof = mintIdentityProof();
+        paths.identityProof = mintIdentityProof(paths, expectations.dllSha256, expectations.initSha256,
+            expectations.parameterSha256, expectations.hwCfgFileCount, expectations.hwCfgTotalBytes,
+            expectations.hwCfgManifestSha256);
     }
     return paths;
 }
