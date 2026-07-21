@@ -14,6 +14,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 qt_add_executable(scenario_nmr_client
     src/main.cpp
+    src/app/DeviceActionAvailability.cpp
+    src/app/DeviceActionAvailability.h
     src/app/MriSdkLoader.cpp
     src/app/MriSdkLoader.h
     src/app/ProtocolMapper.cpp
@@ -75,6 +77,14 @@ if(BUILD_TESTING)
     target_include_directories(test_device_bridge PRIVATE src)
     target_link_libraries(test_device_bridge PRIVATE Qt6::Core Qt6::Test)
 
+    qt_add_executable(test_device_actions
+        tests/test_device_actions.cpp
+        src/app/DeviceActionAvailability.cpp
+        src/app/DeviceActionAvailability.h
+    )
+    target_include_directories(test_device_actions PRIVATE src)
+    target_link_libraries(test_device_actions PRIVATE Qt6::Core Qt6::Test)
+
     add_test(NAME mri_sdk_loader COMMAND test_mri_sdk_loader)
     set_tests_properties(mri_sdk_loader PROPERTIES
         ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>;FAKE_INCOMPLETE_MRI_SDK_PATH=$<TARGET_FILE:fake_incomplete_mri_sdk>"
@@ -84,6 +94,11 @@ if(BUILD_TESTING)
     add_test(NAME device_bridge COMMAND test_device_bridge)
     set_tests_properties(device_bridge PROPERTIES
         ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>"
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME device_actions COMMAND test_device_actions)
+    set_tests_properties(device_actions PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 endif()

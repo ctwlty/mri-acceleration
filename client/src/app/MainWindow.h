@@ -11,6 +11,7 @@ class QGridLayout;
 class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
+class QPushButton;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -38,6 +39,7 @@ private slots:
     void updateTemperature(const QString& temperature);
     void updateSdkStatus(const QString& modeLabel, const QString& pathLabel, const QString& errorLabel);
     void updateSdkDiagnostic(const QString& status, const QString& filePath, const QString& details);
+    void updateSessionState(MriSdkSessionState state);
 
 private:
     QWidget* buildHeader();
@@ -102,6 +104,12 @@ private:
     QPlainTextEdit* m_parameterDetailsView = nullptr;
     QPlainTextEdit* m_sdkDiagnosticView = nullptr;
     QPlainTextEdit* m_logView = nullptr;
+    QPushButton* m_loadSdkButton = nullptr;
+    QPushButton* m_connectButton = nullptr;
+    QPushButton* m_startButton = nullptr;
+    QPushButton* m_pauseButton = nullptr;
+    QPushButton* m_abortButton = nullptr;
     DeviceBridge* m_bridge = nullptr;
+    QString m_selectedDllPath;
     QList<SceneTemplate> m_catalog;
 };

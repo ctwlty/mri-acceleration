@@ -1,8 +1,11 @@
 #include "MainWindow.h"
 
+#include "DeviceActionAvailability.h"
+
 #include <QFrame>
 #include <QComboBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QLabel>
@@ -93,12 +96,18 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_bridge, &DeviceBridge::temperatureChanged, this, &MainWindow::updateTemperature);
     connect(m_bridge, &DeviceBridge::sdkStatusChanged, this, &MainWindow::updateSdkStatus);
     connect(m_bridge, &DeviceBridge::sdkDiagnosticChanged, this, &MainWindow::updateSdkDiagnostic);
+    connect(m_bridge, &DeviceBridge::sessionStateChanged, this, &MainWindow::updateSessionState);
+    connect(m_bridge, &DeviceBridge::rawFileReady, this, [this](const QString& filePath) {
+        appendLog(QStringLiteral("RAW 验收通过：%1").arg(filePath));
+    });
+    connect(m_bridge, &DeviceBridge::operationFailed, this, [this](const MriSdkResult& result) {
+        appendLog(QStringLiteral("操作失败 [%1/%2] code=%3：%4")
+                      .arg(result.stage, result.function)
+                      .arg(result.code)
+                      .arg(result.message));
+    });
 
-    m_bridge->loadSdk(QString());
-    m_bridge->initialize(
-        QStringLiteral("Iface/mriRely/hw_cfg/init.ini"),
-        QStringLiteral("demo_output"),
-        QStringLiteral("Iface/mriRely/par0423.par"));
+    updateSessionState(MriSdkSessionState::Unloaded);
 
     populatePrimaryScenes();
     handleSceneChanged();
@@ -125,15 +134,15 @@ QWidget* MainWindow::buildHeader()
     m_headerSceneValue->setObjectName("AppSubtitle");
     layout->addWidget(m_headerSceneValue);
 
-    m_headerSdkValue = new QLabel(QStringLiteral("SDK：Demo"), frame);
+    m_headerSdkValue = new QLabel(QStringLiteral("SDK：未加载"), frame);
     m_headerSdkValue->setObjectName("AppSubtitle");
     layout->addWidget(m_headerSdkValue);
 
-    auto* connectBadge = new QLabel(QStringLiteral("Run：HOLD"), frame);
+    auto* connectBadge = new QLabel(QStringLiteral("设备：待建链"), frame);
     connectBadge->setObjectName("AppSubtitle");
     layout->addWidget(connectBadge);
 
-    auto* transferBadge = new QLabel(QStringLiteral("参数：待设备适配"), frame);
+    auto* transferBadge = new QLabel(QStringLiteral("参数：PTScan 基线"), frame);
     transferBadge->setObjectName("AppSubtitle");
     layout->addWidget(transferBadge);
 
@@ -202,33 +211,35 @@ QWidget* MainWindow::buildLeftPane()
     buttons->setHorizontalSpacing(10);
     buttons->setVerticalSpacing(10);
 
-    auto* sdkBtn = new QPushButton(QStringLiteral("加载 SDK"), frame);
-    sdkBtn->setProperty("class", "secondary");
-    sdkBtn->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
-    auto* connectBtn = new QPushButton(QStringLiteral("一键建链"), frame);
-    connectBtn->setProperty("class", "primary");
-    connectBtn->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
+    m_loadSdkButton = new QPushButton(QStringLiteral("加载 SDK"), frame);
+    m_loadSdkButton->setProperty("class", "secondary");
+    m_loadSdkButton->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
+    m_connectButton = new QPushButton(QStringLiteral("一键建链"), frame);
+    m_connectButton->setProperty("class", "primary");
+    m_connectButton->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
     auto* precheckBtn = new QPushButton(QStringLiteral("校准向导"), frame);
     precheckBtn->setProperty("class", "secondary");
     auto* dryRunBtn = new QPushButton(QStringLiteral("DRY_RUN"), frame);
     dryRunBtn->setProperty("class", "secondary");
-    auto* startBtn = new QPushButton(QStringLiteral("Demo 采集"), frame);
-    startBtn->setProperty("class", "success");
-    startBtn->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    auto* pauseBtn = new QPushButton(QStringLiteral("暂停"), frame);
-    pauseBtn->setProperty("class", "warning");
-    pauseBtn->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-    auto* abortBtn = new QPushButton(QStringLiteral("急停"), frame);
-    abortBtn->setProperty("class", "danger");
-    abortBtn->setIcon(style()->standardIcon(QStyle::SP_BrowserStop));
+    m_startButton = new QPushButton(QStringLiteral("开始采集"), frame);
+    m_startButton->setProperty("class", "success");
+    m_startButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    m_pauseButton = new QPushButton(QStringLiteral("暂停（不支持）"), frame);
+    m_pauseButton->setProperty("class", "warning");
+    m_pauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+    m_pauseButton->setToolTip(QStringLiteral("当前 SDK 未提供暂停/继续接口"));
+    m_pauseButton->setEnabled(false);
+    m_abortButton = new QPushButton(QStringLiteral("急停"), frame);
+    m_abortButton->setProperty("class", "danger");
+    m_abortButton->setIcon(style()->standardIcon(QStyle::SP_BrowserStop));
 
-    buttons->addWidget(sdkBtn, 0, 0);
-    buttons->addWidget(connectBtn, 0, 1);
+    buttons->addWidget(m_loadSdkButton, 0, 0);
+    buttons->addWidget(m_connectButton, 0, 1);
     buttons->addWidget(precheckBtn, 1, 0);
     buttons->addWidget(dryRunBtn, 1, 1);
-    buttons->addWidget(startBtn, 2, 0);
-    buttons->addWidget(pauseBtn, 2, 1);
-    buttons->addWidget(abortBtn, 3, 0, 1, 2);
+    buttons->addWidget(m_startButton, 2, 0);
+    buttons->addWidget(m_pauseButton, 2, 1);
+    buttons->addWidget(m_abortButton, 3, 0, 1, 2);
     layout->addLayout(buttons);
 
     layout->addStretch();
@@ -237,13 +248,13 @@ QWidget* MainWindow::buildLeftPane()
     connect(m_targetCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handleTargetChanged);
     connect(m_templateSearchEdit, &QLineEdit::textChanged, this, &MainWindow::handleTemplateSearchChanged);
     connect(m_sceneList, &QListWidget::currentRowChanged, this, &MainWindow::handleSceneChanged);
-    connect(sdkBtn, &QPushButton::clicked, this, &MainWindow::handleLoadSdk);
-    connect(connectBtn, &QPushButton::clicked, this, &MainWindow::handleConnect);
+    connect(m_loadSdkButton, &QPushButton::clicked, this, &MainWindow::handleLoadSdk);
+    connect(m_connectButton, &QPushButton::clicked, this, &MainWindow::handleConnect);
     connect(precheckBtn, &QPushButton::clicked, this, &MainWindow::handlePrecheck);
     connect(dryRunBtn, &QPushButton::clicked, this, &MainWindow::handleDryRun);
-    connect(startBtn, &QPushButton::clicked, this, &MainWindow::handleStart);
-    connect(pauseBtn, &QPushButton::clicked, this, &MainWindow::handlePause);
-    connect(abortBtn, &QPushButton::clicked, this, &MainWindow::handleAbort);
+    connect(m_startButton, &QPushButton::clicked, this, &MainWindow::handleStart);
+    connect(m_pauseButton, &QPushButton::clicked, this, &MainWindow::handlePause);
+    connect(m_abortButton, &QPushButton::clicked, this, &MainWindow::handleAbort);
 
     return frame;
 }
@@ -387,7 +398,7 @@ QWidget* MainWindow::buildRightPane()
     m_logView = new QPlainTextEdit(logTab);
     m_logView->setReadOnly(true);
     m_logView->setPlainText(
-        QStringLiteral("任务模板已加载\n参数预设：presetVersion=2\n真实 Run：HOLD\nDemo 模式可执行 UI 流程\n结果交接包等待 QC 确认"));
+        QStringLiteral("任务模板已加载\n设备入口：手动加载 mridll.dll\n实机基线：PTScan.par\n场景参数暂不写入 SDK\n扫描结果以新增 RAW 文件验收"));
     logLayout->addWidget(m_logView, 1);
     tabs->addTab(logTab, QStringLiteral("日志"));
 
@@ -652,7 +663,21 @@ void MainWindow::handleSceneChanged()
 
 void MainWindow::handleConnect()
 {
-    m_bridge->connectDevice();
+    if (m_selectedDllPath.isEmpty()) {
+        appendLog(QStringLiteral("请先选择 mridll.dll"));
+        return;
+    }
+
+    const QDir sdkRoot = QFileInfo(m_selectedDllPath).absoluteDir();
+    MriSdkConfig config;
+    config.initPath = sdkRoot.filePath(QStringLiteral("hw_cfg/init.ini"));
+    config.parameterPath = QStringLiteral("C:/MRIScanner/Scan/PTScan.par");
+    config.outputPath = QStringLiteral("D:/mri_data/par0423-3");
+    config.outputPrefix = "PTMRIData";
+    config.systemSelection = 3;
+    appendLog(QStringLiteral("开始建链：init=%1；par=%2；output=%3")
+                  .arg(config.initPath, config.parameterPath, config.outputPath));
+    static_cast<void>(m_bridge->connectDevice(config));
 }
 
 void MainWindow::handleLoadSdk()
@@ -665,11 +690,10 @@ void MainWindow::handleLoadSdk()
     if (dllPath.isEmpty()) {
         return;
     }
-    m_bridge->loadSdk(dllPath);
-    m_bridge->initialize(
-        QStringLiteral("Iface/mriRely/hw_cfg/init.ini"),
-        QStringLiteral("demo_output"),
-        QStringLiteral("Iface/mriRely/par0423.par"));
+    const MriSdkResult result = m_bridge->loadSdk(dllPath);
+    if (result.ok) {
+        m_selectedDllPath = QFileInfo(dllPath).absoluteFilePath();
+    }
 }
 
 void MainWindow::handlePrecheck()
@@ -684,7 +708,7 @@ void MainWindow::handleDryRun()
 
 void MainWindow::handleStart()
 {
-    m_bridge->startScan(currentScene());
+    static_cast<void>(m_bridge->startScan());
 }
 
 void MainWindow::handlePause()
@@ -764,6 +788,16 @@ void MainWindow::updateSdkDiagnostic(const QString& status, const QString& fileP
         m_sdkDiagnosticView->setPlainText(details);
     }
     appendLog(QStringLiteral("SDK 诊断：%1 %2").arg(status, filePath));
+}
+
+void MainWindow::updateSessionState(MriSdkSessionState state)
+{
+    const DeviceActionAvailability actions = actionsForState(state);
+    if (m_loadSdkButton) m_loadSdkButton->setEnabled(actions.canLoadSdk);
+    if (m_connectButton) m_connectButton->setEnabled(actions.canConnect);
+    if (m_startButton) m_startButton->setEnabled(actions.canRun);
+    if (m_pauseButton) m_pauseButton->setEnabled(false);
+    if (m_abortButton) m_abortButton->setEnabled(actions.canAbort);
 }
 
 void MainWindow::applyScene(const SceneTemplate& scene)
