@@ -200,24 +200,6 @@ void DeviceBridge::refreshStatus()
         return;
     }
 
-    if (m_state == MriSdkSessionState::Scanning
-        && m_scanElapsed.isValid()
-        && m_scanElapsed.elapsed() > m_config.scanTimeoutMs) {
-        m_loader.abort();
-        m_pollTimer.stop();
-        fail(QStringLiteral("scan"), QStringLiteral("timeout"), -1, QStringLiteral("扫描超时，已执行 Abort"));
-        return;
-    }
-
-    if (m_state == MriSdkSessionState::Stopping
-        && m_stopElapsed.isValid()
-        && m_stopElapsed.elapsed() > m_config.stopTimeoutMs) {
-        m_pollTimer.stop();
-        fail(QStringLiteral("abort"), QStringLiteral("timeout"), -1,
-            QStringLiteral("Abort 后等待设备停止超时"));
-        return;
-    }
-
     const MriSdkStatus device = m_loader.status();
     m_temperatureState = QString::number(device.temperature, 'f', 1) + QStringLiteral(" C");
     emit temperatureChanged(m_temperatureState);
@@ -244,12 +226,18 @@ void DeviceBridge::refreshStatus()
             setScan(QStringLiteral("已终止"), QStringLiteral("0/0"));
             setSessionState(MriSdkSessionState::Ready);
             emit logAppended(QStringLiteral("设备已停止，会话返回就绪"));
+            return;
+        }
+        if (m_stopElapsed.isValid()
+            && m_stopElapsed.elapsed() > m_config.stopTimeoutMs) {
+            m_pollTimer.stop();
+            fail(QStringLiteral("abort"), QStringLiteral("timeout"), -1,
+                QStringLiteral("Abort 后等待设备停止超时"));
         }
         return;
     }
     if (device.scan == 1 || device.scan == 2 || device.scan == 4) {
         m_sawActiveScan = true;
-        return;
     }
     if (device.scan == -1 || device.scan == 5 || device.scan == 6) {
         m_loader.abort();
@@ -258,10 +246,7 @@ void DeviceBridge::refreshStatus()
             QStringLiteral("扫描异常，状态码 %1，已执行 Abort").arg(device.scan));
         return;
     }
-    if (device.scan == 0 && !m_sawActiveScan) {
-        return;
-    }
-    if (device.scan == 0 || device.scan == 3) {
+    if ((device.scan == 0 && m_sawActiveScan) || device.scan == 3) {
         if (!m_scanCompletionObserved) {
             m_scanCompletionObserved = true;
             m_rawSettleElapsed.start();
@@ -284,6 +269,15 @@ void DeviceBridge::refreshStatus()
         setScan(QStringLiteral("完成"), QStringLiteral("%1/%2").arg(device.currentScan).arg(device.totalScans));
         emit rawFileReady(m_lastRawFile);
         emit logAppended(QStringLiteral("扫描完成，RAW 文件：%1").arg(m_lastRawFile));
+        return;
+    }
+    if (!m_scanCompletionObserved
+        && m_scanElapsed.isValid()
+        && m_scanElapsed.elapsed() > m_config.scanTimeoutMs) {
+        m_loader.abort();
+        m_pollTimer.stop();
+        fail(QStringLiteral("scan"), QStringLiteral("timeout"), -1,
+            QStringLiteral("扫描超时，已执行 Abort"));
     }
 }
 
