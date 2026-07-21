@@ -86,9 +86,20 @@ endif()
 set(invalid_app_root "${test_root}/invalid-app")
 set(invalid_call_log "${test_root}/invalid-calls.log")
 set(invalid_trace "${test_root}/invalid-trace.log")
-file(MAKE_DIRECTORY "${invalid_app_root}")
-file(REMOVE "${invalid_call_log}" "${invalid_trace}")
+set(invalid_runtime_root "${invalid_app_root}/mri-runtime")
+file(MAKE_DIRECTORY "${invalid_runtime_root}/hw_cfg" "${invalid_runtime_root}/profiles" "${invalid_app_root}/mri-output")
+file(REMOVE "${invalid_trace}")
+file(WRITE "${invalid_call_log}" "")
 file(COPY_FILE "${GUI}" "${invalid_app_root}/scenario_nmr_client.exe" ONLY_IF_DIFFERENT)
+file(COPY_FILE "${FAKE_SDK}" "${invalid_runtime_root}/mridll.dll" ONLY_IF_DIFFERENT)
+file(WRITE "${invalid_runtime_root}/hw_cfg/init.ini" "test")
+file(WRITE "${invalid_runtime_root}/profiles/PTScan.par" "test")
+file(WRITE "${invalid_runtime_root}/mri-runtime-manifest.json"
+    "{\n"
+    "  \"mridll\": { \"relativePath\": \"mridll.dll\", \"sha256\": \"NOT_THE_FAKE_DLL_HASH\" },\n"
+    "  \"hwCfg\": { \"relativePath\": \"hw_cfg\", \"fileCount\": 1, \"totalBytes\": ${init_size}, \"manifestSha256\": \"${hw_cfg_hash}\", \"initSha256\": \"${init_hash}\" },\n"
+    "  \"parameterFile\": { \"fileName\": \"PTScan.par\", \"sha256\": \"${par_hash}\" }\n"
+    "}\n")
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E env
@@ -110,8 +121,21 @@ if(NOT invalid_result MATCHES "timeout")
         "stdout:\n${invalid_output}\n"
         "stderr:\n${invalid_error}")
 endif()
-if(EXISTS "${invalid_call_log}")
-    message(FATAL_ERROR "Invalid bundled runtime must not call the fake SDK: ${invalid_call_log}")
+file(STRINGS "${invalid_call_log}" invalid_calls)
+set(invalid_init_count 0)
+set(invalid_run_count 0)
+set(invalid_abort_count 0)
+foreach(call IN LISTS invalid_calls)
+    if(call STREQUAL "Init")
+        math(EXPR invalid_init_count "${invalid_init_count} + 1")
+    elseif(call STREQUAL "Run")
+        math(EXPR invalid_run_count "${invalid_run_count} + 1")
+    elseif(call STREQUAL "Abort")
+        math(EXPR invalid_abort_count "${invalid_abort_count} + 1")
+    endif()
+endforeach()
+if(NOT invalid_init_count EQUAL 0 OR NOT invalid_run_count EQUAL 0 OR NOT invalid_abort_count EQUAL 0)
+    message(FATAL_ERROR "Invalid bundled runtime must not call Init, Run, or Abort: ${invalid_calls}")
 endif()
 if(NOT EXISTS "${invalid_trace}")
     message(FATAL_ERROR "Invalid bundled runtime did not record a resolution error")

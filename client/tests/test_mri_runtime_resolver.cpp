@@ -121,6 +121,7 @@ private slots:
     void resolvesBundledDefaultsAndCreatesOutputDirectory();
     void overridesOnlySpecifiedField();
     void rejectsMissingOrInvalidManifest();
+    void overridesBypassOnlyMatchingBundledManifestEntry();
     void rejectsTamperedDllEvenWhenManifestIsRewritten();
     void rejectsTamperedParameterAsset();
     void rejectsMissingAndHiddenHwCfgAssets();
@@ -203,6 +204,50 @@ void MriRuntimeResolverTest::rejectsMissingOrInvalidManifest()
     paths = MriRuntimeResolver::resolveForTesting(temp.path(), {}, fixture.expectations);
     QVERIFY(!paths.isValid());
     QVERIFY(paths.error.contains(QStringLiteral("manifest")));
+}
+
+void MriRuntimeResolverTest::overridesBypassOnlyMatchingBundledManifestEntry()
+{
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const RuntimeFixture fixture = createBundledRuntime(temp.path());
+    const QString customSdk = temp.filePath(QStringLiteral("overrides/custom.dll"));
+    const QString customInit = temp.filePath(QStringLiteral("overrides/custom.ini"));
+    const QString customPar = temp.filePath(QStringLiteral("overrides/custom.par"));
+    writeFile(customSdk, "custom sdk");
+    writeFile(customInit, "custom init");
+    writeFile(customPar, "custom parameters");
+
+    MriRuntimeExpectations alteredManifest = fixture.expectations;
+    alteredManifest.parameterSha256 = QStringLiteral("BAD_PARAMETER_HASH");
+    writeManifest(fixture, alteredManifest);
+    MriRuntimeOverrides overrides;
+    overrides.parameterPath = customPar;
+    MriRuntimePaths paths = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, fixture.expectations);
+    QVERIFY2(paths.isValid(), qPrintable(paths.error));
+
+    alteredManifest = fixture.expectations;
+    alteredManifest.dllSha256 = QStringLiteral("BAD_DLL_HASH");
+    writeManifest(fixture, alteredManifest);
+    overrides = {};
+    overrides.sdkPath = customSdk;
+    paths = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, fixture.expectations);
+    QVERIFY2(paths.isValid(), qPrintable(paths.error));
+
+    alteredManifest = fixture.expectations;
+    alteredManifest.initSha256 = QStringLiteral("BAD_INIT_HASH");
+    writeManifest(fixture, alteredManifest);
+    overrides = {};
+    overrides.initPath = customInit;
+    paths = MriRuntimeResolver::resolveForTesting(temp.path(), overrides, fixture.expectations);
+    QVERIFY2(paths.isValid(), qPrintable(paths.error));
+
+    alteredManifest = fixture.expectations;
+    alteredManifest.parameterSha256 = QStringLiteral("BAD_PARAMETER_HASH");
+    writeManifest(fixture, alteredManifest);
+    paths = MriRuntimeResolver::resolveForTesting(temp.path(), {}, fixture.expectations);
+    QVERIFY(!paths.isValid());
+    QVERIFY(paths.error.contains(QStringLiteral("baseline")));
 }
 
 void MriRuntimeResolverTest::rejectsTamperedDllEvenWhenManifestIsRewritten()

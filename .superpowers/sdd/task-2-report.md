@@ -50,3 +50,9 @@ The packaged JSON is now required only as matching structure/diagnostic metadata
 The resolver now includes `QDir::Hidden | QDir::System` while counting and hashing `hw_cfg`, matching the PowerShell staging script's `-Force` behavior. Regressions cover malformed/missing JSON, a rewritten manifest paired with a tampered DLL, tampered PTScan/init assets, missing and hidden `hw_cfg` entries, all-explicit legacy paths, and invalid bundled auto-connect. The latter proves the GUI remains in its event loop, records a resolution trace, and calls fake `Init`, `Run`, and `Abort` zero times.
 
 Follow-up verification: focused resolver/process tests and the full CTest suite passed **8/8**. CLI overrides remain parse-compatible, but they do not bypass the later baseline/precheck `Run` authorization gate.
+
+## Follow-up 2: Per-field Override Isolation
+
+Manifest validation now follows the same field-by-field precedence as CLI resolution: an override skips only the metadata and asset identity check for that same bundled field. Every bundled field that remains selected is still checked against the compiled production baseline. Regression tests cover invalid bundled PT metadata with `--par`, invalid DLL metadata with `--sdk`, invalid init metadata with `--init`, and failure when an invalid entry remains bundled.
+
+The invalid bundled auto-connect process fixture now contains the ordinary loadable fake DLL, reachable `init.ini`, PTScan file, and writable default output directory. It fails only because the packaged DLL identity metadata is wrong before any SDK call. The test pre-creates and reads the fake-call log, asserting exactly zero `Init`, `Run`, and `Abort` calls while the GUI event loop remains active and writes a clear failure trace.

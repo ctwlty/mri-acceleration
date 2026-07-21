@@ -80,20 +80,32 @@ bool validateFile(const QString& path, const QString& label, QString& error)
 bool manifestMatchesProductionExpectations(
     const QJsonObject& root,
     const RuntimeExpectations& expectations,
+    bool usesBundledSdk,
+    bool usesBundledInit,
+    bool usesBundledParameter,
     QString& error)
 {
     const QJsonObject dll = root.value(QStringLiteral("mridll")).toObject();
     const QJsonObject hwCfg = root.value(QStringLiteral("hwCfg")).toObject();
     const QJsonObject parameter = root.value(QStringLiteral("parameterFile")).toObject();
-    if (dll.value(QStringLiteral("relativePath")).toString() != QStringLiteral("mridll.dll")
-        || dll.value(QStringLiteral("sha256")).toString().toUpper() != expectations.dllSha256
-        || hwCfg.value(QStringLiteral("relativePath")).toString() != QStringLiteral("hw_cfg")
-        || hwCfg.value(QStringLiteral("fileCount")).toInt(-1) != expectations.hwCfgFileCount
-        || hwCfg.value(QStringLiteral("totalBytes")).toVariant().toLongLong() != expectations.hwCfgTotalBytes
-        || hwCfg.value(QStringLiteral("manifestSha256")).toString().toUpper() != expectations.hwCfgManifestSha256
-        || hwCfg.value(QStringLiteral("initSha256")).toString().toUpper() != expectations.initSha256
-        || parameter.value(QStringLiteral("fileName")).toString() != QStringLiteral("PTScan.par")
-        || parameter.value(QStringLiteral("sha256")).toString().toUpper() != expectations.parameterSha256) {
+    if (usesBundledSdk
+        && (dll.value(QStringLiteral("relativePath")).toString() != QStringLiteral("mridll.dll")
+            || dll.value(QStringLiteral("sha256")).toString().toUpper() != expectations.dllSha256)) {
+        error = QStringLiteral("MRI runtime manifest does not match the compiled production baseline");
+        return false;
+    }
+    if (usesBundledInit
+        && (hwCfg.value(QStringLiteral("relativePath")).toString() != QStringLiteral("hw_cfg")
+            || hwCfg.value(QStringLiteral("fileCount")).toInt(-1) != expectations.hwCfgFileCount
+            || hwCfg.value(QStringLiteral("totalBytes")).toVariant().toLongLong() != expectations.hwCfgTotalBytes
+            || hwCfg.value(QStringLiteral("manifestSha256")).toString().toUpper() != expectations.hwCfgManifestSha256
+            || hwCfg.value(QStringLiteral("initSha256")).toString().toUpper() != expectations.initSha256)) {
+        error = QStringLiteral("MRI runtime manifest does not match the compiled production baseline");
+        return false;
+    }
+    if (usesBundledParameter
+        && (parameter.value(QStringLiteral("fileName")).toString() != QStringLiteral("PTScan.par")
+            || parameter.value(QStringLiteral("sha256")).toString().toUpper() != expectations.parameterSha256)) {
         error = QStringLiteral("MRI runtime manifest does not match the compiled production baseline");
         return false;
     }
@@ -125,7 +137,8 @@ bool validateBundledAssets(
         error = QStringLiteral("MRI runtime manifest is invalid: %1").arg(manifestPath);
         return false;
     }
-    if (!manifestMatchesProductionExpectations(document.object(), expectations, error)) {
+    if (!manifestMatchesProductionExpectations(
+            document.object(), expectations, usesBundledSdk, usesBundledInit, usesBundledParameter, error)) {
         return false;
     }
 
