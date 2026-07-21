@@ -35,3 +35,18 @@ Resolver validation proves that bundled, non-overridden fields match the staged 
 ## Safety
 
 Only the fake SDK was exercised. Startup tests assert `Init == 1`, `Run == 0`, and `Abort == 0`; no real SDK or device operation was called.
+
+## Follow-up Security Fix
+
+Independent review found that the original resolver treated the package-local JSON manifest as its only trust source. An attacker could change both an asset and the JSON value that described it. The follow-up fix moves the production baseline into compiled constants:
+
+- DLL SHA-256: `D32AF2B676A4956A3D9AB8707B49F47083328A5CE9236FBB5324E44C28054CE8`
+- `init.ini` SHA-256: `644D2F4DAD06E5FD5AC6DF7161C63A4164F5B56F926C66DC77D3892CAD411956`
+- PTScan SHA-256: `6FD62B50A56B802D070AE52737A57516FECE927FCE28BDA17979D4C046C36783`
+- `hw_cfg`: 455 files, 206656 bytes, SHA-256 `A8BFF731985A8886EEB53191A6AFD9F5F037931A841A50A4960738595FC45F6F`
+
+The packaged JSON is now required only as matching structure/diagnostic metadata; it cannot replace those compiled expectations. Fake fixtures use an API compiled only into test targets, and the test GUI reads injected fake expectations only under `MRI_RUNTIME_RESOLVER_TESTING`.
+
+The resolver now includes `QDir::Hidden | QDir::System` while counting and hashing `hw_cfg`, matching the PowerShell staging script's `-Force` behavior. Regressions cover malformed/missing JSON, a rewritten manifest paired with a tampered DLL, tampered PTScan/init assets, missing and hidden `hw_cfg` entries, all-explicit legacy paths, and invalid bundled auto-connect. The latter proves the GUI remains in its event loop, records a resolution trace, and calls fake `Init`, `Run`, and `Abort` zero times.
+
+Follow-up verification: focused resolver/process tests and the full CTest suite passed **8/8**. CLI overrides remain parse-compatible, but they do not bypass the later baseline/precheck `Run` authorization gate.

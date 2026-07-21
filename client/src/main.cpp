@@ -5,6 +5,7 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QFile>
+#include <QStringList>
 #include <QTimer>
 
 static QString loadStyleSheet()
@@ -15,6 +16,43 @@ static QString loadStyleSheet()
     }
     return QString::fromUtf8(file.readAll());
 }
+
+#ifdef MRI_RUNTIME_RESOLVER_TESTING
+static MriRuntimePaths resolveRuntimeForTest(
+    const QString& applicationDir,
+    const MriRuntimeOverrides& overrides)
+{
+    const QStringList values = qEnvironmentVariable("MRI_RUNTIME_TEST_EXPECTATIONS").split(QLatin1Char('|'));
+    if (values.size() != 6) {
+        return MriRuntimeResolver::resolve(applicationDir, overrides);
+    }
+    bool fileCountOk = false;
+    bool totalBytesOk = false;
+    MriRuntimeExpectations expectations;
+    expectations.dllSha256 = values.at(0);
+    expectations.initSha256 = values.at(1);
+    expectations.parameterSha256 = values.at(2);
+    expectations.hwCfgFileCount = values.at(3).toInt(&fileCountOk);
+    expectations.hwCfgTotalBytes = values.at(4).toLongLong(&totalBytesOk);
+    expectations.hwCfgManifestSha256 = values.at(5);
+    if (!fileCountOk || !totalBytesOk) {
+        return MriRuntimeResolver::resolve(applicationDir, overrides);
+    }
+    return MriRuntimeResolver::resolveForTesting(applicationDir, overrides, expectations);
+}
+
+static void writeRuntimeTestTrace(const QString& message)
+{
+    const QString path = qEnvironmentVariable("MRI_RUNTIME_TEST_TRACE_FILE");
+    if (path.isEmpty()) {
+        return;
+    }
+    QFile trace(path);
+    if (trace.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        trace.write(message.toUtf8());
+    }
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -44,7 +82,11 @@ int main(int argc, char* argv[])
     overrides.initPath = parser.value(initOption);
     overrides.parameterPath = parser.value(parameterOption);
     overrides.outputPath = parser.value(outputOption);
+#ifdef MRI_RUNTIME_RESOLVER_TESTING
+    const MriRuntimePaths runtimePaths = resolveRuntimeForTest(app.applicationDirPath(), overrides);
+#else
     const MriRuntimePaths runtimePaths = MriRuntimeResolver::resolve(app.applicationDirPath(), overrides);
+#endif
 
     MainWindow window(runtimePaths.runtimeDirectory);
     window.show();
@@ -52,6 +94,9 @@ int main(int argc, char* argv[])
     if (parser.isSet(autoConnectOption)) {
         if (!runtimePaths.isValid()) {
             qCritical().noquote() << QStringLiteral("Automatic device connection skipped: %1").arg(runtimePaths.error);
+#ifdef MRI_RUNTIME_RESOLVER_TESTING
+            writeRuntimeTestTrace(QStringLiteral("Automatic device connection skipped: %1").arg(runtimePaths.error));
+#endif
             QMetaObject::invokeMethod(
                 &window,
                 "appendLog",

@@ -11,6 +11,27 @@
 #include <QTemporaryFile>
 
 namespace {
+struct RuntimeExpectations {
+    QString dllSha256;
+    QString initSha256;
+    QString parameterSha256;
+    int hwCfgFileCount = 0;
+    qint64 hwCfgTotalBytes = 0;
+    QString hwCfgManifestSha256;
+};
+
+const RuntimeExpectations& productionExpectations()
+{
+    static const RuntimeExpectations expectations{
+        QStringLiteral("D32AF2B676A4956A3D9AB8707B49F47083328A5CE9236FBB5324E44C28054CE8"),
+        QStringLiteral("644D2F4DAD06E5FD5AC6DF7161C63A4164F5B56F926C66DC77D3892CAD411956"),
+        QStringLiteral("6FD62B50A56B802D070AE52737A57516FECE927FCE28BDA17979D4C046C36783"),
+        455,
+        206656,
+        QStringLiteral("A8BFF731985A8886EEB53191A6AFD9F5F037931A841A50A4960738595FC45F6F")};
+    return expectations;
+}
+
 QString absolutePath(const QString& path)
 {
     return QFileInfo(path).absoluteFilePath();
@@ -28,7 +49,10 @@ QString fileHash(const QString& path)
 QString directoryManifestHash(const QString& directoryPath)
 {
     QStringList records;
-    QDirIterator iterator(directoryPath, QDir::Files, QDirIterator::Subdirectories);
+    QDirIterator iterator(
+        directoryPath,
+        QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
     const QDir directory(directoryPath);
     while (iterator.hasNext()) {
         const QFileInfo fileInfo(iterator.next());
@@ -53,10 +77,24 @@ bool validateFile(const QString& path, const QString& label, QString& error)
     return true;
 }
 
-bool validateManifestObject(const QJsonObject& object, const QString& name, QString& error)
+bool manifestMatchesProductionExpectations(
+    const QJsonObject& root,
+    const RuntimeExpectations& expectations,
+    QString& error)
 {
-    if (object.isEmpty()) {
-        error = QStringLiteral("MRI runtime manifest is missing %1 metadata").arg(name);
+    const QJsonObject dll = root.value(QStringLiteral("mridll")).toObject();
+    const QJsonObject hwCfg = root.value(QStringLiteral("hwCfg")).toObject();
+    const QJsonObject parameter = root.value(QStringLiteral("parameterFile")).toObject();
+    if (dll.value(QStringLiteral("relativePath")).toString() != QStringLiteral("mridll.dll")
+        || dll.value(QStringLiteral("sha256")).toString().toUpper() != expectations.dllSha256
+        || hwCfg.value(QStringLiteral("relativePath")).toString() != QStringLiteral("hw_cfg")
+        || hwCfg.value(QStringLiteral("fileCount")).toInt(-1) != expectations.hwCfgFileCount
+        || hwCfg.value(QStringLiteral("totalBytes")).toVariant().toLongLong() != expectations.hwCfgTotalBytes
+        || hwCfg.value(QStringLiteral("manifestSha256")).toString().toUpper() != expectations.hwCfgManifestSha256
+        || hwCfg.value(QStringLiteral("initSha256")).toString().toUpper() != expectations.initSha256
+        || parameter.value(QStringLiteral("fileName")).toString() != QStringLiteral("PTScan.par")
+        || parameter.value(QStringLiteral("sha256")).toString().toUpper() != expectations.parameterSha256) {
+        error = QStringLiteral("MRI runtime manifest does not match the compiled production baseline");
         return false;
     }
     return true;
@@ -65,11 +103,13 @@ bool validateManifestObject(const QJsonObject& object, const QString& name, QStr
 bool validateBundledAssets(
     const MriRuntimePaths& paths,
     const MriRuntimeOverrides& overrides,
+    const RuntimeExpectations& expectations,
     QString& error)
 {
-    if (!overrides.sdkPath.trimmed().isEmpty()
-        && !overrides.initPath.trimmed().isEmpty()
-        && !overrides.parameterPath.trimmed().isEmpty()) {
+    const bool usesBundledSdk = overrides.sdkPath.trimmed().isEmpty();
+    const bool usesBundledInit = overrides.initPath.trimmed().isEmpty();
+    const bool usesBundledParameter = overrides.parameterPath.trimmed().isEmpty();
+    if (!usesBundledSdk && !usesBundledInit && !usesBundledParameter) {
         return true;
     }
 
@@ -79,60 +119,44 @@ bool validateBundledAssets(
         error = QStringLiteral("MRI runtime manifest is missing or unreadable: %1").arg(manifestPath);
         return false;
     }
-
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(manifestFile.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         error = QStringLiteral("MRI runtime manifest is invalid: %1").arg(manifestPath);
         return false;
     }
-
-    const QJsonObject root = document.object();
-    const QJsonObject dll = root.value(QStringLiteral("mridll")).toObject();
-    const QJsonObject hwCfg = root.value(QStringLiteral("hwCfg")).toObject();
-    const QJsonObject parameter = root.value(QStringLiteral("parameterFile")).toObject();
-
-    if (overrides.sdkPath.trimmed().isEmpty()) {
-        if (!validateManifestObject(dll, QStringLiteral("mridll"), error)) return false;
-        if (dll.value(QStringLiteral("relativePath")).toString() != QStringLiteral("mridll.dll")
-            || dll.value(QStringLiteral("sha256")).toString().isEmpty()
-            || fileHash(paths.sdkPath) != dll.value(QStringLiteral("sha256")).toString().toUpper()) {
-            error = QStringLiteral("MRI runtime mridll.dll does not match its manifest: %1").arg(paths.sdkPath);
-            return false;
-        }
+    if (!manifestMatchesProductionExpectations(document.object(), expectations, error)) {
+        return false;
     }
 
-    if (overrides.initPath.trimmed().isEmpty()) {
-        if (!validateManifestObject(hwCfg, QStringLiteral("hwCfg"), error)) return false;
-        const QString expectedRelativePath = hwCfg.value(QStringLiteral("relativePath")).toString();
-        const QDir hwCfgDir(QDir(paths.runtimeDirectory).filePath(expectedRelativePath));
-        if (expectedRelativePath != QStringLiteral("hw_cfg") || !hwCfgDir.exists()) {
-            error = QStringLiteral("MRI runtime hw_cfg does not match its manifest: %1").arg(hwCfgDir.absolutePath());
-            return false;
-        }
+    if (usesBundledSdk && fileHash(paths.sdkPath) != expectations.dllSha256) {
+        error = QStringLiteral("MRI runtime mridll.dll does not match the compiled production baseline: %1").arg(paths.sdkPath);
+        return false;
+    }
+    if (usesBundledInit) {
+        const QDir hwCfgDir(QDir(paths.runtimeDirectory).filePath(QStringLiteral("hw_cfg")));
         qint64 totalBytes = 0;
         int fileCount = 0;
-        QDirIterator iterator(hwCfgDir.absolutePath(), QDir::Files, QDirIterator::Subdirectories);
+        QDirIterator iterator(
+            hwCfgDir.absolutePath(),
+            QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
+            QDirIterator::Subdirectories);
         while (iterator.hasNext()) {
             totalBytes += QFileInfo(iterator.next()).size();
             ++fileCount;
         }
-        if (fileCount != hwCfg.value(QStringLiteral("fileCount")).toInt(-1)
-            || totalBytes != hwCfg.value(QStringLiteral("totalBytes")).toVariant().toLongLong()
-            || directoryManifestHash(hwCfgDir.absolutePath()) != hwCfg.value(QStringLiteral("manifestSha256")).toString().toUpper()) {
-            error = QStringLiteral("MRI runtime hw_cfg does not match its manifest: %1").arg(hwCfgDir.absolutePath());
+        if (!hwCfgDir.exists()
+            || fileHash(paths.initPath) != expectations.initSha256
+            || fileCount != expectations.hwCfgFileCount
+            || totalBytes != expectations.hwCfgTotalBytes
+            || directoryManifestHash(hwCfgDir.absolutePath()) != expectations.hwCfgManifestSha256) {
+            error = QStringLiteral("MRI runtime hw_cfg does not match the compiled production baseline: %1").arg(hwCfgDir.absolutePath());
             return false;
         }
     }
-
-    if (overrides.parameterPath.trimmed().isEmpty()) {
-        if (!validateManifestObject(parameter, QStringLiteral("parameterFile"), error)) return false;
-        if (parameter.value(QStringLiteral("fileName")).toString() != QStringLiteral("PTScan.par")
-            || parameter.value(QStringLiteral("sha256")).toString().isEmpty()
-            || fileHash(paths.parameterPath) != parameter.value(QStringLiteral("sha256")).toString().toUpper()) {
-            error = QStringLiteral("MRI runtime PTScan.par does not match its manifest: %1").arg(paths.parameterPath);
-            return false;
-        }
+    if (usesBundledParameter && fileHash(paths.parameterPath) != expectations.parameterSha256) {
+        error = QStringLiteral("MRI runtime PTScan.par does not match the compiled production baseline: %1").arg(paths.parameterPath);
+        return false;
     }
     return true;
 }
@@ -150,14 +174,11 @@ bool ensureWritableOutput(const QString& outputPath, QString& error)
     }
     return true;
 }
-}
 
-bool MriRuntimePaths::isValid() const
-{
-    return error.isEmpty();
-}
-
-MriRuntimePaths MriRuntimeResolver::resolve(const QString& applicationDir, const MriRuntimeOverrides& overrides)
+MriRuntimePaths resolveWithExpectations(
+    const QString& applicationDir,
+    const MriRuntimeOverrides& overrides,
+    const RuntimeExpectations& expectations)
 {
     MriRuntimePaths paths;
     const QString appDir = absolutePath(applicationDir);
@@ -178,9 +199,39 @@ MriRuntimePaths MriRuntimeResolver::resolve(const QString& applicationDir, const
     if (!validateFile(paths.sdkPath, QStringLiteral("mridll.dll"), paths.error)
         || !validateFile(paths.initPath, QStringLiteral("init.ini"), paths.error)
         || !validateFile(paths.parameterPath, QStringLiteral("PTScan.par"), paths.error)
-        || !validateBundledAssets(paths, overrides, paths.error)
+        || !validateBundledAssets(paths, overrides, expectations, paths.error)
         || !ensureWritableOutput(paths.outputPath, paths.error)) {
         return paths;
     }
     return paths;
 }
+}
+
+bool MriRuntimePaths::isValid() const
+{
+    return error.isEmpty();
+}
+
+MriRuntimePaths MriRuntimeResolver::resolve(const QString& applicationDir, const MriRuntimeOverrides& overrides)
+{
+    return resolveWithExpectations(applicationDir, overrides, productionExpectations());
+}
+
+#ifdef MRI_RUNTIME_RESOLVER_TESTING
+MriRuntimePaths MriRuntimeResolver::resolveForTesting(
+    const QString& applicationDir,
+    const MriRuntimeOverrides& overrides,
+    const MriRuntimeExpectations& expectations)
+{
+    return resolveWithExpectations(
+        applicationDir,
+        overrides,
+        RuntimeExpectations{
+            expectations.dllSha256.toUpper(),
+            expectations.initSha256.toUpper(),
+            expectations.parameterSha256.toUpper(),
+            expectations.hwCfgFileCount,
+            expectations.hwCfgTotalBytes,
+            expectations.hwCfgManifestSha256.toUpper()});
+}
+#endif

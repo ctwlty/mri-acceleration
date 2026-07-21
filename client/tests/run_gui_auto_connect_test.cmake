@@ -21,10 +21,11 @@ string(TOUPPER "${init_hash}" init_hash)
 file(SIZE "${runtime_root}/hw_cfg/init.ini" init_size)
 string(SHA256 hw_cfg_hash "init.ini|${init_size}|${init_hash}\n")
 file(SHA256 "${runtime_root}/profiles/PTScan.par" par_hash)
+set(test_expectations "${sdk_hash}|${init_hash}|${par_hash}|1|${init_size}|${hw_cfg_hash}")
 file(WRITE "${runtime_root}/mri-runtime-manifest.json"
     "{\n"
     "  \"mridll\": { \"relativePath\": \"mridll.dll\", \"sha256\": \"${sdk_hash}\" },\n"
-    "  \"hwCfg\": { \"relativePath\": \"hw_cfg\", \"fileCount\": 1, \"totalBytes\": ${init_size}, \"manifestSha256\": \"${hw_cfg_hash}\" },\n"
+    "  \"hwCfg\": { \"relativePath\": \"hw_cfg\", \"fileCount\": 1, \"totalBytes\": ${init_size}, \"manifestSha256\": \"${hw_cfg_hash}\", \"initSha256\": \"${init_hash}\" },\n"
     "  \"parameterFile\": { \"fileName\": \"PTScan.par\", \"sha256\": \"${par_hash}\" }\n"
     "}\n")
 
@@ -33,6 +34,7 @@ execute_process(
         "PATH=C:/msys64/ucrt64/bin;$ENV{PATH}"
         "QT_QPA_PLATFORM=offscreen"
         "FAKE_CALL_LOG=${call_log}"
+        "MRI_RUNTIME_TEST_EXPECTATIONS=${test_expectations}"
         "${app_root}/scenario_nmr_client.exe"
         --auto-connect
     RESULT_VARIABLE gui_result
@@ -79,4 +81,42 @@ if(NOT abort_count EQUAL 0)
 endif()
 if(connect_count LESS 1)
     message(FATAL_ERROR "Qt GUI did not finish the automatic device connection: ${calls}")
+endif()
+
+set(invalid_app_root "${test_root}/invalid-app")
+set(invalid_call_log "${test_root}/invalid-calls.log")
+set(invalid_trace "${test_root}/invalid-trace.log")
+file(MAKE_DIRECTORY "${invalid_app_root}")
+file(REMOVE "${invalid_call_log}" "${invalid_trace}")
+file(COPY_FILE "${GUI}" "${invalid_app_root}/scenario_nmr_client.exe" ONLY_IF_DIFFERENT)
+
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env
+        "PATH=C:/msys64/ucrt64/bin;$ENV{PATH}"
+        "QT_QPA_PLATFORM=offscreen"
+        "FAKE_CALL_LOG=${invalid_call_log}"
+        "MRI_RUNTIME_TEST_EXPECTATIONS=${test_expectations}"
+        "MRI_RUNTIME_TEST_TRACE_FILE=${invalid_trace}"
+        "${invalid_app_root}/scenario_nmr_client.exe"
+        --auto-connect
+    RESULT_VARIABLE invalid_result
+    OUTPUT_VARIABLE invalid_output
+    ERROR_VARIABLE invalid_error
+    TIMEOUT 2
+)
+if(NOT invalid_result MATCHES "timeout")
+    message(FATAL_ERROR
+        "Invalid bundled runtime must leave the GUI event loop open: ${invalid_result}\n"
+        "stdout:\n${invalid_output}\n"
+        "stderr:\n${invalid_error}")
+endif()
+if(EXISTS "${invalid_call_log}")
+    message(FATAL_ERROR "Invalid bundled runtime must not call the fake SDK: ${invalid_call_log}")
+endif()
+if(NOT EXISTS "${invalid_trace}")
+    message(FATAL_ERROR "Invalid bundled runtime did not record a resolution error")
+endif()
+file(READ "${invalid_trace}" invalid_trace_content)
+if(NOT invalid_trace_content MATCHES "Automatic device connection skipped")
+    message(FATAL_ERROR "Invalid bundled runtime error trace is unclear: ${invalid_trace_content}")
 endif()

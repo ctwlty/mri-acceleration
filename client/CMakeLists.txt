@@ -36,6 +36,31 @@ target_include_directories(scenario_nmr_client PRIVATE src)
 
 target_link_libraries(scenario_nmr_client PRIVATE Qt6::Widgets)
 
+if(BUILD_TESTING)
+    qt_add_executable(scenario_nmr_client_test
+        src/main.cpp
+        src/app/DeviceActionAvailability.cpp
+        src/app/DeviceActionAvailability.h
+        src/app/MriSdkLoader.cpp
+        src/app/MriSdkLoader.h
+        src/app/MriRuntimeResolver.cpp
+        src/app/MriRuntimeResolver.h
+        src/app/ProtocolMapper.cpp
+        src/app/ProtocolMapper.h
+        src/app/DeviceBridge.cpp
+        src/app/DeviceBridge.h
+        src/app/MainWindow.cpp
+        src/app/MainWindow.h
+        src/app/SceneCatalog.cpp
+        src/app/SceneCatalog.h
+        src/app/SceneTemplate.h
+        resources/app.qrc
+    )
+    target_include_directories(scenario_nmr_client_test PRIVATE src)
+    target_link_libraries(scenario_nmr_client_test PRIVATE Qt6::Widgets)
+    target_compile_definitions(scenario_nmr_client_test PRIVATE MRI_RUNTIME_RESOLVER_TESTING)
+endif()
+
 qt_add_executable(mri_sdk_verify
     tools/mri_sdk_verify.cpp
     src/app/DeviceBridge.cpp
@@ -109,6 +134,7 @@ if(BUILD_TESTING)
     )
     target_include_directories(test_mri_runtime_resolver PRIVATE src)
     target_link_libraries(test_mri_runtime_resolver PRIVATE Qt6::Core Qt6::Test)
+    target_compile_definitions(test_mri_runtime_resolver PRIVATE MRI_RUNTIME_RESOLVER_TESTING)
 
     qt_add_executable(test_main_window
         tests/test_main_window.cpp
@@ -171,7 +197,7 @@ if(BUILD_TESTING)
     add_test(
         NAME gui_auto_connect_fake
         COMMAND ${CMAKE_COMMAND}
-            "-DGUI=$<TARGET_FILE:scenario_nmr_client>"
+            "-DGUI=$<TARGET_FILE:scenario_nmr_client_test>"
             "-DFAKE_SDK=$<TARGET_FILE:fake_mri_sdk>"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_gui_auto_connect_test.cmake"
     )

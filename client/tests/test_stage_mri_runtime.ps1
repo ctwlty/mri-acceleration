@@ -64,6 +64,7 @@ try {
             fileCount = $hwFiles.Count
             totalBytes = [int64](($hwFiles | Measure-Object -Property Length -Sum).Sum)
             manifestSha256 = Get-DirectoryManifestSha256 $hwCfgRoot
+            initSha256 = Get-Sha256 (Join-Path $hwCfgRoot 'controller.ini')
         }
         parameterFile = [ordered]@{ fileName = 'PTScan.par'; sha256 = Get-Sha256 $parameterFile }
     }
@@ -79,6 +80,7 @@ try {
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'profiles\PTScan.par')) 'Staged parameter file is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json')) 'Staged runtime manifest is missing.'
     Assert-True ((Get-Content -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json') -Raw | ConvertFrom-Json).mridll.sha256 -eq $manifest.mridll.sha256) 'Staged runtime manifest must preserve the verified DLL hash.'
+    Assert-True ((Get-Content -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json') -Raw | ConvertFrom-Json).hwCfg.initSha256 -eq $manifest.hwCfg.initSha256) 'Staged runtime manifest must preserve the verified init hash.'
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $destination 'mridll.dll.backup_20250303'))) 'Backup DLL must not be staged.'
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $destination 'profiles\unused.par'))) 'Unused parameter files must not be staged.'
 
