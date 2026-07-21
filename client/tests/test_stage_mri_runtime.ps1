@@ -77,6 +77,8 @@ try {
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\controller.ini')) 'Staged hw_cfg content is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'hw_cfg\nested\calibration.cfg')) 'Staged nested hw_cfg content is missing.'
     Assert-True (Test-Path -LiteralPath (Join-Path $destination 'profiles\PTScan.par')) 'Staged parameter file is missing.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json')) 'Staged runtime manifest is missing.'
+    Assert-True ((Get-Content -LiteralPath (Join-Path $destination 'mri-runtime-manifest.json') -Raw | ConvertFrom-Json).mridll.sha256 -eq $manifest.mridll.sha256) 'Staged runtime manifest must preserve the verified DLL hash.'
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $destination 'mridll.dll.backup_20250303'))) 'Backup DLL must not be staged.'
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $destination 'profiles\unused.par'))) 'Unused parameter files must not be staged.'
 

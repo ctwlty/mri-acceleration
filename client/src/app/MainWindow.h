@@ -18,6 +18,7 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(const QString& bundledRuntimeDirectory, QWidget* parent = nullptr);
     MriSdkResult loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config);
     MriSdkSessionState deviceSessionState() const;
 
@@ -112,6 +113,7 @@ private:
     QPushButton* m_pauseButton = nullptr;
     QPushButton* m_abortButton = nullptr;
     DeviceBridge* m_bridge = nullptr;
+    QString m_bundledRuntimeDirectory;
     QString m_selectedDllPath;
     QList<SceneTemplate> m_catalog;
 };

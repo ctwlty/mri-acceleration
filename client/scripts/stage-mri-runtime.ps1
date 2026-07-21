@@ -126,6 +126,7 @@ Copy-Item -LiteralPath (Join-Path $MriSdkRoot $manifest.mridll.relativePath) -De
 Copy-Item -LiteralPath (Join-Path $MriSdkRoot $manifest.hwCfg.relativePath) -Destination $stagedHwCfg -Recurse
 New-Item -ItemType Directory -Force -Path $stagedParameterDirectory | Out-Null
 Copy-Item -LiteralPath $ParameterFile -Destination $stagedParameter
+Copy-Item -LiteralPath $ManifestPath -Destination (Join-Path $Destination 'mri-runtime-manifest.json') -Force
 
 Assert-VerifiedRuntime $Destination $stagedParameter $manifest
 Write-Output "MRI_RUNTIME_STAGED $Destination"

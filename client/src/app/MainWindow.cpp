@@ -59,8 +59,16 @@ void MainWindow::addInfoRow(QGridLayout* form, QWidget* parent, int row, const Q
 }
 
 MainWindow::MainWindow(QWidget* parent)
+    : MainWindow({}, parent)
+{
+}
+
+MainWindow::MainWindow(const QString& bundledRuntimeDirectory, QWidget* parent)
     : QMainWindow(parent)
     , m_bridge(new DeviceBridge(this))
+    , m_bundledRuntimeDirectory(bundledRuntimeDirectory.trimmed().isEmpty()
+                                     ? QString()
+                                     : QFileInfo(bundledRuntimeDirectory).absoluteFilePath())
     , m_catalog(SceneCatalog::defaults())
 {
     setObjectName("MainWindow");
@@ -703,7 +711,7 @@ void MainWindow::handleLoadSdk()
     const QString dllPath = QFileDialog::getOpenFileName(
         this,
         QStringLiteral("选择 mridll.dll"),
-        QString(),
+        QFileInfo(m_bundledRuntimeDirectory).isDir() ? m_bundledRuntimeDirectory : QString(),
         QStringLiteral("DLL 文件 (*.dll)"));
     if (dllPath.isEmpty()) {
         return;

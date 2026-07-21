@@ -18,6 +18,8 @@ qt_add_executable(scenario_nmr_client
     src/app/DeviceActionAvailability.h
     src/app/MriSdkLoader.cpp
     src/app/MriSdkLoader.h
+    src/app/MriRuntimeResolver.cpp
+    src/app/MriRuntimeResolver.h
     src/app/ProtocolMapper.cpp
     src/app/ProtocolMapper.h
     src/app/DeviceBridge.cpp
@@ -100,6 +102,14 @@ if(BUILD_TESTING)
     target_include_directories(test_device_actions PRIVATE src)
     target_link_libraries(test_device_actions PRIVATE Qt6::Core Qt6::Test)
 
+    qt_add_executable(test_mri_runtime_resolver
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_mri_runtime_resolver.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/MriRuntimeResolver.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/MriRuntimeResolver.h
+    )
+    target_include_directories(test_mri_runtime_resolver PRIVATE src)
+    target_link_libraries(test_mri_runtime_resolver PRIVATE Qt6::Core Qt6::Test)
+
     qt_add_executable(test_main_window
         tests/test_main_window.cpp
         src/app/DeviceActionAvailability.cpp
@@ -133,6 +143,11 @@ if(BUILD_TESTING)
 
     add_test(NAME device_actions COMMAND test_device_actions)
     set_tests_properties(device_actions PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME mri_runtime_resolver COMMAND test_mri_runtime_resolver)
+    set_tests_properties(mri_runtime_resolver PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 
