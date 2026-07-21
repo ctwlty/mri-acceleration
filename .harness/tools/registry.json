@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "profile": "generic",
+  "tools": [
+    {
+      "name": "manual-check",
+      "command": "open prototype/scenario-nmr-prototype.html",
+      "purpose": "Open the static prototype for visual review",
+      "when_to_run": "before completion",
+      "writes_files": false,
+      "requires_service": false,
+      "success": "prototype opens with the embedded image and product notes",
+      "failure_action": "regenerate the HTML or PNG asset"
+    }
+  ]
+}

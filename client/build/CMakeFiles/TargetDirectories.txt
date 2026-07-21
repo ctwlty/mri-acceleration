@@ -1,0 +1,5 @@
+/Users/martin/Project/nuclear_system/client/build/CMakeFiles/scenario_nmr_client.dir
+/Users/martin/Project/nuclear_system/client/build/CMakeFiles/edit_cache.dir
+/Users/martin/Project/nuclear_system/client/build/CMakeFiles/rebuild_cache.dir
+/Users/martin/Project/nuclear_system/client/build/CMakeFiles/scenario_nmr_client_autogen_timestamp_deps.dir
+/Users/martin/Project/nuclear_system/client/build/CMakeFiles/scenario_nmr_client_autogen.dir

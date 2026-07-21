@@ -1,0 +1,74 @@
+15:28:13:697 谱仪连接成功
+15:28:13:697 **GetDLLPath return:D:\123pan\Downloads\testDLL\bin\x64\Debug\mridll.dll
+15:28:13:713 启动接收线程！
+15:28:13:715 config:1
+15:28:14:725 config all:1
+15:28:14:725 SetIPForHighSpeedNetworkCard:192.168.2.10;;1030
+15:28:15:740 Query DACalarm return:0020
+15:28:15:744 Query DAC3484:0x18 return:006f
+15:28:15:744 dll ver:8.1.0
+15:28:15:744 arm ver:3.48
+15:28:15:744 fpga ver:20250218 2G 08CH NCO28b ADC14b50M A7V2 Code1
+15:28:15:744 matrix parse
+15:28:16:312 start close file...
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:312 file Closed
+15:28:16:314 start reset ReceiveEnvironment...
+15:28:17:150 Force Abort
+15:28:17:150 Abort ...
+15:28:17:150 谱仪关闭开始
+15:28:18:264 谱仪关闭
+15:28:18:264 接收线程关闭！
+15:38:22:750 谱仪连接成功
+15:38:22:750 **GetDLLPath return:D:\123pan\Downloads\testDLL\bin\x64\Debug\mridll.dll
+15:38:22:761 启动接收线程！
+15:38:22:762 config:1
+15:38:23:773 config all:1
+15:38:23:773 SetIPForHighSpeedNetworkCard:192.168.2.10;;1030
+15:38:24:791 Query DACalarm return:0060
+15:38:24:795 Query DAC3484:0x18 return:006f
+15:38:24:795 TxDacAlarmQuery failed!
+15:38:24:795 config:2
+15:38:24:795 config tx:1
+15:38:25:907 Query DACalarm return:0060
+15:38:25:912 Query DAC3484:0x18 return:006f
+15:38:25:912 TxDacAlarmQuery failed!
+15:38:25:912 config:3
+15:38:25:912 config tx:2
+15:38:27:31 Query DACalarm return:0060
+15:38:27:34 Query DAC3484:0x18 return:006f
+15:38:27:34 TxDacAlarmQuery failed!
+15:38:27:34 config:4
+15:38:27:34 config tx:3
+15:38:28:152 Query DACalarm return:0060
+15:38:28:156 Query DAC3484:0x18 return:006f
+15:38:28:156 TxDacAlarmQuery failed!
+15:38:28:157 config:5
+15:38:28:157 config tx:4
+15:38:29:284 Query DACalarm return:0020
+15:38:29:288 Query DAC3484:0x18 return:006f
+15:38:29:288 dll ver:8.1.0
+15:38:29:288 arm ver:3.48
+15:38:29:288 fpga ver:20250218 2G 08CH NCO28b ADC14b50M A7V2 Code1
+15:38:29:288 matrix parse
+15:38:29:841 start close file...
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 file Closed
+15:38:29:842 start reset ReceiveEnvironment...
+15:38:30:645 Force Abort
+15:38:30:645 Abort ...
+15:38:30:645 谱仪关闭开始
+15:38:31:761 谱仪关闭
+15:38:31:761 接收线程关闭！

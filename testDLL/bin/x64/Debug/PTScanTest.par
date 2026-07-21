@@ -1,0 +1,114 @@
+:SRC	C:\MRIScanner\FTSpect\seq_lib\demo_src\CSJ_SE_PRE.src
+:double	phaseEncodeOrient,1.000000 :board,main(2080) Spectrometer,M
+:double	patientOrient,0.000000 :board,main(2081) Spectrometer,M
+:double	separationSlice,10.000000 :board,main(2082) Spectrometer,M
+:double	sliceInterleave,1.000000 :board,main(2083) Spectrometer,M
+:double	modeAverage,0.000000 :board,main(2084) Spectrometer,M
+:double	TR,500.000000 :board,main(2085) Spectrometer,M
+:double	noDisacq,0.000000 :board,main(2086),gradS(2091),gradR(2131),gradP(2084),tx1(2121),rx1(2118) Spectrometer,M
+:double	sliceBlock,1.000000 :board,main(2087),gradS(2089),gradR(2129),gradP(2082),tx1(2119),rx1(2120) Spectrometer,M
+:double	viewBlock,1.000000 :board,main(2088),gradS(2092),gradR(2132),gradP(2085),tx1(2122),rx1(2122) Spectrometer,M
+:double	viewsPerSeg,1.000000 :board,main(2089),gradS(2093),gradR(2133),gradP(2086),tx1(2123),rx1(2123) Spectrometer,M
+:double	noViews,128.000000 :board,main(2090),gradS(2094),gradR(2134),gradP(2087),tx1(2124),rx1(2124) Spectrometer,M
+:double	noViewsSec,1.000000 :board,main(2091),gradS(2095),gradR(2135),gradP(2088),tx1(2125),rx1(2125) Spectrometer,M
+:double	batchSlices,1.000000 :board,main(2092),gradS(2090),gradR(2130),gradP(2083),tx1(2120),rx1(2121) Spectrometer,M
+:double	noSlices,10.000000 :board,main(2093),gradS(2096),gradR(2136),gradP(2089),tx1(2126),rx1(2126) Spectrometer,M
+:double	noExperiments,1.000000 :board,main(2094),gradS(2097),gradR(2137),gradP(2090),tx1(2127),rx1(2127) Spectrometer,M
+:double	noAverages,1.000000 :board,main(2095) Spectrometer,M
+:double	t_unifiedDelay,30.000000 :board,gradS(2080),gradR(2094),gradP(2081),tx1(2083),rx1(2087) Spectrometer,M
+:double	t_delayTR,200.000000 :board,gradS(2081),gradR(2095),tx1(2084),rx1(2089) Spectrometer,M
+:double	gradStepLengthUpEC,655.358750 :board,gradS(2082) Spectrometer,M
+:int	gradUpPointEC,800 :board,gradS(2083),gradR(2081),tx1(2081),rx1(2081) Spectrometer,M
+:double	gradStrokeGain,300.000000 :board,gradS(2084) Spectrometer,M
+:double	_SYS_GRAD_INSTR_DELAY,80.000000 :board,gradS(2085),gradR(2127) Spectrometer,M
+:double	tgradStroke,1000.000000 :board,gradS(2086),gradR(2097),tx1(2085),rx1(2090) Spectrometer,M
+:double	gradStepLengthDownEC,-1310.717500 :board,gradS(2087) Spectrometer,M
+:int	gradDownPointEC,400 :board,gradS(2088),gradR(2082),tx1(2082),rx1(2082) Spectrometer,M
+:int	gradWavePoint,400 :board,gradR(2080),gradP(2080),tx1(2080),rx1(2080) Spectrometer,M
+:double	echoAsym,0.000000 :board,gradR(2083) Spectrometer,M
+:double	noSamples,256.000000 :board,gradR(2084),rx1(2083) Spectrometer,M
+:double	preDiscard,2.000000 :board,gradR(2085),rx1(2085) Spectrometer,M
+:double	samplePeriod,30.000000 :board,gradR(2086),rx1(2084) Spectrometer,M
+:double	gradROn,1.000000 :board,gradR(2087) Spectrometer,M
+:double	gradRReadOut,0.000000 :board,gradR(2088) Spectrometer,M
+:double	fovRead,250.000000 :board,gradR(2089) Spectrometer,M
+:double	ratioFreqOverSample,1.000000 :board,gradR(2090) Spectrometer,M
+:double	tadspl,0.000000 :board,gradR(2091) Spectrometer,M
+:double	tgradREps,200.000000 :board,gradR(2092) Spectrometer,M
+:double	tgradReadComp,5000.000000 :board,gradR(2093) Spectrometer,M
+:double	readRCGStartPosi,1.000000 :board,gradR(2096) Spectrometer,M
+:double	tDelayArray[25],200.000000 :board,gradR(2098),tx1(2086),rx1(2091) Spectrometer,M
+[
+200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,
+200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,
+200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,200.000000,
+200.000000
+]
+:double	ttx90,600.000000 :board,gradR(2123),tx1(2111),rx1(2116) Spectrometer,M
+:double	TE,16000.000000 :board,gradR(2124),tx1(2112),rx1(2117) Spectrometer,M
+:double	ttx180,2664.000000 :board,gradR(2125),tx1(2113) Spectrometer,M
+:double	gradStepLengthUp,1310.717500 :board,gradR(2126) Spectrometer,M
+:double	gradStepLengthDown,-1310.717500 :board,gradR(2128) Spectrometer,M
+:double	tx90Scale,6.300000 :board,tx1(2114) Spectrometer,M
+:double	ttxGatePre,100.000000 :board,tx1(2115) Spectrometer,M
+:double	ttxGatePost,100.000000 :board,tx1(2116) Spectrometer,M
+:double	tx180Scale,5.800000 :board,tx1(2117) Spectrometer,M
+:int	tx180ShapeNo,2 :board,tx1(2118) Spectrometer,M
+:double	trxGatePre,10.000000 :board,rx1(2086) Spectrometer,M
+:double	rxGain,0.000000 :board,rx1(2088) Spectrometer,M
+:double	trxGatePost,10.000000 :board,rx1(2119) Spectrometer,M
+
+TX 1 2 C:\\MRIScanner\\FTSpect\\seq_lib\\wave\\EX_DEG90_SINC_TBP4_PTS444_2US.rfwave EX_DEG90_SINC_TBP4_PTS444_2US
+{
+    "Matrix": [
+        [
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    ],
+    "ReadGain": null,
+    "PhaseGain": [
+        -198.757764,
+        196.687371
+    ],
+    "SliceGain": null,
+    "TX_RAM": [
+        {
+            "freq": [
+                0.0,
+                0.0
+            ],
+            "phase": [
+                100.0
+            ],
+            "gain": [
+                1.0
+            ]
+        },
+        {
+            "freq": null,
+            "phase": null,
+            "gain": null
+        }
+    ],
+    "RX_RAM": {
+        "freq": [
+            0.0,
+            0.0
+        ],
+        "phase": [
+            100.0,
+            100.0
+        ],
+        "gain": [
+            1.0
+        ]
+    }
+}

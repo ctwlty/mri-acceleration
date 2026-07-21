@@ -1,0 +1,27 @@
+15:16:21:285 谱仪连接成功
+15:16:21:285 **GetDLLPath return:D:\123pan\Downloads\testDLL\bin\x64\Debug\mridll.dll
+15:16:21:299 启动接收线程！
+15:16:21:301 config:1
+15:16:22:315 config all:1
+15:16:22:315 SetIPForHighSpeedNetworkCard:192.168.2.10;;1030
+15:16:23:337 Query DACalarm return:0020
+15:16:23:340 Query DAC3484:0x18 return:006f
+15:16:23:341 dll ver:8.1.0
+15:16:23:341 arm ver:3.48
+15:16:23:341 fpga ver:20250218 2G 08CH NCO28b ADC14b50M A7V2 Code1
+15:16:23:343 matrix parse
+15:16:24:130 start close file...
+15:16:24:130 file Closed
+15:16:24:131 file Closed
+15:16:24:131 file Closed
+15:16:24:131 file Closed
+15:16:24:131 file Closed
+15:16:24:132 file Closed
+15:16:24:132 file Closed
+15:16:24:133 file Closed
+15:16:24:135 start reset ReceiveEnvironment...
+15:16:25:422 Force Abort
+15:16:25:422 Abort ...
+15:16:25:422 谱仪关闭开始
+15:16:26:537 谱仪关闭
+15:16:26:537 接收线程关闭！

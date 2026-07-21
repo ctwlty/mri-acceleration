@@ -1,0 +1,283 @@
+04/30/2026 11:55:32 - ERROR - root - 电机控制器连接失败: could not open port '192.168.123.100': FileNotFoundError(2, '系统找不到指定的文件。', None, 2)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\HSL\HSLControllerV3.py", line 39, in connect_HSL
+    self.serial_conn = serial.Serial(
+                       ^^^^^^^^^^^^^^
+  File "C:\Users\DELL\.conda\envs\ctl\Lib\site-packages\serial\serialwin32.py", line 33, in __init__
+    super(Serial, self).__init__(*args, **kwargs)
+  File "C:\Users\DELL\.conda\envs\ctl\Lib\site-packages\serial\serialutil.py", line 244, in __init__
+    self.open()
+  File "C:\Users\DELL\.conda\envs\ctl\Lib\site-packages\serial\serialwin32.py", line 64, in open
+    raise SerialException("could not open port {!r}: {!r}".format(self.portstr, ctypes.WinError()))
+serial.serialutil.SerialException: could not open port '192.168.123.100': FileNotFoundError(2, '系统找不到指定的文件。', None, 2)
+04/30/2026 11:55:32 - WARNING - root - HSL连接错误
+04/30/2026 12:03:31 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 574, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 12:03:31 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 574, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 12:04:19 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 574, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 12:04:20 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 574, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 21:58:08 - ERROR - root - 采样出现异常,cannot reshape array of size 256 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 398, in samplingBtn_click
+    kspace = kspace.reshape((256, 256)).astype(np.complex128)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 256 into shape (256,256)
+04/30/2026 21:58:18 - ERROR - root - 采样出现异常,cannot reshape array of size 256 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 398, in samplingBtn_click
+    kspace = kspace.reshape((256, 256)).astype(np.complex128)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 256 into shape (256,256)
+04/30/2026 22:07:21 - ERROR - root - 更新检测批次出现异常,The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 695, in updateEggImg
+    if imgList == None or len(imgList) == 0 or not imgList[0]:
+                                                   ~~~~~~~^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+04/30/2026 22:07:23 - ERROR - root - 更新检测批次出现异常,arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 723, in updateEggImg
+    sub_img = img.copy(*rect)
+              ^^^^^^^^^^^^^^^
+TypeError: arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+04/30/2026 22:07:23 - ERROR - root - 采样出现异常,[Errno 2] No such file or directory: 'webdata/data/1777558015/image_1777558015.png'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 437, in samplingBtn_click
+    self.saveJsonData(kspacePath, rgbPath, afterPath, area[0], id)
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 460, in saveJsonData
+    with open(after_save, "rb") as img_file:
+         ^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'webdata/data/1777558015/image_1777558015.png'
+04/30/2026 22:07:31 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 539, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 22:07:32 - ERROR - root - 展示圖片出现异常,int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 539, in showEggImage
+    if int(item['id'])== int(id):
+                         ^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'builtin_function_or_method'
+04/30/2026 22:07:52 - ERROR - root - 更新检测批次出现异常,The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 695, in updateEggImg
+    if imgList == None or len(imgList) == 0 or not imgList[0]:
+                                                   ~~~~~~~^^^
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+04/30/2026 22:07:54 - ERROR - root - 更新检测批次出现异常,arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 723, in updateEggImg
+    sub_img = img.copy(*rect)
+              ^^^^^^^^^^^^^^^
+TypeError: arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+04/30/2026 22:07:54 - ERROR - root - 采样出现异常,[Errno 2] No such file or directory: 'webdata/data/1777558015/image_1777558015.png'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 437, in samplingBtn_click
+    self.saveJsonData(kspacePath, rgbPath, afterPath, area[0], id)
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 460, in saveJsonData
+    with open(after_save, "rb") as img_file:
+         ^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'webdata/data/1777558015/image_1777558015.png'
+04/30/2026 22:11:38 - ERROR - root - 更新检测批次出现异常,arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 719, in updateEggImg
+    sub_img = img.copy(*rect)
+              ^^^^^^^^^^^^^^^
+TypeError: arguments did not match any overloaded call:
+  copy(self, rect: QRect = QRect()): argument 1 has unexpected type 'float'
+  copy(self, x: int, y: int, w: int, h: int): argument 1 has unexpected type 'float'
+04/30/2026 22:11:39 - ERROR - root - 采样出现异常,[Errno 2] No such file or directory: 'webdata/data/1777558282/image_1777558282.png'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 433, in samplingBtn_click
+    self.saveJsonData(kspacePath, rgbPath, afterPath, area[0], id)
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 456, in saveJsonData
+    with open(after_save, "rb") as img_file:
+         ^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'webdata/data/1777558282/image_1777558282.png'
+04/30/2026 22:17:55 - ERROR - root - 消息队列线程出现异常,<Response [404]>
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\message\message.py", line 83, in start_running
+    self.req2.saveData(item2)
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\request\request.py", line 100, in saveData
+    raise Exception(resource)
+Exception: <Response [404]>
+05/01/2026 11:27:45 - ERROR - root - 消息队列线程出现异常,<Response [404]>
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\message\message.py", line 83, in start_running
+    self.req2.saveData(item2)
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\request\request.py", line 100, in saveData
+    raise Exception(resource)
+Exception: <Response [404]>
+05/06/2026 15:05:01 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 525, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 15:07:35 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 525, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 15:22:15 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 489, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:23:08 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 489, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:29:46 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 491, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:30:25 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 491, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:37:18 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 507, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:37:57 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 507, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:38:25 - ERROR - root - 采样出现异常,cannot reshape array of size 8000000 into shape (256,256)
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 507, in samplingBtn_click_sync
+    kspace = kspaceArray.reshape((256, 256))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 8000000 into shape (256,256)
+05/06/2026 15:52:29 - ERROR - root - 采样出现异常,Invalid shape (200, 200, 200) for image data
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 515, in samplingBtn_click_sync
+    self.message.saveImg(kspacePath, np.abs(kspace_T), cmap='hot')
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\message\message.py", line 75, in saveImg
+    plt.imshow(img_normalized, cmap=cmap)
+  File "E:\anaconda\envs\ectl\Lib\site-packages\matplotlib\pyplot.py", line 3601, in imshow
+    __ret = gca().imshow(
+            ^^^^^^^^^^^^^
+  File "E:\anaconda\envs\ectl\Lib\site-packages\matplotlib\__init__.py", line 1524, in inner
+    return func(
+           ^^^^^
+  File "E:\anaconda\envs\ectl\Lib\site-packages\matplotlib\axes\_axes.py", line 5982, in imshow
+    im.set_data(X)
+  File "E:\anaconda\envs\ectl\Lib\site-packages\matplotlib\image.py", line 685, in set_data
+    self._A = self._normalize_image_array(A)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\anaconda\envs\ectl\Lib\site-packages\matplotlib\image.py", line 653, in _normalize_image_array
+    raise TypeError(f"Invalid shape {A.shape} for image data")
+TypeError: Invalid shape (200, 200, 200) for image data
+05/06/2026 15:57:15 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 15:58:45 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 15:59:26 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 20:02:50 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 20:03:35 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 20:10:40 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 550, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 20:17:01 - ERROR - root - 采样出现异常,name 'mockImgPath' is not defined
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 549, in samplingBtn_click_sync
+    print(f"[DEBUG] mock图片路径={mockImgPath}")
+                              ^^^^^^^^^^^
+NameError: name 'mockImgPath' is not defined
+05/06/2026 21:43:05 - ERROR - root - 更新检测批次出现异常,wrapped C/C++ object of type QLabel has been deleted
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 890, in updateEggImg
+    egg.adjustSize()
+RuntimeError: wrapped C/C++ object of type QLabel has been deleted
+05/06/2026 21:54:13 - ERROR - root - 更新检测批次出现异常,wrapped C/C++ object of type QLabel has been deleted
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 901, in updateEggImg
+    egg.adjustSize()
+RuntimeError: wrapped C/C++ object of type QLabel has been deleted
+05/07/2026 12:09:17 - WARNING - root - 电机控制器响应异常: 
+05/07/2026 12:09:17 - WARNING - root - HSL连接错误
+05/07/2026 12:12:03 - ERROR - root - 更新检测批次出现异常,wrapped C/C++ object of type QLabel has been deleted
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 797, in updateEggImg
+    egg.adjustSize()
+RuntimeError: wrapped C/C++ object of type QLabel has been deleted
+05/07/2026 15:59:19 - ERROR - root - 采样出现异常,console.get_all_fid() missing 1 required positional argument: 'ch'
+Traceback (most recent call last):
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\MainWindow_V3.py", line 468, in samplingBtn_click_sync
+    kspaceStr, shape = self.hc.getResult()
+                       ^^^^^^^^^^^^^^^^^^^
+  File "F:\workGuang\MRSeg\eggcontroller-master\eggcontrollerV2\Iface\HCController.py", line 23, in getResult
+    fid = self.c.get_all_fid()
+          ^^^^^^^^^^^^^^^^^^^^
+TypeError: console.get_all_fid() missing 1 required positional argument: 'ch'

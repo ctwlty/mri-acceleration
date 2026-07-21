@@ -1,0 +1,33 @@
+21:45:50:175 谱仪连接成功
+21:45:50:175 **GetDLLPath return:D:\123pan\Downloads\testDLL\bin\x64\Debug\mridll.dll
+21:45:50:192 启动接收线程！
+21:45:50:193 config:1
+21:45:51:207 config all:1
+21:45:51:207 SetIPForHighSpeedNetworkCard:192.168.2.10;;1030
+21:45:52:220 Query DACalarm return:0060
+21:45:52:223 Query DAC3484:0x18 return:006f
+21:45:52:223 TxDacAlarmQuery failed!
+21:45:52:223 config:2
+21:45:52:223 config tx:1
+21:45:53:344 Query DACalarm return:0060
+21:45:53:348 Query DAC3484:0x18 return:006f
+21:45:53:348 TxDacAlarmQuery failed!
+21:45:53:348 config:3
+21:45:53:348 config tx:2
+21:45:54:466 Query DACalarm return:0060
+21:45:54:470 Query DAC3484:0x18 return:006f
+21:45:54:470 TxDacAlarmQuery failed!
+21:45:54:472 config:4
+21:45:54:472 config tx:3
+21:45:55:603 Query DACalarm return:0060
+21:45:55:606 Query DAC3484:0x18 return:006f
+21:45:55:606 TxDacAlarmQuery failed!
+21:45:55:606 config:5
+21:45:55:606 config tx:4
+21:45:56:724 Query DACalarm return:0020
+21:45:56:728 Query DAC3484:0x18 return:006f
+21:45:56:728 dll ver:8.1.0
+21:45:56:728 arm ver:3.48
+21:45:56:728 fpga ver:20250218 2G 08CH NCO28b ADC14b50M A7V2 Code1
+21:45:56:729 matrix parse
+11:25:16:28 接收线程关闭！

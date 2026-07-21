@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_scenario_nmr_client_FILE /Users/martin/Project/nuclear_system/client/build/scenario_nmr_client)
+set(__QT_DEPLOY_TARGET_scenario_nmr_client_TYPE EXECUTABLE)

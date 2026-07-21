@@ -1,0 +1,17 @@
+E:\luowangjun\testDLL\testDLL\bin\x64\Debug\testDLL.exe.config
+E:\luowangjun\testDLL\testDLL\bin\x64\Debug\testDLL.exe
+E:\luowangjun\testDLL\testDLL\bin\x64\Debug\testDLL.pdb
+E:\luowangjun\testDLL\testDLL\bin\x64\Debug\NMRDLL.dll
+E:\luowangjun\testDLL\testDLL\bin\x64\Debug\NMRDLL.pdb
+E:\luowangjun\testDLL\testDLL\obj\x64\Debug\testDLL.csprojResolveAssemblyReference.cache
+E:\luowangjun\testDLL\testDLL\obj\x64\Debug\testDLL.exe
+E:\luowangjun\testDLL\testDLL\obj\x64\Debug\testDLL.pdb
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\bin\x64\Debug\testDLL.exe.config
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\bin\x64\Debug\testDLL.exe
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\bin\x64\Debug\testDLL.pdb
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\bin\x64\Debug\NMRDLL.pdb
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\obj\x64\Debug\testDLL.csproj.AssemblyReference.cache
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\obj\x64\Debug\testDLL.csproj.CoreCompileInputs.cache
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\obj\x64\Debug\testDLL.csproj.Up2Date
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\obj\x64\Debug\testDLL.exe
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\testDLL\obj\x64\Debug\testDLL.pdb

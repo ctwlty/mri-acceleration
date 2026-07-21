@@ -1,0 +1,10 @@
+E:\luowangjun\testDLL\ShareResource\NMRDLL.dll
+E:\luowangjun\testDLL\ShareResource\NMRDLL.pdb
+E:\luowangjun\testDLL\NMRDLL\obj\Debug\NMRDLL.dll
+E:\luowangjun\testDLL\NMRDLL\obj\Debug\NMRDLL.pdb
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\ShareResource\NMRDLL.dll
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\ShareResource\NMRDLL.pdb
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\Debug\NMRDLL.csproj.AssemblyReference.cache
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\Debug\NMRDLL.csproj.CoreCompileInputs.cache
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\Debug\NMRDLL.dll
+C:\Users\root\Desktop\软件demo\序列扫描+数据回调\NMRDLL\obj\Debug\NMRDLL.pdb

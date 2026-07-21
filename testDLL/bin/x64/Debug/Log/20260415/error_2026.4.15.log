@@ -1,0 +1,14 @@
+[15:30:10] [error]   Ip adress is wrong.
+[15:30:15] [warn]  the file:C:\MRIScanner\FTSpect\seq_lib\demo_src\CSJ_SE_PRE.par doesn't match the file:PTScan.par.
+[15:30:15] [error]  In the PAR file ,line:23,type:double noSlices,10 is not recognise
+[15:30:15] [error]  CENTER_FREQ is not in par,please check
+[15:30:18] [error]  recv error ocurr 10053
+
+[15:34:53] [error]   Ip adress is wrong.
+[15:34:54] [error]  CENTER_FREQ is not in par,please check
+[15:45:36] [error]  recv error ocurr 10053
+
+[20:30:20] [error]   Ip adress is wrong.
+[20:30:21] [error]  CENTER_FREQ is not in par,please check
+[20:41:3] [error]  recv error ocurr 10053
+
