@@ -1,5 +1,6 @@
 param(
-    [string]$BuildRoot = ''
+    [string]$BuildRoot = '',
+    [string]$DistRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -8,9 +9,15 @@ if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
     $BuildRoot = Join-Path $clientRoot 'build-release'
 }
 $BuildRoot = [System.IO.Path]::GetFullPath($BuildRoot)
-$distRoot = [System.IO.Path]::GetFullPath((Join-Path $clientRoot 'dist'))
+$distRoot = if ([string]::IsNullOrWhiteSpace($DistRoot)) {
+    [System.IO.Path]::GetFullPath((Join-Path $clientRoot 'dist'))
+} else {
+    [System.IO.Path]::GetFullPath($DistRoot)
+}
 $clientPrefix = $clientRoot + [System.IO.Path]::DirectorySeparatorChar
-if (-not $distRoot.StartsWith($clientPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+$buildPrefix = $BuildRoot + [System.IO.Path]::DirectorySeparatorChar
+if (-not $distRoot.StartsWith($clientPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
+    -not $distRoot.StartsWith($buildPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Unsafe dist target: $distRoot"
 }
 
@@ -25,6 +32,16 @@ if (Test-Path -LiteralPath $distRoot) {
 }
 New-Item -ItemType Directory -Path $distRoot | Out-Null
 Copy-Item -LiteralPath $guiSource, $verifySource -Destination $distRoot
+$proxySource = Join-Path $clientRoot 'tools\eggcontroller_proxy.py'
+if (-not (Test-Path -LiteralPath $proxySource)) { throw "Automation proxy not found: $proxySource" }
+$toolsTarget = Join-Path $distRoot 'tools'
+New-Item -ItemType Directory -Path $toolsTarget | Out-Null
+$proxyTarget = Join-Path $toolsTarget 'eggcontroller_proxy.py'
+Copy-Item -LiteralPath $proxySource -Destination $proxyTarget
+if ((Get-FileHash -LiteralPath $proxySource -Algorithm SHA256).Hash -ne
+    (Get-FileHash -LiteralPath $proxyTarget -Algorithm SHA256).Hash) {
+    throw "Automation proxy hash mismatch after deployment: $proxyTarget"
+}
 
 $env:PATH = "C:\msys64\ucrt64\bin;$env:PATH"
 $guiTarget = Join-Path $distRoot 'scenario_nmr_client.exe'

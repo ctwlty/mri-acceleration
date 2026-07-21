@@ -14,6 +14,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 qt_add_executable(scenario_nmr_client
     src/main.cpp
+    src/app/EggControllerProcess.cpp
+    src/app/EggControllerProcess.h
     src/app/DeviceActionAvailability.cpp
     src/app/DeviceActionAvailability.h
     src/app/MriSdkLoader.cpp
@@ -50,6 +52,7 @@ target_link_libraries(mri_sdk_verify PRIVATE Qt6::Core)
 
 if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
     add_library(fake_mri_sdk SHARED
         tests/fake_mri_sdk.cpp
@@ -66,6 +69,19 @@ if(BUILD_TESTING)
         PREFIX ""
         OUTPUT_NAME "fake_incomplete_mri_sdk"
     )
+
+    qt_add_executable(fake_eggcontroller_proxy
+        tests/fake_eggcontroller_proxy.cpp
+    )
+    target_link_libraries(fake_eggcontroller_proxy PRIVATE Qt6::Core Qt6::Gui)
+
+    qt_add_executable(test_eggcontroller_process
+        tests/test_eggcontroller_process.cpp
+        src/app/EggControllerProcess.cpp
+        src/app/EggControllerProcess.h
+    )
+    target_include_directories(test_eggcontroller_process PRIVATE src)
+    target_link_libraries(test_eggcontroller_process PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 
     qt_add_executable(test_mri_sdk_loader
         tests/test_mri_sdk_loader.cpp
@@ -101,6 +117,8 @@ if(BUILD_TESTING)
 
     qt_add_executable(test_main_window
         tests/test_main_window.cpp
+        src/app/EggControllerProcess.cpp
+        src/app/EggControllerProcess.h
         src/app/DeviceActionAvailability.cpp
         src/app/DeviceActionAvailability.h
         src/app/DeviceBridge.cpp
@@ -117,6 +135,7 @@ if(BUILD_TESTING)
     )
     target_include_directories(test_main_window PRIVATE src)
     target_link_libraries(test_main_window PRIVATE Qt6::Widgets Qt6::Test)
+    add_dependencies(test_main_window fake_mri_sdk fake_eggcontroller_proxy)
 
     add_test(NAME mri_sdk_loader COMMAND test_mri_sdk_loader)
     set_tests_properties(mri_sdk_loader PROPERTIES
@@ -137,8 +156,19 @@ if(BUILD_TESTING)
 
     add_test(NAME main_window COMMAND test_main_window)
     set_tests_properties(main_window PROPERTIES
-        ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>;QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT "FAKE_MRI_SDK_PATH=$<TARGET_FILE:fake_mri_sdk>;FAKE_EGGCONTROLLER_PROXY_PATH=$<TARGET_FILE:fake_eggcontroller_proxy>;QT_QPA_PLATFORM=offscreen"
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME eggcontroller_process COMMAND test_eggcontroller_process)
+    set_tests_properties(eggcontroller_process PROPERTIES
+        ENVIRONMENT "FAKE_EGGCONTROLLER_PROXY_PATH=$<TARGET_FILE:fake_eggcontroller_proxy>"
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(
+        NAME eggcontroller_proxy_py
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_eggcontroller_proxy.py" -v
     )
 
     add_test(
@@ -160,6 +190,17 @@ if(BUILD_TESTING)
             -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_gui_auto_connect_test.cmake"
     )
     set_tests_properties(gui_auto_connect_fake PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(
+        NAME gui_automation_mode_fake
+        COMMAND ${CMAKE_COMMAND}
+            "-DGUI=$<TARGET_FILE:scenario_nmr_client>"
+            "-DFAKE_PROXY=$<TARGET_FILE:fake_eggcontroller_proxy>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_gui_automation_mode_test.cmake"
+    )
+    set_tests_properties(gui_automation_mode_fake PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 endif()

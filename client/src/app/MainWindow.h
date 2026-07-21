@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DeviceBridge.h"
+#include "EggControllerProcess.h"
 #include "SceneCatalog.h"
 
 #include <QMainWindow>
@@ -12,6 +13,7 @@ class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
 class QPushButton;
+class QCloseEvent;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -20,6 +22,10 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     MriSdkResult loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config);
     MriSdkSessionState deviceSessionState() const;
+    void configureEggController(const EggControllerLaunchConfig& config);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void handlePrimarySceneChanged();
@@ -42,6 +48,7 @@ private slots:
     void updateSdkStatus(const QString& modeLabel, const QString& pathLabel, const QString& errorLabel);
     void updateSdkDiagnostic(const QString& status, const QString& filePath, const QString& details);
     void updateSessionState(MriSdkSessionState state);
+    void updateControlMode();
 
 private:
     QWidget* buildHeader();
@@ -52,6 +59,7 @@ private:
     QWidget* makeMetricCard(const QString& name, QLabel*& valueLabel);
     QWidget* makeOperationNode(const QString& step, const QString& title, QLabel*& detailLabel);
     QWidget* makeDarkViewport(const QString& title, const QString& subtitle);
+    QWidget* makeImageViewport(const QString& title, const QString& subtitle, QLabel*& imageView);
     void addInfoRow(QGridLayout* form, QWidget* parent, int row, const QString& labelText, QLabel*& valueLabel);
     void applyScene(const SceneTemplate& scene);
     SceneTemplate currentScene() const;
@@ -61,9 +69,12 @@ private:
     void populateTargetsForScene();
     void populateTemplatesForSelection();
     void setOperationChain(const SceneTemplate& scene);
+    void showEggControllerArtifacts(const EggControllerArtifacts& artifacts);
+    bool isEggControllerMode() const;
 
     QComboBox* m_primarySceneCombo = nullptr;
     QComboBox* m_targetCombo = nullptr;
+    QComboBox* m_controlModeCombo = nullptr;
     QLineEdit* m_templateSearchEdit = nullptr;
     QListWidget* m_sceneList = nullptr;
     QLabel* m_sceneTitle = nullptr;
@@ -97,6 +108,9 @@ private:
 
     QLabel* m_operationDetails[6] = {nullptr};
     QLabel* m_chainSummary = nullptr;
+    QLabel* m_automationStatusLabel = nullptr;
+    QLabel* m_kspaceImageView = nullptr;
+    QLabel* m_finalImageView = nullptr;
     QLabel* m_presetVersionValue = nullptr;
     QLabel* m_parameterStatusValue = nullptr;
     QLabel* m_runGateValue = nullptr;
@@ -111,7 +125,9 @@ private:
     QPushButton* m_startButton = nullptr;
     QPushButton* m_pauseButton = nullptr;
     QPushButton* m_abortButton = nullptr;
+    EggControllerProcess* m_eggController = nullptr;
     DeviceBridge* m_bridge = nullptr;
+    EggControllerLaunchConfig m_eggControllerConfig;
     QString m_selectedDllPath;
     QList<SceneTemplate> m_catalog;
 };

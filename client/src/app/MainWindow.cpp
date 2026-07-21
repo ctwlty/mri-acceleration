@@ -2,8 +2,11 @@
 
 #include "DeviceActionAvailability.h"
 
+#include <QCryptographicHash>
+#include <QCloseEvent>
 #include <QFrame>
 #include <QComboBox>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -13,6 +16,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPlainTextEdit>
+#include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSignalBlocker>
@@ -60,6 +64,7 @@ void MainWindow::addInfoRow(QGridLayout* form, QWidget* parent, int row, const Q
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
+    , m_eggController(new EggControllerProcess(this))
     , m_bridge(new DeviceBridge(this))
     , m_catalog(SceneCatalog::defaults())
 {
@@ -106,11 +111,51 @@ MainWindow::MainWindow(QWidget* parent)
                       .arg(result.code)
                       .arg(result.message));
     });
+    connect(m_eggController, &EggControllerProcess::stageChanged, this, [this](const QString& stage) {
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(stage);
+        }
+        appendLog(QStringLiteral("自动化基线：%1").arg(stage));
+    });
+    connect(m_eggController, &EggControllerProcess::logAppended,
+            this, &MainWindow::appendLog);
+    connect(m_eggController, &EggControllerProcess::completed,
+            this, &MainWindow::showEggControllerArtifacts);
+    connect(m_eggController, &EggControllerProcess::failed, this, [this](const QString& message) {
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(QStringLiteral("Failed"));
+        }
+        appendLog(QStringLiteral("自动化基线失败：%1").arg(message));
+        updateControlMode();
+    });
 
     updateSessionState(MriSdkSessionState::Unloaded);
 
     populatePrimaryScenes();
     handleSceneChanged();
+}
+
+void MainWindow::configureEggController(const EggControllerLaunchConfig& config)
+{
+    m_eggControllerConfig = config;
+    if (m_controlModeCombo) {
+        const int index = m_controlModeCombo->findData(QStringLiteral("eggcontroller"));
+        m_controlModeCombo->setCurrentIndex(index);
+    }
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(QStringLiteral("Ready"));
+    }
+    updateControlMode();
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if (m_eggController && m_eggController->isRunning()) {
+        appendLog(QStringLiteral("自动化基线仍在运行，窗口将在入口自然返回后允许关闭"));
+        event->ignore();
+        return;
+    }
+    QMainWindow::closeEvent(event);
 }
 
 QWidget* MainWindow::buildHeader()
@@ -207,6 +252,23 @@ QWidget* MainWindow::buildLeftPane()
     m_sceneList->setUniformItemSizes(false);
     layout->addWidget(m_sceneList);
 
+    auto* modePanel = makePanel("SelectorFilterPanel");
+    auto* modeLayout = new QGridLayout(modePanel);
+    modeLayout->setContentsMargins(12, 10, 12, 10);
+    auto* modeLabel = new QLabel(QStringLiteral("控制方式"), modePanel);
+    modeLabel->setObjectName("MutedLabel");
+    m_controlModeCombo = new QComboBox(modePanel);
+    m_controlModeCombo->setObjectName("ControlModeCombo");
+    m_controlModeCombo->addItem(QStringLiteral("SDK 直连"), QStringLiteral("sdk"));
+    m_controlModeCombo->addItem(QStringLiteral("自动化基线"), QStringLiteral("eggcontroller"));
+    m_automationStatusLabel = new QLabel(QStringLiteral("未配置"), modePanel);
+    m_automationStatusLabel->setObjectName("AutomationStatusLabel");
+    m_automationStatusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    modeLayout->addWidget(modeLabel, 0, 0);
+    modeLayout->addWidget(m_controlModeCombo, 0, 1);
+    modeLayout->addWidget(m_automationStatusLabel, 1, 0, 1, 2);
+    layout->addWidget(modePanel);
+
     auto* buttons = new QGridLayout;
     buttons->setHorizontalSpacing(10);
     buttons->setVerticalSpacing(10);
@@ -222,6 +284,7 @@ QWidget* MainWindow::buildLeftPane()
     auto* dryRunBtn = new QPushButton(QStringLiteral("DRY_RUN"), frame);
     dryRunBtn->setProperty("class", "secondary");
     m_startButton = new QPushButton(QStringLiteral("开始采集"), frame);
+    m_startButton->setObjectName("StartButton");
     m_startButton->setProperty("class", "success");
     m_startButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     m_pauseButton = new QPushButton(QStringLiteral("暂停（不支持）"), frame);
@@ -248,6 +311,7 @@ QWidget* MainWindow::buildLeftPane()
     connect(m_targetCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handleTargetChanged);
     connect(m_templateSearchEdit, &QLineEdit::textChanged, this, &MainWindow::handleTemplateSearchChanged);
     connect(m_sceneList, &QListWidget::currentRowChanged, this, &MainWindow::handleSceneChanged);
+    connect(m_controlModeCombo, &QComboBox::currentIndexChanged, this, &MainWindow::updateControlMode);
     connect(m_loadSdkButton, &QPushButton::clicked, this, &MainWindow::handleLoadSdk);
     connect(m_connectButton, &QPushButton::clicked, this, &MainWindow::handleConnect);
     connect(precheckBtn, &QPushButton::clicked, this, &MainWindow::handlePrecheck);
@@ -308,8 +372,10 @@ QWidget* MainWindow::buildCenterPane()
     viewportGrid->setSpacing(0);
     viewportGrid->addWidget(makeDarkViewport(QStringLiteral("获取图像 / 协议"), QStringLiteral("LOC + 候选协议")), 0, 0);
     viewportGrid->addWidget(makeDarkViewport(QStringLiteral("准备与预检"), QStringLiteral("样品 / 线圈 / 存储")), 0, 1);
-    viewportGrid->addWidget(makeDarkViewport(QStringLiteral("定位与采集"), QStringLiteral("覆盖 / FOV / Run HOLD")), 1, 0);
-    viewportGrid->addWidget(makeDarkViewport(QStringLiteral("处理与重建"), QStringLiteral("RAW / 重建 / 来源记录")), 1, 1);
+    viewportGrid->addWidget(makeImageViewport(QStringLiteral("K-space 中间过程"), QStringLiteral("eggcontrollerV2 原始输出"), m_kspaceImageView), 1, 0);
+    viewportGrid->addWidget(makeImageViewport(QStringLiteral("最终重建图"), QStringLiteral("同次任务可见结果"), m_finalImageView), 1, 1);
+    m_kspaceImageView->setObjectName("KspaceImageView");
+    m_finalImageView->setObjectName("FinalImageView");
     viewportGrid->setRowStretch(0, 1);
     viewportGrid->setRowStretch(1, 1);
     viewportGrid->setColumnStretch(0, 1);
@@ -529,6 +595,34 @@ QWidget* MainWindow::makeDarkViewport(const QString& title, const QString& subti
     return frame;
 }
 
+QWidget* MainWindow::makeImageViewport(
+    const QString& title, const QString& subtitle, QLabel*& imageView)
+{
+    auto* frame = makePanel("DarkPanel");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(8);
+
+    auto* tag = new QLabel(title, frame);
+    tag->setProperty("class", "overlayTag");
+    tag->setAlignment(Qt::AlignCenter);
+    tag->setMinimumWidth(140);
+
+    imageView = new QLabel(QStringLiteral("等待自动化基线产物"), frame);
+    imageView->setAlignment(Qt::AlignCenter);
+    imageView->setMinimumSize(220, 170);
+    imageView->setStyleSheet(QStringLiteral("color: #8e99a8; background: #10151c;"));
+
+    auto* desc = new QLabel(subtitle, frame);
+    desc->setObjectName("AppSubtitle");
+    desc->setStyleSheet("color: #bcc5d0;");
+
+    layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(imageView, 1);
+    layout->addWidget(desc);
+    return frame;
+}
+
 QString MainWindow::selectedPrimaryScene() const
 {
     if (!m_primarySceneCombo || m_primarySceneCombo->currentIndex() < 0) {
@@ -726,6 +820,30 @@ void MainWindow::handleDryRun()
 
 void MainWindow::handleStart()
 {
+    if (isEggControllerMode()) {
+        if (m_bridge->sessionState() != MriSdkSessionState::Unloaded &&
+            m_bridge->sessionState() != MriSdkSessionState::Closed) {
+            appendLog(QStringLiteral("自动化基线拒绝启动：Qt 直接 SDK 会话仍在占用"));
+            return;
+        }
+        if (m_kspaceImageView) {
+            m_kspaceImageView->clear();
+            m_kspaceImageView->setText(QStringLiteral("等待 K-space 图"));
+        }
+        if (m_finalImageView) {
+            m_finalImageView->clear();
+            m_finalImageView->setText(QStringLiteral("等待最终图"));
+        }
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(QStringLiteral("Starting"));
+        }
+        if (!m_eggController->start(m_eggControllerConfig)) {
+            m_automationStatusLabel->setText(QStringLiteral("Failed"));
+            appendLog(QStringLiteral("自动化基线启动失败：Python、代理或工作目录无效"));
+        }
+        updateControlMode();
+        return;
+    }
     static_cast<void>(m_bridge->startScan());
 }
 
@@ -810,12 +928,84 @@ void MainWindow::updateSdkDiagnostic(const QString& status, const QString& fileP
 
 void MainWindow::updateSessionState(MriSdkSessionState state)
 {
+    if (isEggControllerMode()) {
+        updateControlMode();
+        return;
+    }
     const DeviceActionAvailability actions = actionsForState(state);
     if (m_loadSdkButton) m_loadSdkButton->setEnabled(actions.canLoadSdk);
     if (m_connectButton) m_connectButton->setEnabled(actions.canConnect);
     if (m_startButton) m_startButton->setEnabled(actions.canRun);
     if (m_pauseButton) m_pauseButton->setEnabled(false);
     if (m_abortButton) m_abortButton->setEnabled(actions.canAbort);
+}
+
+void MainWindow::updateControlMode()
+{
+    if (!isEggControllerMode()) {
+        if (m_controlModeCombo) m_controlModeCombo->setEnabled(!m_eggController->isRunning());
+        updateSessionState(m_bridge->sessionState());
+        return;
+    }
+
+    const bool directSessionFree = m_bridge->sessionState() == MriSdkSessionState::Unloaded ||
+                                   m_bridge->sessionState() == MriSdkSessionState::Closed;
+    const bool configured = QFileInfo(m_eggControllerConfig.program).isFile() &&
+                            QFileInfo(m_eggControllerConfig.workingDirectory).isDir();
+    if (m_controlModeCombo) m_controlModeCombo->setEnabled(!m_eggController->isRunning());
+    if (m_loadSdkButton) m_loadSdkButton->setEnabled(false);
+    if (m_connectButton) m_connectButton->setEnabled(false);
+    if (m_startButton) m_startButton->setEnabled(configured && directSessionFree && !m_eggController->isRunning());
+    if (m_pauseButton) m_pauseButton->setEnabled(false);
+    if (m_abortButton) m_abortButton->setEnabled(false);
+}
+
+bool MainWindow::isEggControllerMode() const
+{
+    return m_controlModeCombo &&
+           m_controlModeCombo->currentData().toString() == QStringLiteral("eggcontroller");
+}
+
+void MainWindow::showEggControllerArtifacts(const EggControllerArtifacts& artifacts)
+{
+    const QPixmap kspace(artifacts.kspaceImagePath);
+    const QPixmap finalImage(artifacts.finalImagePath);
+    if (kspace.isNull() || finalImage.isNull()) {
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(QStringLiteral("Failed"));
+        }
+        appendLog(QStringLiteral("自动化基线失败：Qt 无法加载返回图片"));
+        updateControlMode();
+        return;
+    }
+
+    m_kspaceImageView->setPixmap(kspace.scaled(
+        m_kspaceImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_finalImageView->setPixmap(finalImage.scaled(
+        m_finalImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    const auto appendEvidence = [this](const QString& label, const QString& path) {
+        QFile file(path);
+        QByteArray hash;
+        if (file.open(QIODevice::ReadOnly)) {
+            QCryptographicHash hasher(QCryptographicHash::Sha256);
+            hasher.addData(&file);
+            hash = hasher.result().toHex().toUpper();
+        }
+        const QFileInfo info(path);
+        appendLog(QStringLiteral("%1：%2；%3 字节；%4；SHA-256 %5")
+                      .arg(label, info.absoluteFilePath())
+                      .arg(info.size())
+                      .arg(info.lastModified().toUTC().toString(Qt::ISODateWithMs), QString::fromLatin1(hash)));
+    };
+    appendEvidence(QStringLiteral("本次 RAW"), artifacts.rawPath);
+    appendEvidence(QStringLiteral("本次 K-space 图"), artifacts.kspaceImagePath);
+    appendEvidence(QStringLiteral("本次最终图"), artifacts.finalImagePath);
+    appendLog(QStringLiteral("自动化任务 %1 已完成并显示；不会自动启动第二次扫描").arg(artifacts.taskId));
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(QStringLiteral("Ready"));
+    }
+    updateControlMode();
 }
 
 void MainWindow::applyScene(const SceneTemplate& scene)

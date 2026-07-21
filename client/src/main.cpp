@@ -39,10 +39,61 @@ int main(int argc, char* argv[])
     const QCommandLineOption outputOption(
         QStringLiteral("output"), QStringLiteral("Directory for raw scan output."), QStringLiteral("path"),
         QStringLiteral("D:/mri_data/par0423-3"));
-    parser.addOptions({autoConnectOption, sdkOption, initOption, parameterOption, outputOption});
+    const QCommandLineOption automationPythonOption(
+        QStringLiteral("automation-python"),
+        QStringLiteral("Python executable from the verified eggcontrollerV2 environment."),
+        QStringLiteral("path"));
+    const QCommandLineOption automationRootOption(
+        QStringLiteral("automation-root"),
+        QStringLiteral("Path to the verified eggcontrollerV2 root."),
+        QStringLiteral("path"));
+    const QCommandLineOption automationProxyOption(
+        QStringLiteral("automation-proxy"),
+        QStringLiteral("Path to the thin eggcontrollerV2 proxy script."),
+        QStringLiteral("path"));
+    parser.addOptions({autoConnectOption, sdkOption, initOption, parameterOption, outputOption,
+                       automationPythonOption, automationRootOption, automationProxyOption});
     parser.process(app);
 
+    const bool automationRequested = parser.isSet(automationPythonOption) ||
+                                     parser.isSet(automationRootOption) ||
+                                     parser.isSet(automationProxyOption);
+    if (automationRequested && parser.isSet(autoConnectOption)) {
+        qCritical("--auto-connect cannot be combined with eggcontrollerV2 automation mode");
+        return 2;
+    }
+    if (automationRequested &&
+        (!parser.isSet(automationPythonOption) || !parser.isSet(automationRootOption))) {
+        qCritical("automation mode requires --automation-python and --automation-root");
+        return 2;
+    }
+
     MainWindow window;
+    if (automationRequested) {
+        const QString pythonPath = QFileInfo(parser.value(automationPythonOption)).absoluteFilePath();
+        const QString eggRoot = QDir(parser.value(automationRootOption)).absolutePath();
+        QString proxyPath = parser.value(automationProxyOption).trimmed();
+        if (proxyPath.isEmpty()) {
+            proxyPath = QDir(QCoreApplication::applicationDirPath())
+                            .filePath(QStringLiteral("tools/eggcontroller_proxy.py"));
+        }
+        proxyPath = QFileInfo(proxyPath).absoluteFilePath();
+        if (!QFileInfo(pythonPath).isFile() || !QFileInfo(eggRoot).isDir() ||
+            !QFileInfo(proxyPath).isFile()) {
+            qCritical().noquote() << QStringLiteral(
+                "Invalid automation configuration: python=%1 root=%2 proxy=%3")
+                                         .arg(pythonPath, eggRoot, proxyPath);
+            return 2;
+        }
+
+        EggControllerLaunchConfig automationConfig;
+        automationConfig.program = pythonPath;
+        automationConfig.arguments = {
+            proxyPath, QStringLiteral("--egg-root"), eggRoot
+        };
+        automationConfig.workingDirectory = eggRoot;
+        window.configureEggController(automationConfig);
+    }
     window.show();
 
     if (parser.isSet(autoConnectOption)) {
