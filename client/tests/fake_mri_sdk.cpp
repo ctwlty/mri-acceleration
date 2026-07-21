@@ -1,4 +1,5 @@
 #include <cstring>
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -13,6 +14,8 @@ std::string calls;
 std::string failureFunction;
 int failureCode = 0;
 int scanStatus = 0;
+int rawMode = 1;
+std::string outputPath;
 
 void appendCall(const std::string& call)
 {
@@ -40,6 +43,8 @@ MRI_EXPORT void FakeReset()
     failureFunction.clear();
     failureCode = 0;
     scanStatus = 0;
+    rawMode = 1;
+    outputPath.clear();
 }
 
 MRI_EXPORT void FakeSetFailure(const char* functionName, int code)
@@ -58,9 +63,18 @@ MRI_EXPORT void FakeSetScanStatus(int status)
     scanStatus = status;
 }
 
+MRI_EXPORT void FakeSetRawMode(int mode)
+{
+    rawMode = mode;
+}
+
 MRI_EXPORT int Init(const char*) { return resultFor("Init"); }
 MRI_EXPORT int ConfigFile(const char*) { return resultFor("ConfigFile"); }
-MRI_EXPORT int SetOutputPath(const char*) { return resultFor("SetOutputPath"); }
+MRI_EXPORT int SetOutputPath(const char* value)
+{
+    outputPath = value ? value : "";
+    return resultFor("SetOutputPath");
+}
 MRI_EXPORT int SetParameterFile(const char*, bool) { return resultFor("SetParameterFile"); }
 MRI_EXPORT void SetSaveMode(int value) { appendCall("SetSaveMode:" + std::to_string(value)); }
 MRI_EXPORT void SetSystemSel(int value) { appendCall("SetSystemSel:" + std::to_string(value)); }
@@ -85,7 +99,22 @@ MRI_EXPORT int SetPreempValue(int axis, int index, float value)
     call << "SetPreempValue:" << axis << ':' << index << ':' << value;
     return resultFor("SetPreempValue", call.str());
 }
-MRI_EXPORT int Run() { return resultFor("Run"); }
+MRI_EXPORT int Run()
+{
+    const int result = resultFor("Run");
+    if (result != 0) {
+        return result;
+    }
+    scanStatus = 1;
+    if (rawMode != 0 && !outputPath.empty()) {
+        const std::string separator = outputPath.back() == '/' || outputPath.back() == '\\' ? "" : "/";
+        std::ofstream raw(outputPath + separator + "PTMRIData_fake.raw", std::ios::binary);
+        if (rawMode == 1) {
+            raw << "MRI_RAW_TEST_DATA";
+        }
+    }
+    return 0;
+}
 MRI_EXPORT void Abort() { record("Abort"); }
 MRI_EXPORT void CloseSys() { record("CloseSys"); }
 MRI_EXPORT int ScanStatus() { record("ScanStatus"); return scanStatus; }

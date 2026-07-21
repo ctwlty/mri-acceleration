@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QByteArray>
+#include <QMetaType>
 #include <QString>
 
 enum class MriSdkSessionState {
@@ -50,6 +51,8 @@ struct MriSdkConfig {
     QString outputPath;
     QByteArray outputPrefix = "PTMRIData";
     int systemSelection = 3;
+    int pollIntervalMs = 1000;
+    int scanTimeoutMs = 30 * 60 * 1000;
 };
 
 struct MriSdkStatus {
@@ -59,3 +62,7 @@ struct MriSdkStatus {
     int currentScan = 0;
     int totalScans = 0;
 };
+
+Q_DECLARE_METATYPE(MriSdkSessionState)
+Q_DECLARE_METATYPE(MriSdkResult)
+Q_DECLARE_METATYPE(MriSdkStatus)
