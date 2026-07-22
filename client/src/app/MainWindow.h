@@ -110,14 +110,19 @@ private:
     QLabel* m_footerAbnormalValue = nullptr;
     QLabel* m_footerSdkValue = nullptr;
 
-    QLabel* m_operationDetails[6] = {nullptr};
+    QLabel* m_operationDetails[4] = {nullptr};
     QLabel* m_chainSummary = nullptr;
     QLabel* m_automationStatusLabel = nullptr;
     QLabel* m_sequenceProtocolSummary = nullptr;
     QLabel* m_sequenceTimingSummary = nullptr;
     QLabel* m_precheckStatusLabel = nullptr;
+    QLabel* m_precheckSampleStatus = nullptr;
+    QLabel* m_precheckCoilStatus = nullptr;
+    QLabel* m_precheckStorageStatus = nullptr;
+    QLabel* m_precheckDeviceStatus = nullptr;
     QLabel* m_localizationImageView = nullptr;
     QLabel* m_localizationCoverageLabel = nullptr;
+    QLabel* m_reconstructionEvidenceLabel = nullptr;
     QLabel* m_kspaceImageView = nullptr;
     QLabel* m_finalImageView = nullptr;
     QLabel* m_presetVersionValue = nullptr;

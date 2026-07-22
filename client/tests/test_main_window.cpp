@@ -231,6 +231,13 @@ void MainWindowTest::fourStepLayoutShowsProtocolPrecheckLocalizationAndReconstru
     auto* precheck = window.findChild<QLabel*>(QStringLiteral("PrecheckStatusLabel"));
     auto* localizer = window.findChild<QLabel*>(QStringLiteral("LocalizationImageView"));
     auto* coverage = window.findChild<QLabel*>(QStringLiteral("LocalizationCoverageLabel"));
+    auto* precheckBoard = window.findChild<QWidget*>(QStringLiteral("PrecheckResultBoard"));
+    auto* sampleChip = window.findChild<QLabel*>(QStringLiteral("PrecheckSampleStatus"));
+    auto* coilChip = window.findChild<QLabel*>(QStringLiteral("PrecheckCoilStatus"));
+    auto* storageChip = window.findChild<QLabel*>(QStringLiteral("PrecheckStorageStatus"));
+    auto* deviceChip = window.findChild<QLabel*>(QStringLiteral("PrecheckDeviceStatus"));
+    auto* coverageDiagram = window.findChild<QWidget*>(QStringLiteral("LocalizationCoverageDiagram"));
+    auto* reconstructionEvidence = window.findChild<QLabel*>(QStringLiteral("ReconstructionEvidenceLabel"));
     auto* kspace = window.findChild<QLabel*>(QStringLiteral("KspaceImageView"));
     auto* finalImage = window.findChild<QLabel*>(QStringLiteral("FinalImageView"));
     auto* reconstructionViews = window.findChild<QWidget*>(QStringLiteral("ReconstructionViews"));
@@ -241,6 +248,13 @@ void MainWindowTest::fourStepLayoutShowsProtocolPrecheckLocalizationAndReconstru
     QVERIFY(precheck);
     QVERIFY(localizer);
     QVERIFY(coverage);
+    QVERIFY(precheckBoard);
+    QVERIFY(sampleChip);
+    QVERIFY(coilChip);
+    QVERIFY(storageChip);
+    QVERIFY(deviceChip);
+    QVERIFY(coverageDiagram);
+    QVERIFY(reconstructionEvidence);
     QVERIFY(kspace);
     QVERIFY(finalImage);
     QVERIFY(reconstructionViews);
@@ -249,8 +263,14 @@ void MainWindowTest::fourStepLayoutShowsProtocolPrecheckLocalizationAndReconstru
     QVERIFY(protocolSummary->text().contains(QStringLiteral("LOC_017T")));
     QVERIFY(protocolSummary->text().contains(QStringLiteral("FSE_A_017T")));
     QCOMPARE(precheck->text(), QStringLiteral("真实预检：待执行（未声明通过）"));
+    QCOMPARE(sampleChip->text(), QStringLiteral("待确认 / 未录入"));
+    QCOMPARE(coilChip->text(), QStringLiteral("待确认 / 未读取"));
+    QCOMPARE(storageChip->text(), QStringLiteral("待确认 / 未验证"));
+    QCOMPARE(deviceChip->text(), QStringLiteral("待确认 / 未预检"));
     QVERIFY(localizer->pixmap().isNull());
-    QCOMPARE(coverage->text(), QStringLiteral("FOV / 切片覆盖：待同次 LOC 定位像；不伪造覆盖图"));
+    QCOMPARE(coverage->text(), QStringLiteral("规划覆盖，非采集图像：待同次 LOC 定位像后叠加"));
+    QCOMPARE(reconstructionEvidence->text(), QStringLiteral("来源：等待自动化任务产物；未声明同次已证实"));
+    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("OperationNode")).size(), 4);
 }
 
 QTEST_MAIN(MainWindowTest)

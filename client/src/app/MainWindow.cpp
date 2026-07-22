@@ -342,16 +342,14 @@ QWidget* MainWindow::buildCenterPane()
     chainRow->setContentsMargins(0, 0, 0, 0);
     chainRow->setSpacing(8);
     const QString nodeTitles[] = {
-        QStringLiteral("推荐模板"),
+        QStringLiteral("获取图像/协议"),
         QStringLiteral("准备与预检"),
         QStringLiteral("定位与采集"),
-        QStringLiteral("获取图像"),
-        QStringLiteral("处理与重建"),
-        QStringLiteral("质控与交接")
+        QStringLiteral("处理与重建")
     };
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 4; ++i) {
         chainRow->addWidget(makeOperationNode(QStringLiteral("%1").arg(i + 1, 2, 10, QLatin1Char('0')), nodeTitles[i], m_operationDetails[i]));
-        if (i < 5) {
+        if (i < 3) {
             auto* arrow = new QLabel(QStringLiteral(">"), chainHost);
             arrow->setProperty("class", "operationArrow");
             arrow->setAlignment(Qt::AlignCenter);
@@ -572,6 +570,7 @@ QWidget* MainWindow::makeOperationNode(const QString& step, const QString& title
 }
 
 static QWidget* createSequenceTimeline(QWidget* parent);
+static QWidget* createLocalizationCoverageDiagram(QWidget* parent);
 
 QWidget* MainWindow::makeProtocolTimelineViewport()
 {
@@ -580,7 +579,7 @@ QWidget* MainWindow::makeProtocolTimelineViewport()
     layout->setContentsMargins(14, 14, 14, 14);
     layout->setSpacing(0);
 
-    auto* tag = new QLabel(QStringLiteral("获取图像 / 协议"), frame);
+    auto* tag = new QLabel(QStringLiteral("获取图像/协议"), frame);
     tag->setProperty("class", "overlayTag");
     tag->setAlignment(Qt::AlignCenter);
     tag->setFixedWidth(120);
@@ -657,14 +656,39 @@ QWidget* MainWindow::makePrecheckViewport()
     m_precheckStatusLabel->setWordWrap(true);
     m_precheckStatusLabel->setStyleSheet(QStringLiteral("color: #e9a84a; background: #10151c; padding: 12px;"));
 
-    auto* checklist = new QLabel(
-        QStringLiteral("样品：待记录\n线圈：待确认\n存储：待确认\n连接：仅显示 SDK 实际返回，不从界面推断"), frame);
-    checklist->setWordWrap(true);
-    checklist->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
+    auto* board = makePanel("PrecheckResultBoard");
+    auto* boardLayout = new QGridLayout(board);
+    boardLayout->setContentsMargins(8, 8, 8, 8);
+    boardLayout->setHorizontalSpacing(8);
+    boardLayout->setVerticalSpacing(8);
+    const auto addStatusCard = [&](int row, int column, const QString& title, const QString& initialStatus,
+                                   const QString& objectName, QLabel*& value) {
+        auto* card = makePanel("PrecheckStatusCard");
+        auto* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(10, 8, 10, 8);
+        cardLayout->setSpacing(4);
+        auto* cardTitle = new QLabel(title, card);
+        cardTitle->setStyleSheet(QStringLiteral("color: #9ba8b8;"));
+        value = new QLabel(initialStatus, card);
+        value->setObjectName(objectName);
+        value->setStyleSheet(QStringLiteral("color: #e9a84a; font-weight: 600;"));
+        value->setWordWrap(true);
+        cardLayout->addWidget(cardTitle);
+        cardLayout->addWidget(value);
+        boardLayout->addWidget(card, row, column);
+    };
+    addStatusCard(0, 0, QStringLiteral("样品"), QStringLiteral("待确认 / 未录入"),
+                  QStringLiteral("PrecheckSampleStatus"), m_precheckSampleStatus);
+    addStatusCard(0, 1, QStringLiteral("线圈"), QStringLiteral("待确认 / 未读取"),
+                  QStringLiteral("PrecheckCoilStatus"), m_precheckCoilStatus);
+    addStatusCard(1, 0, QStringLiteral("存储"), QStringLiteral("待确认 / 未验证"),
+                  QStringLiteral("PrecheckStorageStatus"), m_precheckStorageStatus);
+    addStatusCard(1, 1, QStringLiteral("设备连接"), QStringLiteral("待确认 / 未预检"),
+                  QStringLiteral("PrecheckDeviceStatus"), m_precheckDeviceStatus);
 
     layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
-    layout->addWidget(m_precheckStatusLabel, 1);
-    layout->addWidget(checklist);
+    layout->addWidget(m_precheckStatusLabel);
+    layout->addWidget(board, 1);
     return frame;
 }
 
@@ -680,21 +704,24 @@ QWidget* MainWindow::makeLocalizationViewport()
     tag->setAlignment(Qt::AlignCenter);
     tag->setMinimumWidth(140);
 
-    m_localizationImageView = new QLabel(QStringLiteral("待同次 LOC 定位像\neggcontrollerV2 当前未输出"), frame);
+    m_localizationImageView = new QLabel(QStringLiteral("未取得LOC定位图\n当前界面未收到同次 LOC 产物"), frame);
     m_localizationImageView->setObjectName(QStringLiteral("LocalizationImageView"));
     m_localizationImageView->setAlignment(Qt::AlignCenter);
     m_localizationImageView->setWordWrap(true);
     m_localizationImageView->setMinimumSize(220, 170);
     m_localizationImageView->setStyleSheet(QStringLiteral("color: #8e99a8; background: #10151c;"));
 
+    auto* coverageDiagram = createLocalizationCoverageDiagram(frame);
+
     m_localizationCoverageLabel = new QLabel(
-        QStringLiteral("FOV / 切片覆盖：待同次 LOC 定位像；不伪造覆盖图"), frame);
+        QStringLiteral("规划覆盖，非采集图像：待同次 LOC 定位像后叠加"), frame);
     m_localizationCoverageLabel->setObjectName(QStringLiteral("LocalizationCoverageLabel"));
     m_localizationCoverageLabel->setWordWrap(true);
     m_localizationCoverageLabel->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
 
     layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
     layout->addWidget(m_localizationImageView, 1);
+    layout->addWidget(coverageDiagram);
     layout->addWidget(m_localizationCoverageLabel);
     return frame;
 }
@@ -735,12 +762,14 @@ QWidget* MainWindow::makeReconstructionViewport()
     kspaceLayout->addWidget(m_kspaceImageView);
     views->addTab(kspaceTab, QStringLiteral("K-space 子视图"));
 
-    auto* note = new QLabel(QStringLiteral("K-space 为同次自动化产物子视图；最终重建图为本面板主视图"), frame);
-    note->setWordWrap(true);
-    note->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
+    m_reconstructionEvidenceLabel = new QLabel(
+        QStringLiteral("来源：等待自动化任务产物；未声明同次已证实"), frame);
+    m_reconstructionEvidenceLabel->setObjectName(QStringLiteral("ReconstructionEvidenceLabel"));
+    m_reconstructionEvidenceLabel->setWordWrap(true);
+    m_reconstructionEvidenceLabel->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
     layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
     layout->addWidget(views, 1);
-    layout->addWidget(note);
+    layout->addWidget(m_reconstructionEvidenceLabel);
     return frame;
 }
 
@@ -811,6 +840,46 @@ protected:
 static QWidget* createSequenceTimeline(QWidget* parent)
 {
     return new SequenceTimelineView(parent);
+}
+
+class LocalizationCoverageView final : public QWidget {
+public:
+    explicit LocalizationCoverageView(QWidget* parent = nullptr) : QWidget(parent)
+    {
+        setObjectName(QStringLiteral("LocalizationCoverageDiagram"));
+        setMinimumHeight(74);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), QColor(QStringLiteral("#10151c")));
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        const QRect fovRect(42, 12, qMax(120, width() - 84), qMax(42, height() - 24));
+        painter.setPen(QPen(QColor(QStringLiteral("#62c1d8")), 1));
+        painter.drawRect(fovRect);
+        painter.setPen(QPen(QColor(QStringLiteral("#4b596b")), 1, Qt::DashLine));
+        painter.drawLine(fovRect.center().x(), fovRect.top(), fovRect.center().x(), fovRect.bottom());
+        painter.drawLine(fovRect.left(), fovRect.center().y(), fovRect.right(), fovRect.center().y());
+
+        painter.setPen(QPen(QColor(QStringLiteral("#b98ae3")), 1));
+        for (int slice = 1; slice < 9; ++slice) {
+            const int y = fovRect.top() + slice * fovRect.height() / 9;
+            painter.drawLine(fovRect.left() + 4, y, fovRect.right() - 4, y);
+        }
+        painter.setPen(QColor(QStringLiteral("#9ba8b8")));
+        painter.setFont(QFont(QStringLiteral("Segoe UI"), 8));
+        painter.drawText(4, fovRect.center().y() + 4, QStringLiteral("FOV"));
+        painter.drawText(fovRect.right() + 6, fovRect.center().y() + 4, QStringLiteral("9 层"));
+    }
+};
+
+static QWidget* createLocalizationCoverageDiagram(QWidget* parent)
+{
+    return new LocalizationCoverageView(parent);
 }
 
 QString MainWindow::selectedPrimaryScene() const
@@ -1141,6 +1210,10 @@ void MainWindow::updatePrecheckStatus(const MriSdkStatus& status)
             .arg(status.connection)
             .arg(status.temperature, 0, 'f', 1)
             .arg(status.scan));
+    if (m_precheckDeviceStatus) {
+        m_precheckDeviceStatus->setText(
+            QStringLiteral("实际返回 / 连接码 %1").arg(status.connection));
+    }
 }
 
 void MainWindow::updateControlMode()
@@ -1186,6 +1259,11 @@ void MainWindow::showEggControllerArtifacts(const EggControllerArtifacts& artifa
         m_kspaceImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_finalImageView->setPixmap(finalImage.scaled(
         m_finalImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    if (m_reconstructionEvidenceLabel) {
+        m_reconstructionEvidenceLabel->setText(
+            QStringLiteral("来源：自动化入口返回任务 %1；关联由入口声明，未额外判定同次")
+                .arg(artifacts.taskId));
+    }
 
     const ImageQualityResult quality = ImageQualityEvaluator::evaluate(finalImage.toImage());
     if (quality.ok) {
@@ -1271,8 +1349,8 @@ void MainWindow::applyScene(const SceneTemplate& scene)
     }
     if (m_chainSummary) {
         m_chainSummary->setText(
-            QStringLiteral("获取图像：%1\n准备与预检：%2\n定位与采集：%3\n处理与重建：%4\n质控与输出：%5")
-                .arg(scene.acquisitionProtocol, scene.preparation, scene.positioning, scene.reconstruction, scene.qcOutput));
+            QStringLiteral("获取图像/协议：%1\n准备与预检：%2\n定位与采集：%3\n处理与重建：%4")
+                .arg(scene.acquisitionProtocol, scene.preparation, scene.positioning, scene.reconstruction));
     }
     if (m_presetVersionValue) {
         m_presetVersionValue->setText(scene.presetVersion);
@@ -1317,15 +1395,13 @@ SceneTemplate MainWindow::currentScene() const
 
 void MainWindow::setOperationChain(const SceneTemplate& scene)
 {
-    const QString values[6] = {
-        scene.name,
+    const QString values[4] = {
+        scene.acquisitionProtocol,
         scene.preparation,
         scene.positioning,
-        scene.acquisitionProtocol,
-        scene.reconstruction,
-        scene.qcOutput + QStringLiteral("；") + scene.handoffTarget
+        scene.reconstruction
     };
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 4; ++i) {
         if (m_operationDetails[i]) {
             m_operationDetails[i]->setText(values[i]);
         }
