@@ -16,6 +16,8 @@ qt_add_executable(scenario_nmr_client
     src/main.cpp
     src/app/EggControllerProcess.cpp
     src/app/EggControllerProcess.h
+    src/app/ImageQualityEvaluator.cpp
+    src/app/ImageQualityEvaluator.h
     src/app/DeviceActionAvailability.cpp
     src/app/DeviceActionAvailability.h
     src/app/MriSdkLoader.cpp
@@ -115,10 +117,20 @@ if(BUILD_TESTING)
     target_include_directories(test_device_actions PRIVATE src)
     target_link_libraries(test_device_actions PRIVATE Qt6::Core Qt6::Test)
 
+    qt_add_executable(test_image_quality_evaluator
+        tests/test_image_quality_evaluator.cpp
+        src/app/ImageQualityEvaluator.cpp
+        src/app/ImageQualityEvaluator.h
+    )
+    target_include_directories(test_image_quality_evaluator PRIVATE src)
+    target_link_libraries(test_image_quality_evaluator PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+
     qt_add_executable(test_main_window
         tests/test_main_window.cpp
         src/app/EggControllerProcess.cpp
         src/app/EggControllerProcess.h
+        src/app/ImageQualityEvaluator.cpp
+        src/app/ImageQualityEvaluator.h
         src/app/DeviceActionAvailability.cpp
         src/app/DeviceActionAvailability.h
         src/app/DeviceBridge.cpp
@@ -151,6 +163,11 @@ if(BUILD_TESTING)
 
     add_test(NAME device_actions COMMAND test_device_actions)
     set_tests_properties(device_actions PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME image_quality_evaluator COMMAND test_image_quality_evaluator)
+    set_tests_properties(image_quality_evaluator PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 

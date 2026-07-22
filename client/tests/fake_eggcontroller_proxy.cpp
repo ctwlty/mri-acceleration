@@ -42,8 +42,20 @@ int main(int argc, char* argv[])
     }
     raw.close();
 
-    QImage image(8, 8, QImage::Format_RGB32);
-    image.fill(Qt::white);
+    QImage image(64, 64, QImage::Format_RGB32);
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const int dx = x - 32;
+            const int dy = y - 32;
+            const bool insidePhantom =
+                (dx * dx * 256) / (10 * 10) +
+                    (dy * dy * 256) / (16 * 16) <= 256;
+            const int value = insidePhantom
+                ? 176 + ((x + y) % 9)
+                : 8 + ((x * 3 + y * 5) % 5);
+            image.setPixel(x, y, qRgb(value, value, value));
+        }
+    }
     if (!image.save(kspacePath) || !image.save(finalPath)) {
         return 4;
     }

@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QLabel>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -23,6 +24,7 @@ class MainWindowTest : public QObject {
 private slots:
     void sdkCanBeLoadedAndConnectedWithoutFileDialog();
     void automationModeDisplaysBothImagesWithoutSdkRun();
+    void automationModeEvaluatesTheReturnedImageInExistingMetricCards();
     void automationRunLocksControlModeUntilProcessFinishes();
     void automationRunPreventsWindowCloseUntilProcessFinishes();
 };
@@ -121,6 +123,48 @@ void MainWindowTest::automationRunLocksControlModeUntilProcessFinishes()
     QTRY_VERIFY_WITH_TIMEOUT(!mode->isEnabled(), 200);
     QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
     QVERIFY(mode->isEnabled());
+}
+
+void MainWindowTest::automationModeEvaluatesTheReturnedImageInExistingMetricCards()
+{
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+
+    EggControllerLaunchConfig config;
+    config.program = qEnvironmentVariable("FAKE_EGGCONTROLLER_PROXY_PATH");
+    config.arguments = {
+        QStringLiteral("--output"), temp.path(),
+        QStringLiteral("--mode"), QStringLiteral("success")
+    };
+    config.workingDirectory = temp.path();
+
+    MainWindow window;
+    window.configureEggController(config);
+    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("MetricCard")).size(), 4);
+
+    auto* start = window.findChild<QPushButton*>(QStringLiteral("StartButton"));
+    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    auto* snr = window.findChild<QLabel*>(QStringLiteral("QualitySnrValue"));
+    auto* uniformity = window.findChild<QLabel*>(QStringLiteral("QualityUniformityValue"));
+    auto* size = window.findChild<QLabel*>(QStringLiteral("QualitySizeValue"));
+    auto* stability = window.findChild<QLabel*>(QStringLiteral("QualityStabilityValue"));
+    QVERIFY(start);
+    QVERIFY(status);
+    QVERIFY(snr);
+    QVERIFY(uniformity);
+    QVERIFY(size);
+    QVERIFY(stability);
+
+    start->click();
+
+    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
+    QVERIFY(QRegularExpression(QStringLiteral("^\\d+\\.\\d dB$")).match(snr->text()).hasMatch());
+    QVERIFY(snr->text().chopped(3).toDouble() > 30.0);
+    QVERIFY(QRegularExpression(QStringLiteral("^\\d+\\.\\d %$")).match(uniformity->text()).hasMatch());
+    QVERIFY(uniformity->text().chopped(2).toDouble() > 95.0);
+    QCOMPARE(size->text(), QStringLiteral("21 × 33 px"));
+    QCOMPARE(stability->text(), QStringLiteral("不可评估（需重复）"));
+    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("MetricCard")).size(), 4);
 }
 
 void MainWindowTest::automationRunPreventsWindowCloseUntilProcessFinishes()

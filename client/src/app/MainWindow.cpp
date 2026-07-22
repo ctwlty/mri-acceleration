@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "DeviceActionAvailability.h"
+#include "ImageQualityEvaluator.h"
 
 #include <QCryptographicHash>
 #include <QCloseEvent>
@@ -407,6 +408,10 @@ QWidget* MainWindow::buildRightPane()
     metricGrid->addWidget(makeMetricCard(QStringLiteral("均匀性"), m_uniformityValue), 0, 1);
     metricGrid->addWidget(makeMetricCard(QStringLiteral("畸变/尺寸"), m_peakValue), 1, 0);
     metricGrid->addWidget(makeMetricCard(QStringLiteral("重复稳定"), m_areaValue), 1, 1);
+    m_snrValue->setObjectName(QStringLiteral("QualitySnrValue"));
+    m_uniformityValue->setObjectName(QStringLiteral("QualityUniformityValue"));
+    m_peakValue->setObjectName(QStringLiteral("QualitySizeValue"));
+    m_areaValue->setObjectName(QStringLiteral("QualityStabilityValue"));
     layout->addLayout(metricGrid);
 
     auto* tabs = new QTabWidget(frame);
@@ -983,6 +988,29 @@ void MainWindow::showEggControllerArtifacts(const EggControllerArtifacts& artifa
         m_kspaceImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_finalImageView->setPixmap(finalImage.scaled(
         m_finalImageView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    const ImageQualityResult quality = ImageQualityEvaluator::evaluate(finalImage.toImage());
+    if (quality.ok) {
+        updateMetrics(
+            QStringLiteral("%1 dB").arg(quality.snrDb, 0, 'f', 1),
+            QStringLiteral("%1 %").arg(quality.uniformityPercent, 0, 'f', 1),
+            QStringLiteral("%1 × %2 px")
+                .arg(quality.objectSizePixels.width())
+                .arg(quality.objectSizePixels.height()),
+            QStringLiteral("不可评估（需重复）"));
+        appendLog(QStringLiteral("只读图像质控（8-bit 显示图像级估计）：SNR=%1 dB，均匀性=%2 %，对象尺寸=%3×%4 px；重复稳定性需要多次成像")
+                      .arg(quality.snrDb, 0, 'f', 1)
+                      .arg(quality.uniformityPercent, 0, 'f', 1)
+                      .arg(quality.objectSizePixels.width())
+                      .arg(quality.objectSizePixels.height()));
+    } else {
+        updateMetrics(
+            QStringLiteral("不可评估"),
+            QStringLiteral("不可评估"),
+            QStringLiteral("不可评估"),
+            QStringLiteral("不可评估（需重复）"));
+        appendLog(QStringLiteral("只读图像质控未完成：%1").arg(quality.error));
+    }
 
     const auto appendEvidence = [this](const QString& label, const QString& path) {
         QFile file(path);
