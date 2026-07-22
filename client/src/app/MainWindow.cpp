@@ -17,6 +17,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPlainTextEdit>
+#include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
@@ -103,6 +104,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_bridge, &DeviceBridge::sdkStatusChanged, this, &MainWindow::updateSdkStatus);
     connect(m_bridge, &DeviceBridge::sdkDiagnosticChanged, this, &MainWindow::updateSdkDiagnostic);
     connect(m_bridge, &DeviceBridge::sessionStateChanged, this, &MainWindow::updateSessionState);
+    connect(m_bridge, &DeviceBridge::deviceStatusChanged, this, &MainWindow::updatePrecheckStatus);
     connect(m_bridge, &DeviceBridge::rawFileReady, this, [this](const QString& filePath) {
         appendLog(QStringLiteral("RAW 验收通过：%1").arg(filePath));
     });
@@ -370,13 +372,11 @@ QWidget* MainWindow::buildCenterPane()
     layout->addWidget(chainScroll);
 
     auto* viewportGrid = new QGridLayout;
-    viewportGrid->setSpacing(0);
-    viewportGrid->addWidget(makeDarkViewport(QStringLiteral("获取图像 / 协议"), QStringLiteral("LOC + 候选协议")), 0, 0);
-    viewportGrid->addWidget(makeDarkViewport(QStringLiteral("准备与预检"), QStringLiteral("样品 / 线圈 / 存储")), 0, 1);
-    viewportGrid->addWidget(makeImageViewport(QStringLiteral("K-space 中间过程"), QStringLiteral("eggcontrollerV2 原始输出"), m_kspaceImageView), 1, 0);
-    viewportGrid->addWidget(makeImageViewport(QStringLiteral("最终重建图"), QStringLiteral("同次任务可见结果"), m_finalImageView), 1, 1);
-    m_kspaceImageView->setObjectName("KspaceImageView");
-    m_finalImageView->setObjectName("FinalImageView");
+    viewportGrid->setSpacing(8);
+    viewportGrid->addWidget(makeProtocolTimelineViewport(), 0, 0);
+    viewportGrid->addWidget(makePrecheckViewport(), 0, 1);
+    viewportGrid->addWidget(makeLocalizationViewport(), 1, 0);
+    viewportGrid->addWidget(makeReconstructionViewport(), 1, 1);
     viewportGrid->setRowStretch(0, 1);
     viewportGrid->setRowStretch(1, 1);
     viewportGrid->setColumnStretch(0, 1);
@@ -571,31 +571,43 @@ QWidget* MainWindow::makeOperationNode(const QString& step, const QString& title
     return frame;
 }
 
-QWidget* MainWindow::makeDarkViewport(const QString& title, const QString& subtitle)
+static QWidget* createSequenceTimeline(QWidget* parent);
+
+QWidget* MainWindow::makeProtocolTimelineViewport()
 {
     auto* frame = makePanel("DarkPanel");
     auto* layout = new QVBoxLayout(frame);
     layout->setContentsMargins(14, 14, 14, 14);
     layout->setSpacing(0);
 
-    auto* tag = new QLabel(title, frame);
+    auto* tag = new QLabel(QStringLiteral("获取图像 / 协议"), frame);
     tag->setProperty("class", "overlayTag");
     tag->setAlignment(Qt::AlignCenter);
     tag->setFixedWidth(120);
 
-    auto* desc = new QLabel(subtitle, frame);
-    desc->setObjectName("AppSubtitle");
-    desc->setStyleSheet("color: #bcc5d0;");
+    m_sequenceProtocolSummary = new QLabel(QStringLiteral("已选：PTScan 基线"), frame);
+    m_sequenceProtocolSummary->setObjectName(QStringLiteral("SequenceProtocolSummaryLabel"));
+    m_sequenceProtocolSummary->setWordWrap(true);
+    m_sequenceProtocolSummary->setStyleSheet("color: #bcc5d0;");
 
-    auto* spacer = new QWidget(frame);
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto* timeline = createSequenceTimeline(frame);
+
+    m_sequenceTimingSummary = new QLabel(QStringLiteral("TR / TE / 采集窗口仅显示当前模板已证实字段"), frame);
+    m_sequenceTimingSummary->setWordWrap(true);
+    m_sequenceTimingSummary->setStyleSheet("color: #bcc5d0;");
+
+    auto* evidence = new QLabel(QStringLiteral("参数推导示意，非设备实测波形"), frame);
+    evidence->setObjectName(QStringLiteral("SequenceTimelineEvidenceLabel"));
+    evidence->setStyleSheet("color: #e9a84a;");
 
     auto* bottom = new QHBoxLayout;
-    bottom->addWidget(desc);
+    bottom->addWidget(evidence);
     bottom->addStretch();
 
     layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
-    layout->addWidget(spacer, 1);
+    layout->addWidget(m_sequenceProtocolSummary);
+    layout->addWidget(timeline, 1);
+    layout->addWidget(m_sequenceTimingSummary);
     layout->addLayout(bottom);
     return frame;
 }
@@ -626,6 +638,179 @@ QWidget* MainWindow::makeImageViewport(
     layout->addWidget(imageView, 1);
     layout->addWidget(desc);
     return frame;
+}
+
+QWidget* MainWindow::makePrecheckViewport()
+{
+    auto* frame = makePanel("DarkPanel");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(8);
+
+    auto* tag = new QLabel(QStringLiteral("准备与预检"), frame);
+    tag->setProperty("class", "overlayTag");
+    tag->setAlignment(Qt::AlignCenter);
+    tag->setMinimumWidth(140);
+
+    m_precheckStatusLabel = new QLabel(QStringLiteral("真实预检：待执行（未声明通过）"), frame);
+    m_precheckStatusLabel->setObjectName(QStringLiteral("PrecheckStatusLabel"));
+    m_precheckStatusLabel->setWordWrap(true);
+    m_precheckStatusLabel->setStyleSheet(QStringLiteral("color: #e9a84a; background: #10151c; padding: 12px;"));
+
+    auto* checklist = new QLabel(
+        QStringLiteral("样品：待记录\n线圈：待确认\n存储：待确认\n连接：仅显示 SDK 实际返回，不从界面推断"), frame);
+    checklist->setWordWrap(true);
+    checklist->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
+
+    layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(m_precheckStatusLabel, 1);
+    layout->addWidget(checklist);
+    return frame;
+}
+
+QWidget* MainWindow::makeLocalizationViewport()
+{
+    auto* frame = makePanel("DarkPanel");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(8);
+
+    auto* tag = new QLabel(QStringLiteral("定位与采集"), frame);
+    tag->setProperty("class", "overlayTag");
+    tag->setAlignment(Qt::AlignCenter);
+    tag->setMinimumWidth(140);
+
+    m_localizationImageView = new QLabel(QStringLiteral("待同次 LOC 定位像\neggcontrollerV2 当前未输出"), frame);
+    m_localizationImageView->setObjectName(QStringLiteral("LocalizationImageView"));
+    m_localizationImageView->setAlignment(Qt::AlignCenter);
+    m_localizationImageView->setWordWrap(true);
+    m_localizationImageView->setMinimumSize(220, 170);
+    m_localizationImageView->setStyleSheet(QStringLiteral("color: #8e99a8; background: #10151c;"));
+
+    m_localizationCoverageLabel = new QLabel(
+        QStringLiteral("FOV / 切片覆盖：待同次 LOC 定位像；不伪造覆盖图"), frame);
+    m_localizationCoverageLabel->setObjectName(QStringLiteral("LocalizationCoverageLabel"));
+    m_localizationCoverageLabel->setWordWrap(true);
+    m_localizationCoverageLabel->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
+
+    layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(m_localizationImageView, 1);
+    layout->addWidget(m_localizationCoverageLabel);
+    return frame;
+}
+
+QWidget* MainWindow::makeReconstructionViewport()
+{
+    auto* frame = makePanel("DarkPanel");
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(8);
+
+    auto* tag = new QLabel(QStringLiteral("处理与重建"), frame);
+    tag->setProperty("class", "overlayTag");
+    tag->setAlignment(Qt::AlignCenter);
+    tag->setMinimumWidth(140);
+
+    auto* views = new QTabWidget(frame);
+    views->setObjectName(QStringLiteral("ReconstructionViews"));
+    auto* finalTab = new QWidget(views);
+    auto* finalLayout = new QVBoxLayout(finalTab);
+    finalLayout->setContentsMargins(0, 0, 0, 0);
+    m_finalImageView = new QLabel(QStringLiteral("等待自动化基线最终重建图"), finalTab);
+    m_finalImageView->setObjectName(QStringLiteral("FinalImageView"));
+    m_finalImageView->setAlignment(Qt::AlignCenter);
+    m_finalImageView->setMinimumSize(220, 170);
+    m_finalImageView->setStyleSheet(QStringLiteral("color: #8e99a8; background: #10151c;"));
+    finalLayout->addWidget(m_finalImageView);
+    views->addTab(finalTab, QStringLiteral("最终重建图"));
+
+    auto* kspaceTab = new QWidget(views);
+    auto* kspaceLayout = new QVBoxLayout(kspaceTab);
+    kspaceLayout->setContentsMargins(0, 0, 0, 0);
+    m_kspaceImageView = new QLabel(QStringLiteral("等待同次 K-space 产物"), kspaceTab);
+    m_kspaceImageView->setObjectName(QStringLiteral("KspaceImageView"));
+    m_kspaceImageView->setAlignment(Qt::AlignCenter);
+    m_kspaceImageView->setMinimumSize(220, 170);
+    m_kspaceImageView->setStyleSheet(QStringLiteral("color: #8e99a8; background: #10151c;"));
+    kspaceLayout->addWidget(m_kspaceImageView);
+    views->addTab(kspaceTab, QStringLiteral("K-space 子视图"));
+
+    auto* note = new QLabel(QStringLiteral("K-space 为同次自动化产物子视图；最终重建图为本面板主视图"), frame);
+    note->setWordWrap(true);
+    note->setStyleSheet(QStringLiteral("color: #bcc5d0;"));
+    layout->addWidget(tag, 0, Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(views, 1);
+    layout->addWidget(note);
+    return frame;
+}
+
+class SequenceTimelineView final : public QWidget {
+public:
+    explicit SequenceTimelineView(QWidget* parent = nullptr) : QWidget(parent)
+    {
+        setObjectName(QStringLiteral("SequenceTimelineView"));
+        setMinimumHeight(126);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), QColor(QStringLiteral("#10151c")));
+        painter.setRenderHint(QPainter::Antialiasing);
+        const QStringList tracks = {QStringLiteral("RF"), QStringLiteral("Gx"), QStringLiteral("Gy"), QStringLiteral("Gz"), QStringLiteral("ADC")};
+        const int labelWidth = 34;
+        const int top = 16;
+        const int spacing = qMax(18, (height() - 28) / tracks.size());
+        const int x0 = labelWidth + 10;
+        const int x1 = width() - 14;
+        painter.setFont(QFont(QStringLiteral("Segoe UI"), 8));
+        for (int index = 0; index < tracks.size(); ++index) {
+            const int y = top + index * spacing;
+            painter.setPen(QColor(QStringLiteral("#9ba8b8")));
+            painter.drawText(2, y + 4, tracks.at(index));
+            painter.setPen(QPen(QColor(QStringLiteral("#4b596b")), 1));
+            painter.drawLine(x0, y, x1, y);
+        }
+        const int pulseX = x0 + (x1 - x0) / 7;
+        const int echoX = x0 + (x1 - x0) * 3 / 5;
+        const int readoutX = echoX + 18;
+        const int rfY = top;
+        const int gxY = top + spacing;
+        const int gyY = top + spacing * 2;
+        const int gzY = top + spacing * 3;
+        const int adcY = top + spacing * 4;
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(QStringLiteral("#e9a84a")));
+        painter.drawRect(pulseX, rfY - 9, 10, 18);
+        painter.drawRect(echoX, rfY - 7, 8, 14);
+        painter.setPen(QPen(QColor(QStringLiteral("#62c1d8")), 2));
+        painter.drawLine(pulseX - 10, gxY, pulseX, gxY - 8);
+        painter.drawLine(pulseX, gxY - 8, pulseX + 12, gxY);
+        painter.drawLine(readoutX, gxY, readoutX + 12, gxY - 10);
+        painter.drawLine(readoutX + 12, gxY - 10, readoutX + 74, gxY - 10);
+        painter.drawLine(readoutX + 74, gxY - 10, readoutX + 88, gxY);
+        painter.setPen(QPen(QColor(QStringLiteral("#7bc47f")), 2));
+        painter.drawLine(pulseX + 18, gyY, pulseX + 24, gyY - 8);
+        painter.drawLine(pulseX + 24, gyY - 8, pulseX + 30, gyY);
+        painter.drawLine(echoX - 16, gyY, echoX - 8, gyY + 7);
+        painter.drawLine(echoX - 8, gyY + 7, echoX, gyY);
+        painter.setPen(QPen(QColor(QStringLiteral("#b98ae3")), 2));
+        painter.drawLine(pulseX - 6, gzY, pulseX + 1, gzY - 10);
+        painter.drawLine(pulseX + 1, gzY - 10, pulseX + 12, gzY);
+        painter.drawLine(echoX - 14, gzY, echoX - 7, gzY + 7);
+        painter.drawLine(echoX - 7, gzY + 7, echoX, gzY);
+        painter.setPen(QPen(QColor(QStringLiteral("#f06e6e")), 2, Qt::DashLine));
+        painter.drawRect(readoutX + 14, adcY - 8, 58, 16);
+        painter.setPen(QColor(QStringLiteral("#9ba8b8")));
+        painter.drawText(readoutX + 16, adcY + 4, QStringLiteral("采集窗口"));
+    }
+};
+
+static QWidget* createSequenceTimeline(QWidget* parent)
+{
+    return new SequenceTimelineView(parent);
 }
 
 QString MainWindow::selectedPrimaryScene() const
@@ -815,6 +1000,7 @@ void MainWindow::handleLoadSdk()
 
 void MainWindow::handlePrecheck()
 {
+    m_precheckRequested = true;
     m_bridge->precheck();
 }
 
@@ -945,6 +1131,18 @@ void MainWindow::updateSessionState(MriSdkSessionState state)
     if (m_abortButton) m_abortButton->setEnabled(actions.canAbort);
 }
 
+void MainWindow::updatePrecheckStatus(const MriSdkStatus& status)
+{
+    if (!m_precheckRequested || !m_precheckStatusLabel) {
+        return;
+    }
+    m_precheckStatusLabel->setText(
+        QStringLiteral("真实预检：连接码 %1；温度 %2 C；ScanStatus %3")
+            .arg(status.connection)
+            .arg(status.temperature, 0, 'f', 1)
+            .arg(status.scan));
+}
+
 void MainWindow::updateControlMode()
 {
     if (!isEggControllerMode()) {
@@ -1046,6 +1244,12 @@ void MainWindow::applyScene(const SceneTemplate& scene)
     }
     if (m_sceneSequence) {
         m_sceneSequence->setText(scene.target);
+    }
+    if (m_sequenceProtocolSummary) {
+        m_sequenceProtocolSummary->setText(QStringLiteral("已选：PTScan 基线 / ") + scene.sequence);
+    }
+    if (m_sequenceTimingSummary) {
+        m_sequenceTimingSummary->setText(scene.parameterDetails);
     }
     if (m_sceneStepA) {
         m_sceneStepA->setText(scene.name);

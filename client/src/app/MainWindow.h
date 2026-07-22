@@ -49,6 +49,7 @@ private slots:
     void updateSdkDiagnostic(const QString& status, const QString& filePath, const QString& details);
     void updateSessionState(MriSdkSessionState state);
     void updateControlMode();
+    void updatePrecheckStatus(const MriSdkStatus& status);
 
 private:
     QWidget* buildHeader();
@@ -58,7 +59,10 @@ private:
     QWidget* buildFooter();
     QWidget* makeMetricCard(const QString& name, QLabel*& valueLabel);
     QWidget* makeOperationNode(const QString& step, const QString& title, QLabel*& detailLabel);
-    QWidget* makeDarkViewport(const QString& title, const QString& subtitle);
+    QWidget* makeProtocolTimelineViewport();
+    QWidget* makePrecheckViewport();
+    QWidget* makeLocalizationViewport();
+    QWidget* makeReconstructionViewport();
     QWidget* makeImageViewport(const QString& title, const QString& subtitle, QLabel*& imageView);
     void addInfoRow(QGridLayout* form, QWidget* parent, int row, const QString& labelText, QLabel*& valueLabel);
     void applyScene(const SceneTemplate& scene);
@@ -109,6 +113,11 @@ private:
     QLabel* m_operationDetails[6] = {nullptr};
     QLabel* m_chainSummary = nullptr;
     QLabel* m_automationStatusLabel = nullptr;
+    QLabel* m_sequenceProtocolSummary = nullptr;
+    QLabel* m_sequenceTimingSummary = nullptr;
+    QLabel* m_precheckStatusLabel = nullptr;
+    QLabel* m_localizationImageView = nullptr;
+    QLabel* m_localizationCoverageLabel = nullptr;
     QLabel* m_kspaceImageView = nullptr;
     QLabel* m_finalImageView = nullptr;
     QLabel* m_presetVersionValue = nullptr;
@@ -129,5 +138,6 @@ private:
     DeviceBridge* m_bridge = nullptr;
     EggControllerLaunchConfig m_eggControllerConfig;
     QString m_selectedDllPath;
+    bool m_precheckRequested = false;
     QList<SceneTemplate> m_catalog;
 };
