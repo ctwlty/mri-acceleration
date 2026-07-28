@@ -19,9 +19,13 @@
 - Mock 闭环 UI GREEN：`C:\tmp\agent-mri-v01-tdd\mock-ui-green-attempt1.txt`，4 通过、0 失败；覆盖唯一 run/snapshot、处理、QC、封存、实际历史和取消无成功工件。
 - Part 3 P1 RED：`C:\tmp\agent-mri-v01-tdd\part3-p1-ui-red.txt` 与 `part3-p1-package-red.txt`；复现 08 绕过上游证据、快照遗漏可见选择、manifest 身份篡改未拒绝。
 - Part 3 P1 GREEN：`C:\tmp\agent-mri-v01-tdd\part3-p1-ui-green-attempt1.txt`、`part3-p1-package-green-attempt1.txt`、`part3-p1-model-green-attempt1.txt`。
-- Part 3 全量 GREEN：`C:\tmp\agent-mri-v01-tdd\part3-p1-full-green.txt`，12/12 CTest 通过。
-- 截图测试：`C:\tmp\agent-mri-v01-evidence\interaction-20260729\capture-test.txt`，3 通过、0 失败。
-- 本轮截图：`C:\tmp\agent-mri-v01-evidence\interaction-20260729\interaction-01.png` 至 `interaction-13.png`。
+- 最终视觉真实性 RED：`C:\tmp\agent-mri-v01-evidence\final-ac93e8d\mock-closure-visible\09-mock-acquiring.png`、`11-mock-result-qc.png`、`12-result-package.png` 与 `13-history.png`；复现图片资产内嵌 `64% / 72% / RUN-MOCK-001` 与本次动态状态冲突，另有 01“无异常”和 07“预计3分20秒”两项无证据文案。
+- 最终视觉真实性 GREEN：`C:\tmp\agent-mri-v01-evidence\final-0d8edf6\mock-closure-visible`；09、11、12、13 的图片不再内嵌伪动态状态，01 改为“设备告警：未核验”，07 改为“预计未计算 / SNR 未评估”。
+- 最终聚焦回归：`C:\tmp\agent-mri-v01-evidence\visual-static-green-attempt1.txt`，4 通过、0 失败。
+- 全新 Debug：`C:\tmp\agent-mri-v01-final-debug-0d8edf6\ctest.txt`，12/12 CTest 通过。
+- 全新 Release：`C:\tmp\agent-mri-v01-final-release-0d8edf6\ctest.txt`，12/12 CTest 通过。
+- 可见 Mock 闭环：`C:\tmp\agent-mri-v01-evidence\final-0d8edf6\mock-closure-visible-test.txt`，通过实际 Qt 控件点击完成 01→13→12，3 通过、0 失败。
+- 本轮截图：`C:\tmp\agent-mri-v01-evidence\final-0d8edf6\mock-closure-visible\01-entry.png` 至 `13-history.png`，另含 `12-returned-from-history.png`。
 
 ## 共享控件
 
@@ -57,24 +61,26 @@
 
 ## 01–13 截图清单
 
-| 页 | 字节 | SHA-256 |
+| 状态 | 字节 | SHA-256 |
 |---|---:|---|
-| 01 | 89,277 | `F5A561DD67486C2ED7AB6935A8F2EF096503B14E6386EE9AFF08EE7F3313F4AF` |
-| 02 | 114,395 | `A31063E236EEC334E7C72187681C0D4F8008A8ACA43096CF99B4BECC72CFC55C` |
-| 03 | 118,319 | `32E4F107F6F2392A06017DFA27C31FF576A8C1A59FE635F150712FEFC843ECE7` |
-| 04 | 122,977 | `51B6973A4A563FB3D10E943BDE9441A4705DF009B000BB9FE2A90E98C48A6D80` |
-| 05 | 128,944 | `DADA8A78DD2B0ED3C73C996A846DCF9826A64D45E1823D00F4A11E74A8DED87E` |
-| 06 | 468,000 | `FDAE85D0685335E83E3A3836750C25DF43ABA92242BB8D9937345EAB80D9B6A6` |
-| 07 | 471,803 | `891EC64011921BCB93233376663F366D0217E0E5ED51D40954E0E50FA7FED72B` |
-| 08 | 125,960 | `E724F1699918278A0482A108787BC3C6C6BFBCCB51CC4DCE00D9346881D415A8` |
-| 09 | 79,758 | `2A99070E9F2F8116EC672A51D688EFE7BA3D1553543AE0836D909721A7826EEF` |
-| 10 | 112,358 | `19C4841DB08E9494E6203A3363728F2AD8E3BB0BCE0DAC9CD2A33CB5103BDDF8` |
-| 11 | 86,420 | `5D541DAC05B3BA76B35BEF0F1D35AE54D8E41086BDF3F2565A8239D00E5C0C80` |
-| 12 | 108,469 | `EF423719FE6F4B5D766844E386D2B591CA7C9FF6BECE7D363C90356199F696EB` |
-| 13 | 85,969 | `A2E415DF36CA705DDAAD6759DAFB8276033475258A7E50E1E581D9CD76E046AD` |
+| `01-entry.png` | 89,829 | `4AF257886BC1156CCB73F4D5D17D1C976DF124C54B864B31EA42F6C49073502C` |
+| `02-task-selection.png` | 115,750 | `1CF88F95906E292F5313B551E251C4ADCC0D90E59ABA5C3DE9A6D1B97C6D5AAF` |
+| `03-template-confirmation.png` | 117,996 | `B4B8E3F968FDD1C47E51EF22E47BF49202E362E81B8E319B4D2BC81782E9EA3C` |
+| `04-preparation.png` | 123,169 | `E39D846FBEAFC263394597768A2691DFEB5F50C9B23CF499CF7C43FF652824A2` |
+| `05-protocol.png` | 130,836 | `6CB6B06E5328C7447383EE03685EF233E3756CC1A819FC4CF363F0BD68AF453C` |
+| `06-loc.png` | 469,241 | `94BD4941C0707B537E26F8EF2AA71621155983D95AA0E72F106D004233D85582` |
+| `07-localization.png` | 473,123 | `A20266F67B7D321AA0573D9F429BB5B7D79121CCE60F7B2CB66CE189716D232B` |
+| `08-run-confirmation-ready.png` | 128,779 | `FC59A561C68D09CC9412E6B0B0144290A18099B5C6DE20CD0665DBB8319C021A` |
+| `09-mock-acquiring.png` | 605,148 | `AD854897D6009F72841D4B51A97A6289615962997FD16656FE0D214AB23D365D` |
+| `10-mock-processing.png` | 119,856 | `F26830062F86478E78DC6EBA6D9D0C9196258F82CFE858A55E17F1D910BEA3DF` |
+| `11-mock-result-qc.png` | 454,568 | `62FFA3A97C34614D9485214C628AB5382ED3C3020A51DFE41BD1DAC95D0D552F` |
+| `12-result-package.png` | 290,100 | `14426155DB37EE9A09E47DCB6D97AA78C6260636228E07A1D9204DF7C313172B` |
+| `12-returned-from-history.png` | 290,100 | `14426155DB37EE9A09E47DCB6D97AA78C6260636228E07A1D9204DF7C313172B` |
+| `13-history.png` | 135,053 | `3E76842A9357FCAAB6C10DE392465088E1C8AE2B3C50C0FC58F0B55E83A815A9` |
 
 ## 剩余边界
 
 - 本审计未加载 SDK、未连接设备、未调用 Run/Abort、未生成真实 RAW。
 - 08–13 已由确定性 Mock 状态模型接管：唯一 run/snapshot、结果根可写、暂停/继续/取消、合法 Mock 图像绑定、图像级 QC、七项结果包与实际历史均有自动化测试。
 - 历史对比在 v0.1 明确不支持，按钮保持禁用而不是伪造反馈。
+- 本轮已识别的 P0/P1/P2 全部关闭；03“采用模板并继续”、12“返回标准结果与 QC”、13 顶部和底部返回均有本次可见证据。
