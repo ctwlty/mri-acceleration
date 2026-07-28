@@ -15,6 +15,11 @@
 - 视觉真实性 RED：`C:\tmp\agent-mri-v01-tdd\visual-truth-red.txt`，2 通过、1 失败；复现 06 使用带假进度的采集资产。
 - 视觉真实性 GREEN：`C:\tmp\agent-mri-v01-tdd\visual-truth-green.txt`，3 通过、0 失败；06 改为无进度的规划参考，10–12 空态不再在顶部宣称前置已完成。
 - GREEN：`C:\tmp\agent-mri-v01-tdd\interaction-green-final.txt`，29 通过、0 失败、1 个截图测试因未设置目录而跳过。
+- Mock 闭环 UI RED：`C:\tmp\agent-mri-v01-tdd\mock-ui-red.txt`，2 通过、2 失败；复现处理按钮永久禁用、取消无可见反馈。
+- Mock 闭环 UI GREEN：`C:\tmp\agent-mri-v01-tdd\mock-ui-green-attempt1.txt`，4 通过、0 失败；覆盖唯一 run/snapshot、处理、QC、封存、实际历史和取消无成功工件。
+- Part 3 P1 RED：`C:\tmp\agent-mri-v01-tdd\part3-p1-ui-red.txt` 与 `part3-p1-package-red.txt`；复现 08 绕过上游证据、快照遗漏可见选择、manifest 身份篡改未拒绝。
+- Part 3 P1 GREEN：`C:\tmp\agent-mri-v01-tdd\part3-p1-ui-green-attempt1.txt`、`part3-p1-package-green-attempt1.txt`、`part3-p1-model-green-attempt1.txt`。
+- Part 3 全量 GREEN：`C:\tmp\agent-mri-v01-tdd\part3-p1-full-green.txt`，12/12 CTest 通过。
 - 截图测试：`C:\tmp\agent-mri-v01-evidence\interaction-20260729\capture-test.txt`，3 通过、0 失败。
 - 本轮截图：`C:\tmp\agent-mri-v01-evidence\interaction-20260729\interaction-01.png` 至 `interaction-13.png`。
 
@@ -43,12 +48,12 @@
 | 05 | `ProtocolL2Current0..4`、`ShowL3Button`、`ProtocolUseOnceButton`、`ProtocolSaveVersionButton`、`ContinueProtocolButton` | 五字段即时校验/计算；编辑会撤销本次确认；持久化明确禁用；通过后进入 06 | 修复无校验和假保存；表格本体不可选择 | TESTED |
 | 06 | `OpenLocalizationPlanningButton` | 进入 07；页面和右栏均标注 Mock 规划参考，无假进度 | 修复 68% 假进度 | TESTED |
 | 07 | 三方位、Read/Phase、自动/重置/更多、自定义目标、科研参数、`ConfirmLocalizationButton` | 每次操作均有文字/图上反馈；非横断位禁用确认；科研参数回 05 展开 L3；横断确认进入 08 | 修复死按钮和横断位门禁 | TESTED |
-| 08 | `RunConfirmationCheck1..3`、`RunConfirmationBackButton`、`MockAcquireButton`、`WorkflowRealRunButton` | 三项确认同步控制 Mock 开始；返回会清确认；真实入口始终 LIVE: BLOCKED | 正常；真实副作用不可达 | TESTED |
-| 09 | 共享暂停/停止；页内无开始按钮 | 只有从 08 合法启动才显示 MOCK 运行；QA 跳页为空态；运行中任务选择和返回被锁定 | 修复“页码即运行”的假状态 | TESTED |
-| 10 | `CompleteMockProcessingButton`、`RetryMockProcessingButton` | 未有模型证据时均禁用并说明原因；无图、无 RAW/72% 假进度 | 诚实 Empty；由 Mock 模型接管后再启用 | TESTED |
-| 11 | `ReturnToLocalizationButton`、`RetryMockQcButton`、`ConfirmResultButton` | Empty 时无图/QC；返回 07；重试/确认均禁用并说明原因；持久返回同样到 07 | 修复假 QC 和错误返回 | TESTED |
-| 12 | `SaveResultPackageButton`、`OpenResultLocationButton`、`CopyResultPathButton`、`ExternalAnalysisButton`、`OpenHistoryButton` | 无封存包时全部禁用，逐项解释；页面有固定可见返回 | 修复假保存/假打开和“无返回” | TESTED |
-| 13 | `BackToResultsButton`、筛选器、空表、打开/对比/来源按钮 | 两个返回入口均到 12；无实际 manifest 时 0 行、无预览，筛选和记录动作禁用并解释 | 修复硬编码历史和“无返回” | TESTED |
+| 08 | `RunConfirmationCheck1..3`、`RunConfirmationBackButton`、`MockAcquireButton`、`WorkflowRealRunButton` | 必须同时具备 04 准备、05 协议、07 横断位定位证据及三项运行确认；直接跳页不能开始；返回会清运行确认；真实入口始终 LIVE: BLOCKED | 修复上游证据绕过；真实副作用不可达 | TESTED |
+| 09 | 共享暂停/停止；页内无开始按钮 | 只有从 08 合法启动才生成唯一 run/snapshot 并显示 MOCK 进度；暂停/继续更新模型；取消保留身份与审计但清空成功工件；QA 跳页为空态 | 修复“页码即运行”的假状态 | TESTED |
+| 10 | `CompleteMockProcessingButton`、`RetryMockProcessingButton` | 仅 `Processing` 状态启用；读取项目合法 Mock PNG、绑定当前 run/snapshot 和 SHA-256；失败才允许同身份重试 | 由确定性模型接管，无 RAW/72% 假进度 | TESTED |
+| 11 | `ReturnToLocalizationButton`、`RetryMockQcButton`、`ConfirmResultButton` | 只有重建成功后显示 Mock 图和实际计算 QC；取消/失败/Empty 无图无数值；研究者确认后进入 12 | 修复假 QC；图像与 QC 由同一 SHA-256 绑定 | TESTED |
+| 12 | `SaveResultPackageButton`、`OpenResultLocationButton`、`CopyResultPathButton`、`ExternalAnalysisButton`、`OpenHistoryButton` | 结果确认后才可原子封存七项结果包；参数快照冻结可见协议链、L2 与定位几何；成功后可复制/打开实际绝对路径并进入历史；未封存时禁用并解释；外部分析未配置 | 修复假保存/假打开和快照来源遗漏 | TESTED |
+| 13 | `BackToResultsButton`、筛选器、只读表、打开/对比/来源按钮 | 两个返回入口均到 12；只读取实际 manifest；空根为 0 行；manifest 必须与目录、快照、来源、QC、审计和图像哈希交叉一致；损坏包标 Warning/Error；不生成样例记录 | 修复硬编码历史、身份篡改和“无返回” | TESTED |
 
 ## 01–13 截图清单
 
@@ -71,5 +76,5 @@
 ## 剩余边界
 
 - 本审计未加载 SDK、未连接设备、未调用 Run/Abort、未生成真实 RAW。
-- 08 的唯一 run/snapshot、结果根可写门禁、Mock 重建/QC、封存包和历史加载由下一独立 Mock 状态模型提交完成；未完成前 10–13 保持 Empty/BLOCKED。
+- 08–13 已由确定性 Mock 状态模型接管：唯一 run/snapshot、结果根可写、暂停/继续/取消、合法 Mock 图像绑定、图像级 QC、七项结果包与实际历史均有自动化测试。
 - 历史对比在 v0.1 明确不支持，按钮保持禁用而不是伪造反馈。

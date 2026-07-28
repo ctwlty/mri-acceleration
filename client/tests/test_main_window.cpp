@@ -4,9 +4,12 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -25,6 +28,59 @@ void writeFile(const QString& path)
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly));
     QVERIFY(file.write("test") > 0);
+}
+
+class ScopedEnvironment final {
+public:
+    ScopedEnvironment(const QByteArray& name, const QByteArray& value)
+        : m_name(name), m_previous(qgetenv(name)), m_existed(qEnvironmentVariableIsSet(name))
+    {
+        qputenv(m_name, value);
+    }
+
+    ~ScopedEnvironment()
+    {
+        if (m_existed)
+            qputenv(m_name, m_previous);
+        else
+            qunsetenv(m_name);
+    }
+
+private:
+    QByteArray m_name;
+    QByteArray m_previous;
+    bool m_existed = false;
+};
+
+bool advanceToMockRunConfirmation(MainWindow& window)
+{
+    window.setMockWorkflowStep(4);
+    auto* preparation =
+        window.findChild<QPushButton*>(QStringLiteral("SavePreparationButton"));
+    if (!preparation || !preparation->isEnabled()) return false;
+    preparation->click();
+
+    auto* useOnce =
+        window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton"));
+    auto* continueProtocol =
+        window.findChild<QPushButton*>(QStringLiteral("ContinueProtocolButton"));
+    if (!useOnce || !continueProtocol || !useOnce->isEnabled()) return false;
+    useOnce->click();
+    if (!continueProtocol->isEnabled()) return false;
+    continueProtocol->click();
+
+    auto* openPlanning =
+        window.findChild<QPushButton*>(QStringLiteral("OpenLocalizationPlanningButton"));
+    if (!openPlanning || !openPlanning->isEnabled()) return false;
+    openPlanning->click();
+
+    auto* confirmLocalization =
+        window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"));
+    if (!confirmLocalization || !confirmLocalization->isEnabled()) return false;
+    confirmLocalization->click();
+    auto* currentStep =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    return currentStep && currentStep->text() == QStringLiteral("08");
 }
 }
 
@@ -59,6 +115,9 @@ private slots:
     void researchParametersNavigatesToExpandedL3();
     void qaJumpAndUnexecutedPagesShowHonestEmptyStates();
     void resultAndHistoryActionsAreBlockedBeforeARealMockPackage();
+    void mockVerticalSliceCreatesBoundPackageAndActualHistory();
+    void mockSnapshotBindsVisibleProtocolAndPlanning();
+    void cancelledMockRunKeepsEvidenceAndCreatesNoSuccessfulArtifacts();
     void captureInteractionQaScreensWhenRequested();
 };
 
@@ -438,11 +497,11 @@ void MainWindowTest::workflowUsesWaterPhantomTransverseSemantics()
     QVERIFY(sampleProfile->text().contains(QStringLiteral("水模")));
     QVERIFY(acquisitionPlan->text().contains(QStringLiteral("水模")));
     QVERIFY(acquisitionPlan->text().contains(QStringLiteral("横断位")));
-    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("PTScan Mock")));
+    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("FSE A Mock")));
     QVERIFY(acquisitionPlan->text().contains(QStringLiteral("SNAPSHOT-PENDING")));
     QVERIFY(reconstructionPath->text().contains(QStringLiteral("MOCK")));
     QVERIFY(reconstructionPath->text().contains(QStringLiteral("不调用 eggcontrollerV2")));
-    QVERIFY(protocolChain->text().contains(QStringLiteral("PTScan")));
+    QVERIFY(protocolChain->text().contains(QStringLiteral("FSE A")));
     window.setMockWorkflowStep(2);
     QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
     QVERIFY(templateList->currentItem());
@@ -450,7 +509,7 @@ void MainWindowTest::workflowUsesWaterPhantomTransverseSemantics()
 
     const auto catalog = SceneCatalog::defaults();
     QVERIFY(!catalog.isEmpty());
-    QVERIFY(catalog.first().reconstruction.contains(QStringLiteral("待真实放行核验")));
+    QVERIFY(catalog.first().reconstruction.contains(QStringLiteral("合法 Mock 图像资产")));
     QVERIFY(!catalog.first().reconstruction.startsWith(QStringLiteral("复用")));
 
     window.setMockWorkflowStep(3);
@@ -460,7 +519,7 @@ void MainWindowTest::workflowUsesWaterPhantomTransverseSemantics()
     for (const QLabel* label : rightStep3->findChildren<QLabel*>())
         step3Text += label->text() + QLatin1Char('\n');
     QVERIFY(step3Text.contains(QStringLiteral("横断位")));
-    QVERIFY(step3Text.contains(QStringLiteral("PTScan")));
+    QVERIFY(step3Text.contains(QStringLiteral("FSE A")));
     QVERIFY(!step3Text.contains(QStringLiteral("2D FSE")));
 
     window.setMockWorkflowStep(12);
@@ -585,7 +644,7 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
 
     templateSearch->setText(QStringLiteral("no-such-template"));
     QCOMPARE(templateList->count(), 0);
-    templateSearch->setText(QStringLiteral("PTScan"));
+    templateSearch->setText(QStringLiteral("FSE A"));
     QCOMPARE(templateList->count(), 1);
     QVERIFY(templateList->currentItem());
     QVERIFY(templateList->currentItem()->isSelected());
@@ -835,6 +894,24 @@ void MainWindowTest::mockAcquisitionRequiresAllRunConfirmations()
         window.findChild<QCheckBox*>(QStringLiteral("RunConfirmationCheck3"));
     QVERIFY(finalCheck);
     QTest::mouseClick(finalCheck, Qt::LeftButton);
+    QVERIFY(!acquire->isEnabled());
+    QVERIFY(!leftStart->isEnabled());
+    QVERIFY(!next->isEnabled());
+    QVERIFY(acquire->toolTip().contains(QStringLiteral("准备"))
+            || acquire->toolTip().contains(QStringLiteral("定位")));
+
+    QVERIFY(advanceToMockRunConfirmation(window));
+    for (int index = 1; index <= 2; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QTest::mouseClick(check, Qt::LeftButton);
+        QVERIFY(!acquire->isEnabled());
+    }
+    finalCheck =
+        window.findChild<QCheckBox*>(QStringLiteral("RunConfirmationCheck3"));
+    QVERIFY(finalCheck);
+    QTest::mouseClick(finalCheck, Qt::LeftButton);
     QVERIFY(acquire->isEnabled());
     QVERIFY(leftStart->isEnabled());
     QVERIFY(next->isEnabled());
@@ -847,7 +924,7 @@ void MainWindowTest::mockPauseStopsAndResumesAutomaticProgression()
 {
     MainWindow window;
     window.show();
-    window.setMockWorkflowStep(8);
+    QVERIFY(advanceToMockRunConfirmation(window));
 
     for (int index = 1; index <= 3; ++index) {
         auto* check = window.findChild<QCheckBox*>(
@@ -879,7 +956,7 @@ void MainWindowTest::runConfirmationsResetAfterLeavingConfirmationStep()
 {
     MainWindow window;
     window.show();
-    window.setMockWorkflowStep(8);
+    QVERIFY(advanceToMockRunConfirmation(window));
 
     for (int index = 1; index <= 3; ++index) {
         auto* check = window.findChild<QCheckBox*>(
@@ -892,8 +969,10 @@ void MainWindowTest::runConfirmationsResetAfterLeavingConfirmationStep()
     QVERIFY(acquire);
     QVERIFY(acquire->isEnabled());
 
-    window.setMockWorkflowStep(7);
-    window.setMockWorkflowStep(8);
+    window.findChild<QPushButton*>(
+        QStringLiteral("RunConfirmationBackButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ConfirmLocalizationButton"))->click();
 
     for (int index = 1; index <= 3; ++index) {
         auto* check = window.findChild<QCheckBox*>(
@@ -986,7 +1065,7 @@ void MainWindowTest::templateRestartIsUnavailableDuringMockAcquisition()
 {
     MainWindow window;
     window.show();
-    window.setMockWorkflowStep(8);
+    QVERIFY(advanceToMockRunConfirmation(window));
     for (int index = 1; index <= 3; ++index) {
         window.findChild<QCheckBox*>(
             QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
@@ -1255,7 +1334,7 @@ void MainWindowTest::qaJumpAndUnexecutedPagesShowHonestEmptyStates()
     QVERIFY(!processingText.contains(QStringLiteral("已保存")));
     QVERIFY(!processingText.contains(QStringLiteral("72%")));
     QVERIFY(!complete->isEnabled());
-    QVERIFY(!status->text().contains(QStringLiteral("已完成：PTScan采集")));
+    QVERIFY(!status->text().contains(QStringLiteral("已完成：FSE A Mock采集")));
 
     window.setMockWorkflowStep(11);
     auto* resultImage = window.findChild<QWidget*>(QStringLiteral("MockResultImage"));
@@ -1337,6 +1416,259 @@ void MainWindowTest::resultAndHistoryActionsAreBlockedBeforeARealMockPackage()
     QVERIFY(!historySource->isEnabled());
     QVERIFY(summary->text().contains(QStringLiteral("尚无")));
     QVERIFY(back->isEnabled());
+}
+
+void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
+{
+    QTemporaryDir resultRoot;
+    QVERIFY(resultRoot.isValid());
+    ScopedEnvironment rootOverride(
+        QByteArrayLiteral("SCENARIO_NMR_MOCK_RESULT_ROOT"),
+        QFile::encodeName(resultRoot.path()));
+
+    MainWindow window;
+    window.show();
+    auto* currentStep =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(currentStep);
+
+    window.setMockWorkflowStep(4);
+    window.findChild<QPushButton*>(
+        QStringLiteral("SavePreparationButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ProtocolUseOnceButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ContinueProtocolButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("OpenLocalizationPlanningButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ConfirmLocalizationButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("08"));
+
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
+    auto* acquire =
+        window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    QVERIFY(acquire);
+    QVERIFY(acquire->isEnabled());
+    acquire->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+    QTRY_COMPARE_WITH_TIMEOUT(currentStep->text(), QStringLiteral("10"), 4000);
+
+    auto* complete =
+        window.findChild<QPushButton*>(QStringLiteral("CompleteMockProcessingButton"));
+    QVERIFY(complete);
+    QVERIFY(complete->isEnabled());
+    complete->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("11"));
+    auto* resultImage =
+        window.findChild<QWidget*>(QStringLiteral("MockResultImage"));
+    auto* snr = window.findChild<QLabel*>(QStringLiteral("MockQcSnrValue"));
+    auto* uniformity =
+        window.findChild<QLabel*>(QStringLiteral("MockQcUniformityValue"));
+    auto* confirm =
+        window.findChild<QPushButton*>(QStringLiteral("ConfirmResultButton"));
+    QVERIFY(resultImage);
+    QVERIFY(snr);
+    QVERIFY(uniformity);
+    QVERIFY(confirm);
+    QVERIFY(resultImage->isVisibleTo(&window));
+    QVERIFY(snr->text().contains(QStringLiteral("MOCK")));
+    QVERIFY(uniformity->text().contains(QStringLiteral("MOCK")));
+    QVERIFY(confirm->isEnabled());
+    confirm->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
+
+    auto* save =
+        window.findChild<QPushButton*>(QStringLiteral("SaveResultPackageButton"));
+    auto* copy =
+        window.findChild<QPushButton*>(QStringLiteral("CopyResultPathButton"));
+    auto* history =
+        window.findChild<QPushButton*>(QStringLiteral("OpenHistoryButton"));
+    auto* saveState =
+        window.findChild<QLabel*>(QStringLiteral("ResultPackageSaveState"));
+    QVERIFY(save);
+    QVERIFY(copy);
+    QVERIFY(history);
+    QVERIFY(saveState);
+    QVERIFY(save->isEnabled());
+    save->click();
+    QVERIFY(saveState->text().contains(QStringLiteral("MOCK")));
+    QVERIFY(copy->isEnabled());
+    QVERIFY(history->isEnabled());
+
+    const QFileInfoList packages =
+        QDir(resultRoot.path()).entryInfoList(
+            QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    QCOMPARE(packages.size(), 1);
+    const QString packagePath = packages.first().absoluteFilePath();
+    const QString manifestPath =
+        QDir(packagePath).filePath(QStringLiteral("manifest.json"));
+    QFile manifestFile(manifestPath);
+    QVERIFY(manifestFile.open(QIODevice::ReadOnly));
+    const QJsonObject manifest =
+        QJsonDocument::fromJson(manifestFile.readAll()).object();
+    QCOMPARE(manifest.value(QStringLiteral("dataSource")).toString(),
+             QStringLiteral("MOCK"));
+    QVERIFY(!manifest.value(QStringLiteral("runId")).toString().isEmpty());
+    QVERIFY(!manifest.value(QStringLiteral("snapshotId")).toString().isEmpty());
+    QCOMPARE(
+        QDir(packagePath).entryList(
+            QDir::Files | QDir::NoDotAndDotDot, QDir::Name).size(),
+        7);
+
+    copy->click();
+    QCOMPARE(QApplication::clipboard()->text(),
+             QDir::toNativeSeparators(packagePath));
+    history->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("13"));
+    auto* table =
+        window.findChild<QTableWidget*>(QStringLiteral("HistoryReadOnlyTable"));
+    auto* preview =
+        window.findChild<QWidget*>(QStringLiteral("HistoryPreviewImage"));
+    QVERIFY(table);
+    QVERIFY(preview);
+    QCOMPARE(table->rowCount(), 1);
+    QCOMPARE(table->item(0, 0)->text(),
+             manifest.value(QStringLiteral("runId")).toString());
+    QVERIFY(table->isEnabled());
+    QVERIFY(preview->isVisibleTo(&window));
+    QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
+}
+
+void MainWindowTest::mockSnapshotBindsVisibleProtocolAndPlanning()
+{
+    QTemporaryDir resultRoot;
+    QVERIFY(resultRoot.isValid());
+    ScopedEnvironment rootOverride(
+        QByteArrayLiteral("SCENARIO_NMR_MOCK_RESULT_ROOT"),
+        QFile::encodeName(resultRoot.path()));
+
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(3);
+    auto* addComparison =
+        window.findChild<QPushButton*>(QStringLiteral("AddComparisonButton"));
+    QVERIFY(addComparison);
+    QVERIFY(addComparison->isEnabled());
+    addComparison->click();
+
+    window.setMockWorkflowStep(4);
+    window.findChild<QPushButton*>(
+        QStringLiteral("SavePreparationButton"))->click();
+    auto* sliceGap =
+        window.findChild<QLineEdit*>(QStringLiteral("ProtocolL2Current3"));
+    auto* nex =
+        window.findChild<QLineEdit*>(QStringLiteral("ProtocolL2Current4"));
+    QVERIFY(sliceGap);
+    QVERIFY(nex);
+    sliceGap->setText(QStringLiteral("2 mm"));
+    nex->setText(QStringLiteral("3"));
+    window.findChild<QPushButton*>(
+        QStringLiteral("ProtocolUseOnceButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ContinueProtocolButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("OpenLocalizationPlanningButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ReadPhaseSwapButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("AutoPlanningButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ConfirmLocalizationButton"))->click();
+
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
+    auto* acquire =
+        window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    QVERIFY(acquire);
+    QVERIFY(acquire->isEnabled());
+    acquire->click();
+    auto* currentStep =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(currentStep);
+    QTRY_COMPARE_WITH_TIMEOUT(currentStep->text(), QStringLiteral("10"), 4000);
+    window.findChild<QPushButton*>(
+        QStringLiteral("CompleteMockProcessingButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ConfirmResultButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("SaveResultPackageButton"))->click();
+
+    const QFileInfoList packages =
+        QDir(resultRoot.path()).entryInfoList(
+            QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    QCOMPARE(packages.size(), 1);
+    QFile snapshotFile(
+        QDir(packages.first().absoluteFilePath())
+            .filePath(QStringLiteral("parameter-snapshot.json")));
+    QVERIFY(snapshotFile.open(QIODevice::ReadOnly));
+    const QJsonObject snapshot =
+        QJsonDocument::fromJson(snapshotFile.readAll()).object();
+    const QJsonArray protocolChain =
+        snapshot.value(QStringLiteral("protocolChain")).toArray();
+    QVERIFY(protocolChain.contains(QStringLiteral("FSE B")));
+    QCOMPARE(snapshot.value(QStringLiteral("sliceGapMm")).toDouble(), 2.0);
+    QCOMPARE(snapshot.value(QStringLiteral("nex")).toInt(), 3);
+    QVERIFY(snapshot.value(QStringLiteral("readPhaseSwapped")).toBool());
+    QVERIFY(snapshot.value(QStringLiteral("planningCoverageModified")).toBool());
+    QVERIFY(snapshot.value(QStringLiteral("coverageWidth")).toDouble() > 0.0);
+    QVERIFY(snapshot.value(QStringLiteral("coverageHeight")).toDouble() > 0.0);
+    QCOMPARE(snapshot.value(QStringLiteral("orientation")).toString(),
+             QStringLiteral("横断"));
+}
+
+void MainWindowTest::cancelledMockRunKeepsEvidenceAndCreatesNoSuccessfulArtifacts()
+{
+    QTemporaryDir resultRoot;
+    QVERIFY(resultRoot.isValid());
+    ScopedEnvironment rootOverride(
+        QByteArrayLiteral("SCENARIO_NMR_MOCK_RESULT_ROOT"),
+        QFile::encodeName(resultRoot.path()));
+
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(4);
+    window.findChild<QPushButton*>(
+        QStringLiteral("SavePreparationButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ProtocolUseOnceButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ContinueProtocolButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("OpenLocalizationPlanningButton"))->click();
+    window.findChild<QPushButton*>(
+        QStringLiteral("ConfirmLocalizationButton"))->click();
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
+    window.findChild<QPushButton*>(
+        QStringLiteral("MockAcquireButton"))->click();
+    auto* stop =
+        window.findChild<QPushButton*>(QStringLiteral("LeftMockStopButton"));
+    auto* feedback =
+        window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    auto* resultImage =
+        window.findChild<QWidget*>(QStringLiteral("MockResultImage"));
+    QVERIFY(stop);
+    QVERIFY(feedback);
+    QVERIFY(resultImage);
+    QVERIFY(stop->isEnabled());
+    stop->click();
+
+    QVERIFY(feedback->text().contains(QStringLiteral("已取消")));
+    QVERIFY(feedback->text().contains(QStringLiteral("RUN-MOCK-")));
+    QVERIFY(!resultImage->isVisible());
+    QCOMPARE(
+        QDir(resultRoot.path()).entryList(
+            QDir::Dirs | QDir::NoDotAndDotDot).size(),
+        0);
+    QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
 }
 
 void MainWindowTest::captureInteractionQaScreensWhenRequested()
@@ -1457,7 +1789,7 @@ void MainWindowTest::galleryLayoutUsesStableThreeColumnsAndContextPanels()
     QVERIFY(!leftMockStart->isEnabled());
     window.setMockWorkflowStep(6);
     QVERIFY(!leftMockStart->isEnabled());
-    window.setMockWorkflowStep(8);
+    QVERIFY(advanceToMockRunConfirmation(window));
     QVERIFY(!leftMockStart->isEnabled());
     for (int index = 1; index <= 3; ++index) {
         window.findChild<QCheckBox*>(

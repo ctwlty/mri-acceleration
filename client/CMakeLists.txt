@@ -12,12 +12,27 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE NMR_SOFTWARE_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT NMR_SOFTWARE_COMMIT)
+    set(NMR_SOFTWARE_COMMIT "UNKNOWN")
+endif()
+
 qt_add_executable(scenario_nmr_client
     src/main.cpp
     src/app/EggControllerProcess.cpp
     src/app/EggControllerProcess.h
     src/app/ImageQualityEvaluator.cpp
     src/app/ImageQualityEvaluator.h
+    src/app/MockWorkflow.cpp
+    src/app/MockWorkflow.h
+    src/app/MockResultPackage.cpp
+    src/app/MockResultPackage.h
     src/app/DeviceActionAvailability.cpp
     src/app/DeviceActionAvailability.h
     src/app/MriSdkLoader.cpp
@@ -35,6 +50,10 @@ qt_add_executable(scenario_nmr_client
 )
 
 target_include_directories(scenario_nmr_client PRIVATE src)
+target_compile_definitions(
+    scenario_nmr_client PRIVATE
+    NMR_SOFTWARE_COMMIT="${NMR_SOFTWARE_COMMIT}"
+)
 
 target_link_libraries(scenario_nmr_client PRIVATE Qt6::Widgets)
 
@@ -125,12 +144,34 @@ if(BUILD_TESTING)
     target_include_directories(test_image_quality_evaluator PRIVATE src)
     target_link_libraries(test_image_quality_evaluator PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 
+    qt_add_executable(test_mock_workflow
+        tests/test_mock_workflow.cpp
+        src/app/MockWorkflow.cpp
+        src/app/MockWorkflow.h
+    )
+    target_include_directories(test_mock_workflow PRIVATE src)
+    target_link_libraries(test_mock_workflow PRIVATE Qt6::Core Qt6::Test)
+
+    qt_add_executable(test_mock_result_package
+        tests/test_mock_result_package.cpp
+        src/app/MockWorkflow.cpp
+        src/app/MockWorkflow.h
+        src/app/MockResultPackage.cpp
+        src/app/MockResultPackage.h
+    )
+    target_include_directories(test_mock_result_package PRIVATE src)
+    target_link_libraries(test_mock_result_package PRIVATE Qt6::Core Qt6::Test)
+
     qt_add_executable(test_main_window
         tests/test_main_window.cpp
         src/app/EggControllerProcess.cpp
         src/app/EggControllerProcess.h
         src/app/ImageQualityEvaluator.cpp
         src/app/ImageQualityEvaluator.h
+        src/app/MockWorkflow.cpp
+        src/app/MockWorkflow.h
+        src/app/MockResultPackage.cpp
+        src/app/MockResultPackage.h
         src/app/DeviceActionAvailability.cpp
         src/app/DeviceActionAvailability.h
         src/app/DeviceBridge.cpp
@@ -147,6 +188,10 @@ if(BUILD_TESTING)
         resources/app.qrc
     )
     target_include_directories(test_main_window PRIVATE src)
+    target_compile_definitions(
+        test_main_window PRIVATE
+        NMR_SOFTWARE_COMMIT="${NMR_SOFTWARE_COMMIT}"
+    )
     target_link_libraries(test_main_window PRIVATE Qt6::Widgets Qt6::Test)
     add_dependencies(test_main_window fake_mri_sdk fake_eggcontroller_proxy)
 
@@ -169,6 +214,16 @@ if(BUILD_TESTING)
 
     add_test(NAME image_quality_evaluator COMMAND test_image_quality_evaluator)
     set_tests_properties(image_quality_evaluator PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME mock_workflow COMMAND test_mock_workflow)
+    set_tests_properties(mock_workflow PROPERTIES
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
+    )
+
+    add_test(NAME mock_result_package COMMAND test_mock_result_package)
+    set_tests_properties(mock_result_package PROPERTIES
         ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:C:\\msys64\\ucrt64\\bin"
     )
 

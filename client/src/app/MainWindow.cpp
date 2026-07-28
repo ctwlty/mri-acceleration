@@ -4,17 +4,21 @@
 #include "ImageQualityEvaluator.h"
 
 #include <QCryptographicHash>
+#include <QApplication>
 #include <QButtonGroup>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QFrame>
 #include <QComboBox>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QDesktopServices>
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QHeaderView>
+#include <QImage>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -37,12 +41,20 @@
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QTime>
+#include <QTemporaryFile>
 #include <QTimer>
+#include <QUrl>
 #include <QValidator>
 #include <QVBoxLayout>
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <utility>
+
+#ifndef NMR_SOFTWARE_COMMIT
+#define NMR_SOFTWARE_COMMIT "UNKNOWN"
+#endif
 
 namespace {
 enum class ProtocolFieldKind {
@@ -180,14 +192,35 @@ MainWindow::MainWindow(QWidget* parent)
     setWindowTitle(QStringLiteral("场景化核磁共振控制台"));
     resize(1570, 953);
     setMinimumSize(1280, 760);
+    m_mockResultRoot =
+        qEnvironmentVariable("SCENARIO_NMR_MOCK_RESULT_ROOT").trimmed();
+    if (m_mockResultRoot.isEmpty())
+        m_mockResultRoot = MockResultPackage::defaultRoot();
+    m_mockResultRoot = QDir(m_mockResultRoot).absolutePath();
 
     m_mockAcquisitionTimer = new QTimer(this);
     m_mockAcquisitionTimer->setSingleShot(true);
     connect(m_mockAcquisitionTimer, &QTimer::timeout, this, [this] {
         m_mockAcquisitionRemainingMs = 3200;
         if (m_workflowStep == 9 && m_mockRunActive) {
+            const MockActionResult completed = m_mockWorkflow.setProgress(100);
+            if (!completed.ok) {
+                m_mockWorkflow.fail(completed.error);
+                m_mockRunActive = false;
+                m_mockExecutionCompleted = false;
+                if (m_automationStatusLabel)
+                    m_automationStatusLabel->setText(
+                        QStringLiteral("MOCK 失败：%1").arg(completed.error));
+                refreshWorkflow();
+                return;
+            }
             m_mockRunActive = false;
             m_mockExecutionCompleted = true;
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("%1 · MOCK 执行完成 · 等待处理")
+                        .arg(m_mockWorkflow.runId()));
+            }
             setWorkflowStep(10);
         }
     });
@@ -285,6 +318,7 @@ public:
     {
         m_axesSwapped = !m_axesSwapped;
         setProperty("readPhaseSwapped", m_axesSwapped);
+        notifyChanged();
         update();
     }
 
@@ -292,6 +326,7 @@ public:
     {
         m_orientation = orientation;
         setProperty("selectedOrientation", orientation);
+        notifyChanged();
         update();
     }
 
@@ -305,6 +340,7 @@ public:
         m_centerY = 0.50;
         m_slice = 0.50;
         setProperty("planningCoverageModified", true);
+        notifyChanged();
         update();
     }
 
@@ -322,7 +358,28 @@ public:
         setProperty("selectedOrientation", m_orientation);
         setProperty("readPhaseSwapped", false);
         setProperty("planningCoverageModified", false);
+        notifyChanged();
         update();
+    }
+
+    void setChangeHandler(std::function<void()> handler)
+    {
+        m_changeHandler = std::move(handler);
+    }
+
+    QRectF normalizedCoverage() const
+    {
+        return QRectF(m_boxX, m_boxY, m_boxWidth, m_boxHeight);
+    }
+
+    QPointF normalizedCenter() const
+    {
+        return QPointF(m_centerX, m_centerY);
+    }
+
+    qreal normalizedSlicePosition() const
+    {
+        return m_slice;
     }
 
 protected:
@@ -437,12 +494,18 @@ protected:
             m_slice = y;
         }
         setProperty("planningCoverageModified", true);
+        notifyChanged();
         update();
     }
 
     void mouseReleaseEvent(QMouseEvent*) override { m_dragMode = 0; }
 
 private:
+    void notifyChanged()
+    {
+        if (m_changeHandler) m_changeHandler();
+    }
+
     bool m_axesSwapped = false;
     QString m_orientation = QStringLiteral("横断");
     int m_dragMode = 0;
@@ -453,6 +516,7 @@ private:
     qreal m_centerX = 0.50;
     qreal m_centerY = 0.50;
     qreal m_slice = 0.50;
+    std::function<void()> m_changeHandler;
 };
 
 class MockImagingCanvas final : public QWidget {
@@ -513,6 +577,13 @@ public:
         setObjectName(objectName);
         setMinimumHeight(minimumHeight);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    }
+
+    bool setSource(const QString& path)
+    {
+        const bool loaded = m_pixmap.load(path);
+        update();
+        return loaded;
     }
 
 protected:
@@ -584,7 +655,7 @@ QWidget* MainWindow::buildHeader()
     connectBadge->setObjectName("AppSubtitle");
     layout->addWidget(connectBadge);
 
-    auto* transferBadge = new QLabel(QStringLiteral("参数：PTScan 基线"), frame);
+    auto* transferBadge = new QLabel(QStringLiteral("参数：FSE A Mock"), frame);
     transferBadge->setObjectName("AppSubtitle");
     layout->addWidget(transferBadge);
 
@@ -780,8 +851,23 @@ QWidget* MainWindow::buildLeftPane()
     connect(m_abortButton, &QPushButton::clicked, this, &MainWindow::handleAbort);
     connect(m_leftMockStopButton, &QPushButton::clicked, this, [this] {
         if (!m_mockRunActive) return;
+        const QString cancelledRun = m_mockWorkflow.runId();
+        const QString cancelledSnapshot = m_mockWorkflow.snapshotId();
+        const MockActionResult cancelled = m_mockWorkflow.cancel();
+        if (!cancelled.ok) {
+            if (m_automationStatusLabel)
+                m_automationStatusLabel->setText(
+                    QStringLiteral("MOCK 取消失败：%1").arg(cancelled.error));
+            return;
+        }
         m_mockRunActive = false;
         m_mockExecutionCompleted = false;
+        if (m_mockAcquisitionTimer) m_mockAcquisitionTimer->stop();
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(
+                QStringLiteral("%1 · %2 · MOCK 已取消 · 未生成成功结果")
+                    .arg(cancelledRun, cancelledSnapshot));
+        }
         setWorkflowStep(8);
     });
 
@@ -985,7 +1071,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         hero->setAlignment(Qt::AlignCenter);
         layout->addWidget(hero);
         auto* copy = new QLabel(
-            QStringLiteral("以当前水模为对象，按横断位 LOC → 单次 PTScan 采集 → 原程序既有重建与结果显示推进。"),
+            QStringLiteral("以当前水模为对象，按横断位 LOC 规划 → 单次 FSE A Mock 执行 → Mock 重建与结果包推进。"),
             page);
         copy->setProperty("class", "workflowLead");
         copy->setAlignment(Qt::AlignCenter);
@@ -1105,6 +1191,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         connect(repeatChoice.second, &QRadioButton::toggled, this,
                 [this](bool checked) {
                     m_comparisonEnabled = checked;
+                    m_protocolUseOnceConfirmed = false;
+                    m_localizationConfirmed = false;
                     refreshWorkflow();
                 });
         layout->addStretch();
@@ -1156,7 +1244,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         capabilityGrid->setVerticalSpacing(8);
         const QList<QPair<QString, QString>> capabilities = {
             {QStringLiteral("目标输出"), QStringLiteral("水模横断位图像")},
-            {QStringLiteral("默认主采集"), QStringLiteral("PTScan 基线（单次）")},
+            {QStringLiteral("默认主采集"), QStringLiteral("FSE A Mock（单次）")},
             {QStringLiteral("第二组采集"), QStringLiteral("按需增加，不默认执行")},
             {QStringLiteral("重建方式"), QStringLiteral("标准重建与基础处理")},
             {QStringLiteral("质控"), QStringLiteral("SNR、均匀性、畸变/尺寸、分辨率、伪影、重复稳定性")}
@@ -1174,7 +1262,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         recommendationLayout->addLayout(capabilityGrid, 1);
         layout->addWidget(recommendation);
         m_protocolChainLabel =
-            new QLabel(QStringLiteral("横断位 LOC → PTScan（单次基线；当前 HOLD）"), page);
+            new QLabel(QStringLiteral("横断位 LOC → FSE A（单次 Mock 主流程）"), page);
         m_protocolChainLabel->setObjectName(QStringLiteral("ProtocolChainLabel"));
         m_protocolChainLabel->setProperty("class", "workflowProtocol");
         layout->addWidget(m_protocolChainLabel);
@@ -1183,6 +1271,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         m_addComparisonButton->setProperty("class", "secondary");
         connect(m_addComparisonButton, &QPushButton::clicked, this, [this] {
             m_comparisonEnabled = true;
+            m_protocolUseOnceConfirmed = false;
+            m_localizationConfirmed = false;
             refreshWorkflow();
         });
         layout->addWidget(m_addComparisonButton, 0, Qt::AlignLeft);
@@ -1320,7 +1410,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         planSummaryLayout->setVerticalSpacing(7);
         const QList<QPair<QString, QString>> planRows = {
             {QStringLiteral("系统模板"), QStringLiteral("水模横断位成像模板 · TPL-PHANTOM-AXIAL v1.0")},
-            {QStringLiteral("当前方案"), QStringLiteral("水模横断位 · PTScan 基线 · 单次")}
+            {QStringLiteral("当前方案"), QStringLiteral("水模横断位 · FSE A Mock · 单次")}
         };
         for (int row = 0; row < planRows.size(); ++row) {
             auto* name = new QLabel(planRows.at(row).first, planSummary);
@@ -1334,7 +1424,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addWidget(planSummary);
 
         m_scanPlanChainLabel =
-            new QLabel(QStringLiteral("协议链　横断位 LOC → PTScan（单次基线）"), page);
+            new QLabel(QStringLiteral("协议链　横断位 LOC → FSE A（单次 Mock 主流程）"), page);
         m_scanPlanChainLabel->setProperty("class", "workflowProtocol");
         m_scanPlanChainLabel->setFixedHeight(48);
         layout->addWidget(m_scanPlanChainLabel);
@@ -1526,6 +1616,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             connect(editor, &QLineEdit::textChanged, this,
                     [this, updateProtocolState](const QString&) {
                 m_protocolUseOnceConfirmed = false;
+                m_localizationConfirmed = false;
                 updateProtocolState();
             });
         }
@@ -1621,6 +1712,10 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         }
         imagingRow->addLayout(thumbnailRail);
         m_localizationPlanner = new LocalizationPlannerView(page);
+        static_cast<LocalizationPlannerView*>(m_localizationPlanner)
+            ->setChangeHandler([this] {
+                m_localizationConfirmed = false;
+            });
         imagingRow->addWidget(m_localizationPlanner, 1);
         layout->addWidget(imagingPanel, 1);
 
@@ -1762,6 +1857,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         modifyTarget->setProperty("class", "secondary");
         connect(modifyTarget, &QPushButton::clicked, this,
                 [this, targetChoice, actionFeedback] {
+            m_localizationConfirmed = false;
             if (m_automationStatusLabel) {
                 m_automationStatusLabel->setText(
                     QStringLiteral("成像目标已应用：%1 · Mock 规划")
@@ -1799,12 +1895,16 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                     QStringLiteral("专家参数（L3）｜仅影响当前 Mock 候选协议　收起"));
             }
             m_protocolUseOnceConfirmed = false;
+            m_localizationConfirmed = false;
             setWorkflowStep(5);
         });
         auto* confirm = new QPushButton(QStringLiteral("确认定位"), page);
         confirm->setObjectName(QStringLiteral("ConfirmLocalizationButton"));
         confirm->setProperty("class", "primary");
-        connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(8); });
+        connect(confirm, &QPushButton::clicked, this, [this] {
+            m_localizationConfirmed = true;
+            setWorkflowStep(8);
+        });
         planningActions->addStretch();
         planningActions->addWidget(researchParameters);
         planningActions->addWidget(confirm);
@@ -1823,7 +1923,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             {QStringLiteral("1　样品"),
              QStringLiteral("WATER-PHANTOM-001 · 固定 Mock 水模预设")},
             {QStringLiteral("2　任务与方案"),
-             QStringLiteral("水模横断位 · PTScan Mock 基线 · 单次模拟执行")},
+            QStringLiteral("水模横断位 · FSE A Mock · 单次模拟执行")},
             {QStringLiteral("3　采集步骤"),
              QStringLiteral("LOC Mock参考 → 参数快照 → Mock执行 → Mock处理与QC")},
             {QStringLiteral("4　定位与主要参数"),
@@ -1850,7 +1950,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addWidget(confirmationTable);
 
         auto* snapshot = new QLabel(
-            QStringLiteral("SNAPSHOT-PENDING　｜　水模 · 横断位 · PTScan Mock　｜　开始时冻结唯一身份"),
+            QStringLiteral("SNAPSHOT-PENDING　｜　水模 · 横断位 · FSE A Mock　｜　开始时冻结唯一身份"),
             page);
         snapshot->setObjectName(QStringLiteral("RealAcquisitionPlanSummary"));
         snapshot->setProperty("class", "evidenceLabel");
@@ -1902,7 +2002,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         m_realRunButton->setToolTip(liveBlockedReason);
         m_realRunButton->setAccessibleDescription(liveBlockedReason);
         m_mockAcquireButton =
-            new QPushButton(QStringLiteral("确认并进入 PTScan Mock 采集"), page);
+            new QPushButton(QStringLiteral("确认并进入 FSE A Mock 采集"), page);
         m_mockAcquireButton->setObjectName(QStringLiteral("MockAcquireButton"));
         m_mockAcquireButton->setProperty("class", "primary");
         m_mockAcquireButton->setEnabled(false);
@@ -1913,8 +2013,31 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             const bool baselineTemplateSelected =
                 m_sceneList && m_sceneList->currentItem()
                 && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
-            const bool canStartMock = allConfirmed && baselineTemplateSelected;
+            QString outputError;
+            const bool outputWritable = mockOutputRootWritable(outputError);
+            QStringList blockReasons;
+            if (!m_preparationConfirmed)
+                blockReasons.append(QStringLiteral("准备与 Mock 水模预设未确认"));
+            if (!m_protocolUseOnceConfirmed)
+                blockReasons.append(QStringLiteral("协议草稿未确认"));
+            if (!m_localizationConfirmed)
+                blockReasons.append(QStringLiteral("横断位定位未确认"));
+            if (!allConfirmed)
+                blockReasons.append(QStringLiteral("三项 Mock 运行确认未完成"));
+            if (!baselineTemplateSelected)
+                blockReasons.append(QStringLiteral("当前不是水模基线模板"));
+            if (!outputWritable)
+                blockReasons.append(outputError);
+            const bool canStartMock =
+                blockReasons.isEmpty();
             m_mockAcquireButton->setEnabled(canStartMock);
+            m_mockAcquireButton->setToolTip(
+                canStartMock
+                    ? QStringLiteral("仅运行确定性 MOCK；不会加载 SDK、连接设备或调用 Run/Abort")
+                    : QStringLiteral("MOCK 启动被阻止：%1")
+                          .arg(blockReasons.join(QStringLiteral("；"))));
+            m_mockAcquireButton->setAccessibleDescription(
+                m_mockAcquireButton->toolTip());
             if (m_leftMockStartButton && m_workflowStep == 8) {
                 m_leftMockStartButton->setEnabled(canStartMock);
             }
@@ -1925,6 +2048,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                     [updateMockAcquisitionGate](bool) { updateMockAcquisitionGate(); });
         }
         connect(m_mockAcquireButton, &QPushButton::clicked, this, [this] {
+            if (!startMockRun()) return;
             m_mockRunActive = true;
             m_mockExecutionCompleted = false;
             setWorkflowStep(9);
@@ -1953,6 +2077,12 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                              QStringLiteral("MockAcquisitionImage"),
                              QStringLiteral("尚未开始本次 Mock；QA 只读预览不构成运行证据。"));
         acquisitionImage->setVisible(false);
+        auto* progress = new QProgressBar(page);
+        progress->setObjectName(QStringLiteral("MockAcquisitionProgress"));
+        progress->setRange(0, 100);
+        progress->setValue(0);
+        progress->setFormat(QStringLiteral("尚未开始本次 MOCK"));
+        layout->addWidget(progress);
         break;
     }
     case 10: {
@@ -2011,13 +2141,24 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         result->setEnabled(false);
         result->setToolTip(QStringLiteral("等待合法 Mock 执行与处理完成"));
         result->setAccessibleDescription(QStringLiteral("等待合法 Mock 执行与处理完成"));
-        connect(result, &QPushButton::clicked, this, [this] { setWorkflowStep(11); });
+        connect(result, &QPushButton::clicked,
+                this, &MainWindow::completeMockProcessing);
         auto* retry = new QPushButton(QStringLiteral("重试 Mock 处理"), page);
         retry->setObjectName(QStringLiteral("RetryMockProcessingButton"));
         retry->setProperty("class", "secondary");
         retry->setEnabled(false);
         retry->setToolTip(QStringLiteral("当前没有可重试的 Mock 处理失败"));
         retry->setAccessibleDescription(retry->toolTip());
+        connect(retry, &QPushButton::clicked, this, [this] {
+            const MockActionResult retried = m_mockWorkflow.retryProcessing();
+            if (!retried.ok) {
+                if (m_automationStatusLabel)
+                    m_automationStatusLabel->setText(
+                        QStringLiteral("MOCK 重试失败：%1").arg(retried.error));
+                return;
+            }
+            completeMockProcessing();
+        });
         auto* actions = new QHBoxLayout;
         actions->addWidget(retry);
         actions->addStretch();
@@ -2035,9 +2176,9 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                                  QStringLiteral("ResultLocThumbnail"),
                                  QStringLiteral("定位图 LOC"), false, page);
         auto* fseThumbnail =
-            makeGalleryThumbnail(QStringLiteral(":/mock-phantom.png"),
+            makeGalleryThumbnail(QStringLiteral(":/mock-reconstruction.png"),
                                  QStringLiteral("ResultFseThumbnail"),
-                                 QStringLiteral("PTScan · 当前"), true, page);
+                                 QStringLiteral("FSE A · 当前"), true, page);
         locThumbnail->setVisible(false);
         fseThumbnail->setVisible(false);
         resultRail->addWidget(locThumbnail, 1);
@@ -2045,7 +2186,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         resultRail->addStretch();
         resultRow->addLayout(resultRail);
         auto* mockResultImage =
-            new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
+            new ReferenceImageView(QStringLiteral(":/mock-reconstruction.png"),
                                    QStringLiteral("MockResultImage"), page);
         mockResultImage->setVisible(false);
         resultRow->addWidget(mockResultImage, 1);
@@ -2056,6 +2197,23 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         evidence->setProperty("class", "evidenceLabel");
         evidence->setWordWrap(true);
         layout->addWidget(evidence);
+        auto* qcGrid = new QGridLayout;
+        auto* snrName = new QLabel(QStringLiteral("Mock SNR"), page);
+        auto* snrValue = new QLabel(QStringLiteral("尚未计算"), page);
+        snrValue->setObjectName(QStringLiteral("MockQcSnrValue"));
+        auto* uniformityName = new QLabel(QStringLiteral("Mock 均匀性"), page);
+        auto* uniformityValue = new QLabel(QStringLiteral("尚未计算"), page);
+        uniformityValue->setObjectName(QStringLiteral("MockQcUniformityValue"));
+        auto* sizeName = new QLabel(QStringLiteral("Mock 对象尺寸"), page);
+        auto* sizeValue = new QLabel(QStringLiteral("尚未计算"), page);
+        sizeValue->setObjectName(QStringLiteral("MockQcObjectSizeValue"));
+        qcGrid->addWidget(snrName, 0, 0);
+        qcGrid->addWidget(snrValue, 0, 1);
+        qcGrid->addWidget(uniformityName, 0, 2);
+        qcGrid->addWidget(uniformityValue, 0, 3);
+        qcGrid->addWidget(sizeName, 0, 4);
+        qcGrid->addWidget(sizeValue, 0, 5);
+        layout->addLayout(qcGrid);
         auto* controls = new QHBoxLayout;
         controls->addWidget(new QLabel(QStringLiteral("窗宽 1200　窗位 60%　缩放 100%"), page));
         controls->addStretch();
@@ -2070,13 +2228,37 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         confirm->setEnabled(false);
         confirm->setToolTip(QStringLiteral("等待本次 Mock 重建与 QC 成功"));
         confirm->setAccessibleDescription(confirm->toolTip());
-        connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(12); });
+        connect(confirm, &QPushButton::clicked, this, [this] {
+            const MockActionResult confirmed = m_mockWorkflow.confirmResult();
+            if (!confirmed.ok) {
+                if (m_automationStatusLabel)
+                    m_automationStatusLabel->setText(
+                        QStringLiteral("MOCK 结果确认失败：%1").arg(confirmed.error));
+                refreshWorkflow();
+                return;
+            }
+            if (m_automationStatusLabel)
+                m_automationStatusLabel->setText(
+                    QStringLiteral("%1 · MOCK 结果已确认 · 待封存")
+                        .arg(m_mockWorkflow.runId()));
+            setWorkflowStep(12);
+        });
         auto* retryQc = new QPushButton(QStringLiteral("重试 Mock QC"), page);
         retryQc->setObjectName(QStringLiteral("RetryMockQcButton"));
         retryQc->setProperty("class", "secondary");
         retryQc->setEnabled(false);
         retryQc->setToolTip(QStringLiteral("当前没有可重试的 Mock QC 失败"));
         retryQc->setAccessibleDescription(retryQc->toolTip());
+        connect(retryQc, &QPushButton::clicked, this, [this] {
+            const MockActionResult retried = m_mockWorkflow.retryProcessing();
+            if (!retried.ok) {
+                if (m_automationStatusLabel)
+                    m_automationStatusLabel->setText(
+                        QStringLiteral("MOCK QC 重试失败：%1").arg(retried.error));
+                return;
+            }
+            completeMockProcessing();
+        });
         controls->addWidget(returnToLocalization);
         controls->addWidget(retryQc);
         controls->addWidget(confirm);
@@ -2086,7 +2268,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
     case 12: {
         addTitle(QStringLiteral("结果包保存与任务结束"));
         auto* content = new QHBoxLayout;
-        auto* image = new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
+        auto* image = new ReferenceImageView(QStringLiteral(":/mock-reconstruction.png"),
                                              QStringLiteral("ResultPackageImage"), page);
         image->setVisible(false);
         content->addWidget(image, 3);
@@ -2143,6 +2325,38 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         external->setAccessibleDescription(external->toolTip());
         m_openHistoryButton->setEnabled(false);
         m_openHistoryButton->setToolTip(QStringLiteral("尚无实际封存的 Mock 结果包"));
+        connect(save, &QPushButton::clicked,
+                this, &MainWindow::saveMockResultPackage);
+        connect(copyPath, &QPushButton::clicked, this, [this] {
+            if (m_mockWorkflow.packagePath().isEmpty()) return;
+            QApplication::clipboard()->setText(
+                QDir::toNativeSeparators(m_mockWorkflow.packagePath()));
+            if (auto* state = findChild<QLabel*>(
+                    QStringLiteral("ResultPackageSaveState"))) {
+                state->setText(
+                    QStringLiteral("MOCK 结果路径已复制：%1")
+                        .arg(QDir::toNativeSeparators(
+                            m_mockWorkflow.packagePath())));
+            }
+        });
+        connect(openLocation, &QPushButton::clicked, this, [this] {
+            if (m_mockWorkflow.packagePath().isEmpty()) return;
+            const bool opened = QDesktopServices::openUrl(
+                QUrl::fromLocalFile(m_mockWorkflow.packagePath()));
+            if (auto* state = findChild<QLabel*>(
+                    QStringLiteral("ResultPackageSaveState"))) {
+                state->setText(
+                    opened
+                        ? QStringLiteral("已请求打开 MOCK 结果目录：%1")
+                              .arg(QDir::toNativeSeparators(
+                                  m_mockWorkflow.packagePath()))
+                        : QStringLiteral("无法打开 MOCK 结果目录"));
+            }
+        });
+        connect(m_openHistoryButton, &QPushButton::clicked, this, [this] {
+            loadMockHistory();
+            setWorkflowStep(13);
+        });
         actions->addWidget(save);
         actions->addWidget(openLocation);
         actions->addWidget(copyPath);
@@ -2237,18 +2451,53 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                 [applyHistoryFilter](const QString&) { applyHistoryFilter(); });
 
         connect(table, &QTableWidget::currentCellChanged, this,
-                [this, table](int currentRow, int, int, int) {
+                 [this, table](int currentRow, int, int, int) {
             if (currentRow < 0 || !m_historySelectionSummary) return;
+            const QString runId = table->item(currentRow, 0)->text();
+            const QString packagePath =
+                table->item(currentRow, 0)->data(Qt::UserRole).toString();
+            const QString previewPath =
+                table->item(currentRow, 0)->data(Qt::UserRole + 1).toString();
             m_historySelectionSummary->setText(
-                QStringLiteral("运行 ID　RUN-MOCK-%1\n"
+                QStringLiteral("运行 ID　%1\n"
                                "样品 ID　%2\n"
                                "结果包　　%3\n"
                                "QC　　　　%4\n"
-                               "来源记录　完整 · Mock")
-                    .arg(currentRow + 1, 3, 10, QLatin1Char('0'))
-                     .arg(table->item(currentRow, 2)->text(),
-                          table->item(currentRow, 5)->text(),
-                          table->item(currentRow, 6)->text()));
+                               "来源目录　%5")
+                    .arg(runId,
+                         table->item(currentRow, 2)->text(),
+                         table->item(currentRow, 5)->text(),
+                         table->item(currentRow, 6)->text(),
+                         QDir::toNativeSeparators(packagePath)));
+            auto* openButton = findChild<QPushButton*>(
+                QStringLiteral("HistoryOpenButton"));
+            auto* sourceButton = findChild<QPushButton*>(
+                QStringLiteral("HistorySourceButton"));
+            if (openButton) {
+                openButton->setEnabled(!previewPath.isEmpty());
+                openButton->setToolTip(
+                    previewPath.isEmpty()
+                        ? QStringLiteral("结果包完整性未通过，不能打开预览")
+                        : QStringLiteral("打开本次实际封存的 MOCK 结果"));
+            }
+            if (sourceButton) {
+                sourceButton->setEnabled(!packagePath.isEmpty());
+                sourceButton->setToolTip(
+                    packagePath.isEmpty()
+                        ? QStringLiteral("来源目录缺失")
+                        : QStringLiteral("查看本次实际封存的 MOCK 来源记录"));
+            }
+            if (auto* preview = dynamic_cast<ReferenceImageView*>(
+                    findChild<QWidget*>(
+                        QStringLiteral("HistoryPreviewImage")))) {
+                const bool loaded =
+                    !previewPath.isEmpty() && preview->setSource(previewPath);
+                preview->setVisible(loaded);
+                preview->setAccessibleDescription(
+                    loaded
+                        ? QStringLiteral("%1 的实际封存 MOCK 结果预览").arg(runId)
+                        : QStringLiteral("当前记录无可验证预览"));
+            }
         });
 
         auto* actions = new QHBoxLayout;
@@ -2273,6 +2522,24 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         for (QPushButton* button : {open, compare, source})
             button->setAccessibleDescription(button->toolTip());
         historyActionState->setText(QStringLiteral("尚无已封存 Mock 结果包"));
+        connect(open, &QPushButton::clicked, this, [this, table, historyActionState] {
+            const int row = table->currentRow();
+            if (row < 0) return;
+            historyActionState->setText(
+                QStringLiteral("已打开实际封存结果（只读）：%1")
+                    .arg(table->item(row, 0)->text()));
+        });
+        connect(source, &QPushButton::clicked, this, [table, historyActionState] {
+            const int row = table->currentRow();
+            if (row < 0) return;
+            const QString packagePath =
+                table->item(row, 0)->data(Qt::UserRole).toString();
+            historyActionState->setText(
+                QStringLiteral("MOCK 来源记录：%1")
+                    .arg(QDir::toNativeSeparators(
+                        QDir(packagePath).filePath(
+                            QStringLiteral("mock-source.json")))));
+        });
         actions->addWidget(open);
         actions->addWidget(compare);
         actions->addWidget(source);
@@ -2517,6 +2784,721 @@ void MainWindow::resetRunConfirmations()
     }
 }
 
+MockParameterDraft MainWindow::currentMockDraft() const
+{
+    MockParameterDraft draft;
+    draft.scene = selectedPrimaryScene();
+    draft.object = selectedTarget();
+    draft.sampleId = QStringLiteral("WATER-PHANTOM-001");
+    draft.templateId = QStringLiteral("water-phantom-axial-v1");
+    draft.templateName = QStringLiteral("水模横断位成像模板");
+    draft.protocolChain = {QStringLiteral("LOC"), QStringLiteral("FSE A")};
+    if (m_comparisonEnabled)
+        draft.protocolChain.append(QStringLiteral("FSE B"));
+    draft.orientation = QStringLiteral("横断");
+    draft.trMs = 3000.0;
+    draft.teMs = 12.9;
+    draft.sliceCount = 11;
+    draft.nex = 1;
+    draft.outputRoot = m_mockResultRoot;
+
+    if (auto* fov = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current0"))) {
+        parseDecimalPair(
+            fov->text(), draft.fovReadMm, draft.fovPhaseMm, true);
+    }
+    if (auto* matrix = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current1"))) {
+        double read = 0.0;
+        double phase = 0.0;
+        if (parseDecimalPair(matrix->text(), read, phase, false)) {
+            draft.matrixRead = static_cast<int>(read);
+            draft.matrixPhase = static_cast<int>(phase);
+        }
+    }
+    if (auto* thickness = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current2"))) {
+        parseDecimalMillimetres(
+            thickness->text(), draft.sliceThicknessMm);
+    }
+    if (auto* gap = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current3"))) {
+        parseDecimalMillimetres(gap->text(), draft.sliceGapMm);
+    }
+    if (auto* nex = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current4"))) {
+        draft.nex = nex->text().trimmed().toInt();
+    }
+    if (m_localizationPlanner) {
+        const auto* planner =
+            static_cast<const LocalizationPlannerView*>(
+                m_localizationPlanner);
+        const QRectF coverage = planner->normalizedCoverage();
+        const QPointF center = planner->normalizedCenter();
+        draft.orientation =
+            planner->property("selectedOrientation").toString();
+        draft.readPhaseSwapped =
+            planner->property("readPhaseSwapped").toBool();
+        draft.planningCoverageModified =
+            planner->property("planningCoverageModified").toBool();
+        draft.coverageX = coverage.x();
+        draft.coverageY = coverage.y();
+        draft.coverageWidth = coverage.width();
+        draft.coverageHeight = coverage.height();
+        draft.coverageCenterX = center.x();
+        draft.coverageCenterY = center.y();
+        draft.slicePosition = planner->normalizedSlicePosition();
+    }
+    return draft;
+}
+
+bool MainWindow::mockOutputRootWritable(QString& error) const
+{
+    const QString absoluteRoot = QDir(m_mockResultRoot).absolutePath();
+    const QFileInfo existing(absoluteRoot);
+    if (existing.exists() && !existing.isDir()) {
+        error =
+            QStringLiteral("MOCK 结果根不是目录：%1")
+                .arg(QDir::toNativeSeparators(absoluteRoot));
+        return false;
+    }
+    if (!existing.exists() && !QDir().mkpath(absoluteRoot)) {
+        error =
+            QStringLiteral("无法创建 MOCK 结果根：%1")
+                .arg(QDir::toNativeSeparators(absoluteRoot));
+        return false;
+    }
+    QTemporaryFile probe(
+        QDir(absoluteRoot).filePath(
+            QStringLiteral(".agent-mri-write-check-XXXXXX")));
+    probe.setAutoRemove(true);
+    if (!probe.open()) {
+        error =
+            QStringLiteral("MOCK 结果根不可写：%1")
+                .arg(QDir::toNativeSeparators(absoluteRoot));
+        return false;
+    }
+    error.clear();
+    return true;
+}
+
+void MainWindow::resetMockWorkflow()
+{
+    if (m_mockAcquisitionTimer) m_mockAcquisitionTimer->stop();
+    m_mockWorkflow = MockWorkflow{};
+    m_mockStandardResultPng.clear();
+    m_mockRunActive = false;
+    m_mockExecutionCompleted = false;
+    m_mockAcquisitionRemainingMs = 3200;
+}
+
+bool MainWindow::startMockRun()
+{
+    QString outputError;
+    MockPreparationEvidence preparation;
+    preparation.preparationConfirmed = m_preparationConfirmed;
+    preparation.protocolConfirmed = m_protocolUseOnceConfirmed;
+    preparation.localizationConfirmed = m_localizationConfirmed;
+    preparation.outputRootWritable =
+        mockOutputRootWritable(outputError);
+    preparation.outputRootError = outputError;
+
+    MockWorkflow candidate;
+    candidate.selectDataSource(DataSourceKind::Mock);
+    const MockActionResult prepared =
+        candidate.prepare(currentMockDraft(), preparation);
+    if (!prepared.ok) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 准备失败：%1").arg(prepared.error));
+        return false;
+    }
+
+    MockStartConfirmations confirmations;
+    if (auto* check = findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck1")))
+        confirmations.mockSourceConfirmed = check->isChecked();
+    if (auto* check = findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck2")))
+        confirmations.outputConfirmed = check->isChecked();
+    if (auto* check = findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck3")))
+        confirmations.noDeviceSideEffectsConfirmed = check->isChecked();
+    const MockActionResult started = candidate.start(confirmations);
+    if (!started.ok) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 启动被阻塞：%1").arg(started.error));
+        return false;
+    }
+    candidate.setProgress(1);
+    m_mockWorkflow = std::move(candidate);
+    m_mockStandardResultPng.clear();
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(
+            QStringLiteral("%1 · %2 · dataSource=MOCK · 运行中")
+                .arg(m_mockWorkflow.runId(),
+                     m_mockWorkflow.snapshotId()));
+    }
+    refreshMockWorkflowUi();
+    return true;
+}
+
+void MainWindow::completeMockProcessing()
+{
+    if (m_mockWorkflow.state() != MockWorkflowState::Processing) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 处理被阻塞：当前状态 %1")
+                    .arg(mockWorkflowStateName(
+                        m_mockWorkflow.state())));
+        refreshWorkflow();
+        return;
+    }
+
+    QFile source(QStringLiteral(":/mock-reconstruction.png"));
+    if (!source.open(QIODevice::ReadOnly)) {
+        m_mockWorkflow.fail(
+            QStringLiteral("无法读取既有 Mock 重建资产"));
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 处理失败：无法读取重建资产"));
+        refreshWorkflow();
+        return;
+    }
+    const QByteArray pngBytes = source.readAll();
+    const QByteArray imageHash =
+        QCryptographicHash::hash(
+            pngBytes, QCryptographicHash::Sha256)
+            .toHex()
+            .toUpper();
+    MockReconstructionArtifact reconstruction;
+    reconstruction.logicalSource =
+        QStringLiteral(":/mock-reconstruction.png");
+    reconstruction.pngSha256 = imageHash;
+    reconstruction.byteSize = pngBytes.size();
+    const MockActionResult bound =
+        m_mockWorkflow.bindReconstruction(reconstruction);
+    if (!bound.ok) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 重建绑定失败：%1")
+                    .arg(bound.error));
+        refreshWorkflow();
+        return;
+    }
+
+    QImage image;
+    if (!image.loadFromData(pngBytes, "PNG")) {
+        m_mockWorkflow.recordQcFailure(
+            QStringLiteral("Mock PNG 无法解码"));
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK QC 失败：PNG 无法解码"));
+        refreshWorkflow();
+        return;
+    }
+    const ImageQualityResult quality =
+        ImageQualityEvaluator::evaluate(image);
+    if (!quality.ok) {
+        m_mockWorkflow.recordQcFailure(quality.error);
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK QC 失败：%1")
+                    .arg(quality.error));
+        refreshWorkflow();
+        return;
+    }
+    MockQcMetrics qc;
+    qc.snrDb = quality.snrDb;
+    qc.uniformityPercent = quality.uniformityPercent;
+    qc.objectSizePixels = quality.objectSizePixels;
+    qc.imageSha256 = imageHash;
+    const MockActionResult recorded =
+        m_mockWorkflow.recordQcSuccess(qc);
+    if (!recorded.ok) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK QC 绑定失败：%1")
+                    .arg(recorded.error));
+        refreshWorkflow();
+        return;
+    }
+    m_mockStandardResultPng = pngBytes;
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(
+            QStringLiteral("%1 · MOCK 重建与图像级 QC 完成")
+                .arg(m_mockWorkflow.runId()));
+    }
+    setWorkflowStep(11);
+}
+
+void MainWindow::saveMockResultPackage()
+{
+    if (m_mockWorkflow.state() != MockWorkflowState::QcReady
+        || !m_mockWorkflow.resultConfirmed()
+        || !m_mockWorkflow.reconstruction()
+        || !m_mockWorkflow.qc()
+        || m_mockStandardResultPng.isEmpty()) {
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 封存被阻塞：结果、QC 或人工确认不完整"));
+        refreshWorkflow();
+        return;
+    }
+
+    MockPackageInput input;
+    input.rootDirectory = m_mockResultRoot;
+    input.softwareCommit =
+        QString::fromLatin1(NMR_SOFTWARE_COMMIT);
+    input.runId = m_mockWorkflow.runId();
+    input.snapshot = m_mockWorkflow.snapshot();
+    input.reconstruction =
+        m_mockWorkflow.reconstruction().value();
+    input.standardResultPng = m_mockStandardResultPng;
+    input.qc = m_mockWorkflow.qc().value();
+    input.auditEvents = m_mockWorkflow.auditEvents();
+    input.taskNote =
+        QStringLiteral(
+            "dataSource=MOCK；确定性水模横断位演示结果；"
+            "未加载 SDK、未连接设备、未调用 Run/Abort、未生成真实 RAW。");
+    input.createdAtUtc = QDateTime::currentDateTimeUtc();
+
+    const PackageWriteResult written =
+        MockResultPackage::write(input);
+    if (!written.ok) {
+        m_mockWorkflow.recordPackageFailure(written.error);
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 结果包封存失败：%1")
+                    .arg(written.error));
+        refreshWorkflow();
+        return;
+    }
+    const MockActionResult marked =
+        m_mockWorkflow.markPackaged(written.packageDirectory);
+    if (!marked.ok) {
+        m_mockWorkflow.recordPackageFailure(marked.error);
+        if (m_automationStatusLabel)
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 结果包状态绑定失败：%1")
+                    .arg(marked.error));
+        refreshWorkflow();
+        return;
+    }
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(
+            QStringLiteral("%1 · MOCK 结果包已封存 · 同名不覆盖")
+                .arg(m_mockWorkflow.runId()));
+    }
+    refreshWorkflow();
+}
+
+void MainWindow::loadMockHistory()
+{
+    auto* table =
+        findChild<QTableWidget*>(
+            QStringLiteral("HistoryReadOnlyTable"));
+    auto* sampleFilter =
+        findChild<QComboBox*>(
+            QStringLiteral("HistorySampleFilter"));
+    auto* templateFilter =
+        findChild<QComboBox*>(
+            QStringLiteral("HistoryTemplateFilter"));
+    auto* dateFilter =
+        findChild<QComboBox*>(
+            QStringLiteral("HistoryDateFilter"));
+    auto* keyword =
+        findChild<QLineEdit*>(
+            QStringLiteral("HistoryFilter"));
+    if (!table || !sampleFilter || !templateFilter
+        || !dateFilter || !keyword)
+        return;
+
+    const HistoryLoadResult history =
+        MockResultPackage::loadHistory(m_mockResultRoot);
+    table->setRowCount(0);
+    sampleFilter->clear();
+    templateFilter->clear();
+    dateFilter->clear();
+    sampleFilter->addItem(QStringLiteral("全部样品"));
+    templateFilter->addItem(QStringLiteral("全部模板"));
+    dateFilter->addItem(QStringLiteral("全部时间"));
+    if (!history.ok) {
+        if (m_historySelectionSummary)
+            m_historySelectionSummary->setText(
+                QStringLiteral("历史加载失败：%1")
+                    .arg(history.error));
+        return;
+    }
+
+    QStringList samples;
+    QStringList templates;
+    QStringList dates;
+    for (const MockHistoryRecord& record : history.records) {
+        const int row = table->rowCount();
+        table->insertRow(row);
+        const QString integrity =
+            record.integrity == PackageIntegrity::Valid
+                ? QStringLiteral("完整")
+            : record.integrity == PackageIntegrity::Warning
+                ? QStringLiteral("警告")
+                : QStringLiteral("错误");
+        const QString qcStatus =
+            record.integrity == PackageIntegrity::Valid
+                ? QStringLiteral("MOCK QC 已封存")
+                : record.issues.join(QStringLiteral("；"));
+        const QStringList values = {
+            record.runId,
+            record.createdAtUtc,
+            record.sampleId,
+            record.templateName,
+            record.snapshotId,
+            integrity,
+            qcStatus
+        };
+        for (int column = 0; column < values.size();
+             ++column) {
+            auto* item =
+                new QTableWidgetItem(values.at(column));
+            item->setFlags(
+                item->flags() & ~Qt::ItemIsEditable);
+            table->setItem(row, column, item);
+        }
+        table->item(row, 0)->setData(
+            Qt::UserRole, record.packageDirectory);
+        table->item(row, 0)->setData(
+            Qt::UserRole + 1, record.previewImagePath);
+        if (!record.sampleId.isEmpty()
+            && !samples.contains(record.sampleId))
+            samples.append(record.sampleId);
+        if (!record.templateName.isEmpty()
+            && !templates.contains(record.templateName))
+            templates.append(record.templateName);
+        const QString date =
+            record.createdAtUtc.left(10);
+        if (!date.isEmpty() && !dates.contains(date))
+            dates.append(date);
+    }
+    sampleFilter->addItems(samples);
+    templateFilter->addItems(templates);
+    dateFilter->addItems(dates);
+    const bool hasRecords = table->rowCount() > 0;
+    for (QWidget* control : {
+             static_cast<QWidget*>(sampleFilter),
+             static_cast<QWidget*>(templateFilter),
+             static_cast<QWidget*>(dateFilter),
+             static_cast<QWidget*>(keyword),
+             static_cast<QWidget*>(table)}) {
+        control->setEnabled(hasRecords);
+        control->setToolTip(
+            hasRecords
+                ? QString()
+                : QStringLiteral("尚无已封存 Mock 结果包"));
+        control->setAccessibleDescription(
+            control->toolTip());
+    }
+    table->setSelectionMode(
+        hasRecords
+            ? QAbstractItemView::SingleSelection
+            : QAbstractItemView::NoSelection);
+    if (hasRecords) {
+        table->setCurrentCell(0, 0);
+    } else if (m_historySelectionSummary) {
+        m_historySelectionSummary->setText(
+            QStringLiteral("尚无已封存 Mock 结果包\n"
+                           "历史页只读取实际生成且通过完整性检查的 manifest。"));
+    }
+}
+
+void MainWindow::refreshMockWorkflowUi()
+{
+    const MockWorkflowState state =
+        m_mockWorkflow.state();
+    const bool running =
+        state == MockWorkflowState::Running
+        || state == MockWorkflowState::Paused;
+    const bool processing =
+        state == MockWorkflowState::Processing;
+    const bool qcReady =
+        state == MockWorkflowState::QcReady;
+    const bool packaged =
+        state == MockWorkflowState::Packaged;
+
+    if (auto* progress = findChild<QProgressBar*>(
+            QStringLiteral("MockAcquisitionProgress"))) {
+        progress->setValue(m_mockWorkflow.progressPercent());
+        progress->setFormat(
+            running
+                ? QStringLiteral("dataSource=MOCK · %1 · %2%")
+                      .arg(mockWorkflowStateName(state))
+                      .arg(m_mockWorkflow.progressPercent())
+            : processing || qcReady || packaged
+                ? QStringLiteral("dataSource=MOCK · 执行 100%")
+                : QStringLiteral("尚未开始本次 MOCK"));
+    }
+    if (auto* complete = findChild<QPushButton*>(
+            QStringLiteral("CompleteMockProcessingButton"))) {
+        complete->setEnabled(processing);
+        complete->setToolTip(
+            processing
+                ? QStringLiteral("读取既有合法 Mock 资产并计算图像级 QC")
+                : QStringLiteral("等待合法 Mock 执行完成"));
+    }
+    if (auto* retry = findChild<QPushButton*>(
+            QStringLiteral("RetryMockProcessingButton"))) {
+        const bool canRetry =
+            state == MockWorkflowState::Failed
+            && !m_mockWorkflow.runId().isEmpty();
+        retry->setEnabled(canRetry);
+        retry->setToolTip(
+            canRetry
+                ? QStringLiteral("使用同一 run/snapshot 重试 Mock 处理")
+                : QStringLiteral("当前没有可重试的 Mock 处理失败"));
+    }
+
+    const bool showResult =
+        (qcReady || packaged)
+        && m_mockWorkflow.hasReconstruction()
+        && m_mockWorkflow.hasQc();
+    for (const QString& objectName : {
+             QStringLiteral("ResultLocThumbnail"),
+             QStringLiteral("ResultFseThumbnail"),
+             QStringLiteral("MockResultImage"),
+             QStringLiteral("ResultPackageImage")}) {
+        if (auto* widget =
+                findChild<QWidget*>(objectName))
+            widget->setVisible(showResult);
+    }
+    if (auto* page11 =
+            findChild<QWidget*>(
+                QStringLiteral("WorkflowPage11"))) {
+        if (auto* evidence = page11->findChild<QLabel*>(
+                QStringLiteral("MockImageEvidenceLabel"))) {
+            evidence->setText(
+                showResult
+                    ? QStringLiteral(
+                          "%1 · %2 · dataSource=MOCK · 图像与 QC 绑定同一 SHA-256")
+                          .arg(m_mockWorkflow.runId(),
+                               m_mockWorkflow.snapshotId())
+                    : QStringLiteral(
+                          "尚无本次 Mock 重建图或 QC；Empty/失败/取消状态不显示结果。"));
+        }
+    }
+    if (auto* snr = findChild<QLabel*>(
+            QStringLiteral("MockQcSnrValue"))) {
+        snr->setText(
+            showResult
+                ? QStringLiteral("%1 dB · MOCK 图像级估计")
+                      .arg(m_mockWorkflow.qc()->snrDb, 0, 'f', 2)
+                : QStringLiteral("尚未计算"));
+    }
+    if (auto* uniformity = findChild<QLabel*>(
+            QStringLiteral("MockQcUniformityValue"))) {
+        uniformity->setText(
+            showResult
+                ? QStringLiteral("%1% · MOCK 图像级估计")
+                      .arg(m_mockWorkflow.qc()->uniformityPercent, 0, 'f', 2)
+                : QStringLiteral("尚未计算"));
+    }
+    if (auto* size = findChild<QLabel*>(
+            QStringLiteral("MockQcObjectSizeValue"))) {
+        size->setText(
+            showResult
+                ? QStringLiteral("%1×%2 px · MOCK")
+                      .arg(m_mockWorkflow.qc()->objectSizePixels.width())
+                      .arg(m_mockWorkflow.qc()->objectSizePixels.height())
+                : QStringLiteral("尚未计算"));
+    }
+    if (auto* confirm = findChild<QPushButton*>(
+            QStringLiteral("ConfirmResultButton"))) {
+        confirm->setEnabled(qcReady && !m_mockWorkflow.resultConfirmed());
+        confirm->setToolTip(
+            confirm->isEnabled()
+                ? QStringLiteral("确认本次 MOCK 图像级结果并进入封存")
+                : QStringLiteral("等待本次 Mock 重建与 QC 成功"));
+    }
+    if (auto* retryQc = findChild<QPushButton*>(
+            QStringLiteral("RetryMockQcButton"))) {
+        const bool canRetry =
+            state == MockWorkflowState::Failed
+            && !m_mockWorkflow.runId().isEmpty();
+        retryQc->setEnabled(canRetry);
+        retryQc->setToolTip(
+            canRetry
+                ? QStringLiteral("使用同一 run/snapshot 重试 Mock QC")
+                : QStringLiteral("当前没有可重试的 Mock QC 失败"));
+    }
+
+    const bool readyToSave =
+        qcReady && m_mockWorkflow.resultConfirmed()
+        && !packaged;
+    if (auto* save = findChild<QPushButton*>(
+            QStringLiteral("SaveResultPackageButton"))) {
+        save->setEnabled(readyToSave);
+        save->setToolTip(
+            readyToSave
+                ? QStringLiteral("封存 dataSource=MOCK 结果包；同名不覆盖")
+                : QStringLiteral("等待本次 Mock 重建、QC 与结果确认"));
+    }
+    const bool hasPackage =
+        packaged && !m_mockWorkflow.packagePath().isEmpty();
+    for (const QString& objectName : {
+             QStringLiteral("OpenResultLocationButton"),
+             QStringLiteral("CopyResultPathButton"),
+             QStringLiteral("OpenHistoryButton")}) {
+        if (auto* button =
+                findChild<QPushButton*>(objectName)) {
+            button->setEnabled(hasPackage);
+            button->setToolTip(
+                hasPackage
+                    ? QStringLiteral("当前实际封存的 MOCK 结果包")
+                    : QStringLiteral("尚无已封存 Mock 结果包"));
+        }
+    }
+    if (auto* metadata = findChild<QLabel*>(
+            QStringLiteral("ResultPackageMetadata"))) {
+        metadata->setText(
+            (qcReady || packaged)
+                ? QStringLiteral(
+                      "运行 ID　%1\n快照 ID　%2\ndataSource　MOCK\n结果根　%3")
+                      .arg(m_mockWorkflow.runId(),
+                           m_mockWorkflow.snapshotId(),
+                           QDir::toNativeSeparators(
+                               m_mockResultRoot))
+                : QStringLiteral(
+                      "尚无已封存 Mock 结果包\n完成合法 Mock 重建与 QC 后方可保存。"));
+    }
+    if (auto* stateLabel = findChild<QLabel*>(
+            QStringLiteral("ResultPackageSaveState"))) {
+        stateLabel->setText(
+            hasPackage
+                ? QStringLiteral("MOCK 结果包已封存：%1")
+                      .arg(QDir::toNativeSeparators(
+                          m_mockWorkflow.packagePath()))
+            : readyToSave
+                ? QStringLiteral("MOCK 结果与 QC 已确认 · 等待封存")
+                : QStringLiteral(
+                      "尚无已封存 Mock 结果包 · 所有结果动作保持禁用"));
+    }
+    for (QWidget* card :
+         findChildren<QWidget*>(
+             QStringLiteral("ResultPackageItem"))) {
+        const auto labels =
+            card->findChildren<QLabel*>(
+                QString(), Qt::FindDirectChildrenOnly);
+        if (labels.size() >= 2) {
+            labels.last()->setText(
+                hasPackage
+                    ? QStringLiteral("已封存 · dataSource=MOCK")
+                : readyToSave
+                    ? QStringLiteral("已准备 · 等待原子封存")
+                    : QStringLiteral("尚未生成 · 等待封存"));
+        }
+    }
+
+    if (auto* snapshot = findChild<QLabel*>(
+            QStringLiteral("RealAcquisitionPlanSummary"))) {
+        snapshot->setText(
+            m_mockWorkflow.runId().isEmpty()
+                ? QStringLiteral(
+                      "SNAPSHOT-PENDING　｜　水模 · 横断位 · FSE A Mock　｜　开始时冻结唯一身份")
+                : QStringLiteral("%1　｜　%2　｜　dataSource=MOCK　｜　%3")
+                      .arg(m_mockWorkflow.runId(),
+                           m_mockWorkflow.snapshotId(),
+                           mockWorkflowStateName(state)));
+    }
+
+    const auto setRightCardValues =
+        [this](int step, const QStringList& values) {
+            auto* page = findChild<QWidget*>(
+                QStringLiteral("RightPage%1")
+                    .arg(step, 2, 10, QLatin1Char('0')));
+            if (!page) return;
+            const auto cards =
+                page->findChildren<QWidget*>(
+                    QStringLiteral("WorkflowCard"),
+                    Qt::FindDirectChildrenOnly);
+            for (int index = 0;
+                 index < cards.size() && index < values.size();
+                 ++index) {
+                const auto labels =
+                    cards.at(index)->findChildren<QLabel*>(
+                        QString(), Qt::FindDirectChildrenOnly);
+                if (labels.size() >= 2)
+                    labels.last()->setText(values.at(index));
+            }
+        };
+    if (processing) {
+        setRightCardValues(
+            10,
+            {QStringLiteral("MOCK 执行已完成 · 不生成真实 RAW"),
+             QStringLiteral("%1 / %2")
+                 .arg(m_mockWorkflow.runId(),
+                      m_mockWorkflow.snapshotId()),
+             QStringLiteral("既有 Mock 输入待解析"),
+             QStringLiteral("等待用户执行标准 Mock 处理"),
+             QStringLiteral("尚未计算"),
+             QStringLiteral("无异常")});
+    }
+    if (showResult) {
+        setRightCardValues(
+            11,
+            {QStringLiteral("已绑定 · dataSource=MOCK"),
+             QStringLiteral("已从同一图像实际计算"),
+             m_mockWorkflow.resultConfirmed()
+                 ? QStringLiteral("研究者已确认")
+                 : QStringLiteral("等待研究者确认")});
+        setRightCardValues(
+            12,
+            {QStringLiteral("MOCK 已完成"),
+             QStringLiteral("MOCK 已完成"),
+             QStringLiteral("MOCK 图像级 QC 已完成"),
+             hasPackage
+                 ? QStringLiteral("已封存")
+                 : QStringLiteral("等待封存"),
+             QStringLiteral("未配置"),
+             QStringLiteral("同名不覆盖")});
+    }
+
+    if (m_workflowStatusLabel) {
+        if (m_workflowStep == 10 && processing) {
+            m_workflowStatusLabel->setText(
+                QStringLiteral(
+                    "已完成：MOCK执行　｜　当前：Mock处理与重建　｜　下一步：图像级QC"));
+        } else if (m_workflowStep == 11 && showResult) {
+            m_workflowStatusLabel->setText(
+                QStringLiteral(
+                    "已完成：MOCK处理与重建　｜　当前：标准Mock结果与QC　｜　下一步：确认并封存"));
+        } else if (m_workflowStep == 12
+                   && (m_mockWorkflow.resultConfirmed()
+                       || packaged)) {
+            m_workflowStatusLabel->setText(
+                QStringLiteral(
+                    "已完成：标准Mock结果与QC　｜　当前：结果包　｜　下一步：按需历史"));
+        }
+    }
+    if (m_workflowNextButton
+        && m_workflowStep >= 10
+        && m_workflowStep <= 12) {
+        const QStringList actionNames = {
+            QStringLiteral("CompleteMockProcessingButton"),
+            QStringLiteral("ConfirmResultButton"),
+            QStringLiteral("OpenHistoryButton")
+        };
+        auto* action = findChild<QPushButton*>(
+            actionNames.at(m_workflowStep - 10));
+        m_workflowNextButton->setEnabled(
+            action && action->isEnabled());
+        if (action) {
+            m_workflowNextButton->setText(
+                QStringLiteral("下一步：%1").arg(action->text()));
+            m_workflowNextButton->setToolTip(
+                action->toolTip());
+        }
+    }
+}
+
 void MainWindow::setWorkflowStep(int step)
 {
     const int nextStep = qBound(1, step, 13);
@@ -2539,10 +3521,10 @@ void MainWindow::setWorkflowStep(int step)
 
 void MainWindow::setMockWorkflowStep(int step)
 {
-    if (m_mockAcquisitionTimer) m_mockAcquisitionTimer->stop();
-    m_mockAcquisitionRemainingMs = 3200;
-    m_mockRunActive = false;
-    m_mockExecutionCompleted = false;
+    resetMockWorkflow();
+    m_preparationConfirmed = false;
+    m_protocolUseOnceConfirmed = false;
+    m_localizationConfirmed = false;
     setWorkflowStep(step);
 }
 
@@ -2551,7 +3533,7 @@ void MainWindow::refreshWorkflow()
     static const QStringList titles = {
         QStringLiteral("进入系统"), QStringLiteral("选择场景与对象"), QStringLiteral("确认任务模板"),
         QStringLiteral("样品登记与预检"), QStringLiteral("扫描方案"), QStringLiteral("LOC定位采集"),
-        QStringLiteral("切片规划"), QStringLiteral("运行前确认"), QStringLiteral("PTScan采集"),
+        QStringLiteral("切片规划"), QStringLiteral("运行前确认"), QStringLiteral("FSE A Mock采集"),
         QStringLiteral("RAW保存与重建"), QStringLiteral("标准结果与QC"),
         QStringLiteral("保存结果包"), QStringLiteral("历史记录")
     };
@@ -2756,18 +3738,19 @@ void MainWindow::refreshWorkflow()
     if (m_protocolChainLabel) {
         m_protocolChainLabel->setText(
             m_comparisonEnabled
-                ? QStringLiteral("横断位 LOC → PTScan → FSE B 对照（用户已主动添加，Mock）")
-                : QStringLiteral("横断位 LOC → PTScan（单次基线；当前 HOLD）"));
+                ? QStringLiteral("横断位 LOC → FSE A → FSE B 对照（用户已主动添加，Mock）")
+                : QStringLiteral("横断位 LOC → FSE A（单次 Mock 主流程）"));
     }
     if (m_scanPlanChainLabel) {
         m_scanPlanChainLabel->setText(
             m_comparisonEnabled
-                ? QStringLiteral("协议链　横断位 LOC → PTScan → FSE B（用户主动添加的对照）")
-                : QStringLiteral("协议链　横断位 LOC → PTScan（单次基线）"));
+                ? QStringLiteral("协议链　横断位 LOC → FSE A → FSE B（用户主动添加的对照）")
+                : QStringLiteral("协议链　横断位 LOC → FSE A（单次 Mock 主流程）"));
     }
     if (m_workflowOutputSummary) {
         m_workflowOutputSummary->setText(QStringLiteral("当前步骤 %1 · 所有图像、数值和输出均为 Mock/设计示例").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
     }
+    refreshMockWorkflowUi();
 }
 
 QWidget* MainWindow::makeWorkflowRightPage(int step)
@@ -2822,13 +3805,13 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
     case 2:
         addStatus(QStringLiteral("科研目标"), QStringLiteral("水模横断位基线成像"));
         addStatus(QStringLiteral("检测对象"), QStringLiteral("水模 · 位置待现场确认"));
-        addStatus(QStringLiteral("当前建议"), QStringLiteral("横断位 LOC → 单次 PTScan"));
-        addStatus(QStringLiteral("候选协议"), QStringLiteral("PTScan.par · 待核验"));
+        addStatus(QStringLiteral("当前建议"), QStringLiteral("横断位 LOC → 单次 FSE A Mock"));
+        addStatus(QStringLiteral("候选协议"), QStringLiteral("FSE A Mock · 不映射真实参数"));
         break;
     case 3:
         addStatus(QStringLiteral("参数状态"), QStringLiteral("系统模板 · 只读"));
         addStatus(QStringLiteral("定位方向"), QStringLiteral("横断位 · 待现场复核"));
-        addStatus(QStringLiteral("首轮协议"), QStringLiteral("LOC → 单次 PTScan · 待核验"));
+        addStatus(QStringLiteral("首轮协议"), QStringLiteral("LOC → 单次 FSE A Mock"));
         addStatus(QStringLiteral("真实 Run"), QStringLiteral("HOLD"), QStringLiteral("warning"));
         break;
     case 4:
@@ -2839,7 +3822,7 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
         addWarningNote(QStringLiteral("真实采集前必须完成水模/线圈位置、横断位、连接/温度/空闲和输出目录确认。"));
         break;
     case 5:
-        addStatus(QStringLiteral("预计步骤"), QStringLiteral("横断位定位 + 单次 PTScan"));
+        addStatus(QStringLiteral("预计步骤"), QStringLiteral("横断位定位 + 单次 FSE A Mock"));
         addStatus(QStringLiteral("第二组采集"), QStringLiteral("未加入"));
         addStatus(QStringLiteral("参数来源"), QStringLiteral("开发预设 · Mock"));
         addStatus(QStringLiteral("设备适配"), QStringLiteral("待实机确认"), QStringLiteral("warning"));
@@ -3120,7 +4103,7 @@ QWidget* MainWindow::makeProtocolTimelineViewport()
     tag->setAlignment(Qt::AlignCenter);
     tag->setFixedWidth(120);
 
-    m_sequenceProtocolSummary = new QLabel(QStringLiteral("已选：PTScan 基线"), frame);
+    m_sequenceProtocolSummary = new QLabel(QStringLiteral("已选：FSE A Mock"), frame);
     m_sequenceProtocolSummary->setObjectName(QStringLiteral("SequenceProtocolSummaryLabel"));
     m_sequenceProtocolSummary->setWordWrap(true);
     m_sequenceProtocolSummary->setStyleSheet("color: #bcc5d0;");
@@ -3658,6 +4641,17 @@ void MainWindow::handlePause()
         return;
     }
     const bool paused = !m_pauseButton->property("mockPaused").toBool();
+    const MockActionResult transition =
+        paused ? m_mockWorkflow.pause() : m_mockWorkflow.resume();
+    if (!transition.ok) {
+        if (m_automationStatusLabel) {
+            m_automationStatusLabel->setText(
+                QStringLiteral("MOCK 暂停/继续失败：%1")
+                    .arg(transition.error));
+        }
+        refreshWorkflow();
+        return;
+    }
     if (paused) {
         if (m_mockAcquisitionTimer->isActive()) {
             m_mockAcquisitionRemainingMs =
@@ -3677,6 +4671,7 @@ void MainWindow::handlePause()
             paused ? QStringLiteral("Mock 已暂停 · 未调用设备")
                    : QStringLiteral("Mock 已继续 · 未调用设备"));
     }
+    refreshWorkflow();
 }
 
 void MainWindow::handleResume()
@@ -3879,11 +4874,10 @@ void MainWindow::showEggControllerArtifacts(const EggControllerArtifacts& artifa
 
 void MainWindow::applyScene(const SceneTemplate& scene)
 {
-    if (m_mockAcquisitionTimer) m_mockAcquisitionTimer->stop();
-    m_mockRunActive = false;
-    m_mockExecutionCompleted = false;
+    resetMockWorkflow();
     m_preparationConfirmed = false;
     m_protocolUseOnceConfirmed = false;
+    m_localizationConfirmed = false;
     resetRunConfirmations();
     if (m_sceneTitle) {
         m_sceneTitle->setText(QStringLiteral("任务选择"));
@@ -3895,7 +4889,7 @@ void MainWindow::applyScene(const SceneTemplate& scene)
         m_sceneSequence->setText(scene.target);
     }
     if (m_sequenceProtocolSummary) {
-        m_sequenceProtocolSummary->setText(QStringLiteral("已选：PTScan 基线 / ") + scene.sequence);
+        m_sequenceProtocolSummary->setText(QStringLiteral("已选：FSE A Mock / ") + scene.sequence);
     }
     if (m_sequenceTimingSummary) {
         m_sequenceTimingSummary->setText(scene.parameterDetails);

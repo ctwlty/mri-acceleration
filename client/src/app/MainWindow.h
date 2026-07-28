@@ -2,6 +2,8 @@
 
 #include "DeviceBridge.h"
 #include "EggControllerProcess.h"
+#include "MockResultPackage.h"
+#include "MockWorkflow.h"
 #include "SceneCatalog.h"
 
 #include <QMainWindow>
@@ -82,6 +84,14 @@ private:
     void setOperationChain(const SceneTemplate& scene);
     void showEggControllerArtifacts(const EggControllerArtifacts& artifacts);
     void resetRunConfirmations();
+    MockParameterDraft currentMockDraft() const;
+    bool mockOutputRootWritable(QString& error) const;
+    bool startMockRun();
+    void completeMockProcessing();
+    void saveMockResultPackage();
+    void loadMockHistory();
+    void refreshMockWorkflowUi();
+    void resetMockWorkflow();
     void setWorkflowStep(int step);
     void refreshWorkflow();
     bool isEggControllerMode() const;
@@ -179,8 +189,12 @@ private:
     int m_mockAcquisitionRemainingMs = 3200;
     bool m_preparationConfirmed = false;
     bool m_protocolUseOnceConfirmed = false;
+    bool m_localizationConfirmed = false;
     bool m_mockRunActive = false;
     bool m_mockExecutionCompleted = false;
     bool m_comparisonEnabled = false;
+    MockWorkflow m_mockWorkflow;
+    QString m_mockResultRoot;
+    QByteArray m_mockStandardResultPng;
     QList<SceneTemplate> m_catalog;
 };
