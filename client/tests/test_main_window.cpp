@@ -1,12 +1,18 @@
 #include "app/MainWindow.h"
 #include "app/EggControllerProcess.h"
+#include "app/SceneCatalog.h"
 
+#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDir>
 #include <QFile>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QPushButton>
+#include <QRadioButton>
+#include <QPixmap>
 #include <QTableWidget>
 #include <QStackedWidget>
 #include <QRegularExpression>
@@ -33,6 +39,11 @@ private slots:
     void mockAcquisitionShowsRunningInsteadOfStartState();
     void runConfirmationSnapshotKeepsChecksGrouped();
     void operationalRightStatusUsesReadableRows();
+    void enabledWorkflowActionsExposeVisibleFeedback();
+    void realActionsExplainWhyTheyAreUnavailable();
+    void workflowUsesWaterPhantomTransverseSemantics();
+    void visibleWorkflowControlsHaveNamesAndObservableBehavior();
+    void captureInteractionQaScreensWhenRequested();
 };
 
 void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
@@ -301,6 +312,437 @@ void MainWindowTest::workflowUsesMockNavigationAndKeepsRealRunOnHold()
     QCOMPARE(currentStep->text(), QStringLiteral("13"));
     backToResults->click();
     QCOMPARE(currentStep->text(), QStringLiteral("12"));
+}
+
+void MainWindowTest::enabledWorkflowActionsExposeVisibleFeedback()
+{
+    MainWindow window;
+    auto* feedback = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    auto* dryRun = window.findChild<QPushButton*>(QStringLiteral("DryRunButton"));
+    QVERIFY(feedback);
+    QVERIFY(dryRun);
+
+    dryRun->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("DRY_RUN")));
+    QVERIFY(feedback->text().contains(QStringLiteral("未写入 SDK")));
+
+    window.setMockWorkflowStep(5);
+    auto* useOnce = window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton"));
+    auto* saveVersion = window.findChild<QPushButton*>(QStringLiteral("ProtocolSaveVersionButton"));
+    QVERIFY(useOnce);
+    QVERIFY(saveVersion);
+    useOnce->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("仅本次使用")));
+    QVERIFY(feedback->text().contains(QStringLiteral("未写入 SDK")));
+    saveVersion->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("版本保存待真实接入")));
+
+    window.setMockWorkflowStep(6);
+    auto* pause = window.findChild<QPushButton*>(QStringLiteral("MockPauseButton"));
+    QVERIFY(pause);
+    QVERIFY(pause->isEnabled());
+    pause->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("Mock 已暂停")));
+    QVERIFY(pause->text().contains(QStringLiteral("继续")));
+    pause->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("Mock 已继续")));
+    QVERIFY(pause->text().contains(QStringLiteral("暂停")));
+
+    window.setMockWorkflowStep(7);
+    auto* modifyTarget =
+        window.findChild<QPushButton*>(QStringLiteral("ModifyImagingTargetButton"));
+    auto* researchParameters =
+        window.findChild<QPushButton*>(QStringLiteral("ResearchParametersButton"));
+    QVERIFY(modifyTarget);
+    QVERIFY(researchParameters);
+    modifyTarget->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("成像目标")));
+    QVERIFY(feedback->text().contains(QStringLiteral("Mock")));
+    researchParameters->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("科研参数")));
+    QVERIFY(feedback->text().contains(QStringLiteral("L3")));
+
+    window.setMockWorkflowStep(12);
+    auto* openLocation =
+        window.findChild<QPushButton*>(QStringLiteral("OpenResultLocationButton"));
+    auto* external =
+        window.findChild<QPushButton*>(QStringLiteral("ExternalAnalysisButton"));
+    QVERIFY(openLocation);
+    QVERIFY(external);
+    openLocation->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("Mock 未生成磁盘结果目录")));
+    external->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("真实结果生成后")));
+}
+
+void MainWindowTest::realActionsExplainWhyTheyAreUnavailable()
+{
+    MainWindow window;
+    auto* feedback = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    auto* loadSdk = window.findChild<QPushButton*>(QStringLiteral("LoadSdkButton"));
+    auto* connectDevice = window.findChild<QPushButton*>(QStringLiteral("ConnectDeviceButton"));
+    auto* precheck = window.findChild<QPushButton*>(QStringLiteral("RealPrecheckButton"));
+    auto* realRun = window.findChild<QPushButton*>(QStringLiteral("RealRunButton"));
+    auto* abort = window.findChild<QPushButton*>(QStringLiteral("RealAbortButton"));
+    QVERIFY(feedback);
+    QVERIFY(loadSdk);
+    QVERIFY(connectDevice);
+    QVERIFY(precheck);
+    QVERIFY(realRun);
+    QVERIFY(abort);
+    QVERIFY(feedback->text().contains(QStringLiteral("等待现场确认")));
+    QVERIFY(feedback->text().contains(QStringLiteral("未通过真实预检")));
+    QVERIFY(!loadSdk->isEnabled());
+    QVERIFY(!connectDevice->isEnabled());
+    QVERIFY(!precheck->isEnabled());
+    QVERIFY(!realRun->isEnabled());
+    QVERIFY(realRun->text().contains(QStringLiteral("等待现场确认")));
+    QVERIFY(!abort->isEnabled());
+    QVERIFY(abort->isHidden());
+
+    window.setMockWorkflowStep(8);
+    auto* workflowRealRun =
+        window.findChild<QPushButton*>(QStringLiteral("WorkflowRealRunButton"));
+    auto* gateState = window.findChild<QLabel*>(QStringLiteral("RealAcquisitionGateState"));
+    QVERIFY(workflowRealRun);
+    QVERIFY(gateState);
+    QVERIFY(!workflowRealRun->isEnabled());
+    QVERIFY(workflowRealRun->text().contains(QStringLiteral("等待现场确认")));
+    QVERIFY(gateState->text().contains(QStringLiteral("未通过真实预检")));
+    QVERIFY2(gateState->maximumHeight() <= 80,
+             "The real-acquisition gate must remain a compact status strip.");
+}
+
+void MainWindowTest::workflowUsesWaterPhantomTransverseSemantics()
+{
+    MainWindow window;
+    auto* planner = window.findChild<QWidget*>(QStringLiteral("LocalizationPlannerView"));
+    auto* sampleProfile = window.findChild<QLabel*>(QStringLiteral("SampleProfileLabel"));
+    auto* acquisitionPlan =
+        window.findChild<QLabel*>(QStringLiteral("RealAcquisitionPlanSummary"));
+    auto* reconstructionPath =
+        window.findChild<QLabel*>(QStringLiteral("ExistingReconstructionPathSummary"));
+    auto* protocolChain = window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"));
+    auto* target = window.findChild<QComboBox*>(QStringLiteral("TargetCombo"));
+    auto* templateList = window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
+    QVERIFY(planner);
+    QVERIFY(sampleProfile);
+    QVERIFY(acquisitionPlan);
+    QVERIFY(reconstructionPath);
+    QVERIFY(protocolChain);
+    QVERIFY(target);
+    QVERIFY(templateList);
+    QCOMPARE(planner->property("selectedOrientation").toString(), QStringLiteral("横断"));
+    QVERIFY(sampleProfile->text().contains(QStringLiteral("水模")));
+    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("水模")));
+    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("横断位")));
+    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("PTScan.par")));
+    QVERIFY(acquisitionPlan->text().contains(QStringLiteral("单次")));
+    QVERIFY(reconstructionPath->text().contains(QStringLiteral("eggcontrollerV2")));
+    QVERIFY(reconstructionPath->text().contains(QStringLiteral("RAW")));
+    QVERIFY(reconstructionPath->text().contains(QStringLiteral("PNG")));
+    QVERIFY(protocolChain->text().contains(QStringLiteral("PTScan")));
+    window.setMockWorkflowStep(2);
+    QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
+    QVERIFY(templateList->currentItem());
+    QVERIFY(templateList->currentItem()->text().contains(QStringLiteral("水模横断位")));
+
+    const auto catalog = SceneCatalog::defaults();
+    QVERIFY(!catalog.isEmpty());
+    QVERIFY(catalog.first().reconstruction.contains(QStringLiteral("待真实放行核验")));
+    QVERIFY(!catalog.first().reconstruction.startsWith(QStringLiteral("复用")));
+
+    window.setMockWorkflowStep(3);
+    auto* rightStep3 = window.findChild<QWidget*>(QStringLiteral("RightPage03"));
+    QVERIFY(rightStep3);
+    QString step3Text;
+    for (const QLabel* label : rightStep3->findChildren<QLabel*>())
+        step3Text += label->text() + QLatin1Char('\n');
+    QVERIFY(step3Text.contains(QStringLiteral("横断位")));
+    QVERIFY(step3Text.contains(QStringLiteral("PTScan")));
+    QVERIFY(!step3Text.contains(QStringLiteral("2D FSE")));
+
+    window.setMockWorkflowStep(12);
+    auto* rightStep12 = window.findChild<QWidget*>(QStringLiteral("RightPage12"));
+    QVERIFY(rightStep12);
+    QString step12Text;
+    for (const QLabel* label : rightStep12->findChildren<QLabel*>())
+        step12Text += label->text() + QLatin1Char('\n');
+    QVERIFY(step12Text.contains(QStringLiteral("重建\nMock 已完成")));
+    QVERIFY(step12Text.contains(QStringLiteral("Mock 待科研用户确认")));
+    QVERIFY(step12Text.contains(QStringLiteral("真实结果生成后")));
+    QVERIFY(!step12Text.contains(QStringLiteral("外部分析\n可移交")));
+}
+
+void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
+{
+    MainWindow window;
+    window.show();
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    auto* feedback = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    QVERIFY(currentStep);
+    QVERIFY(feedback);
+
+    const auto assertNamedVisibleControls = [&window](int step) {
+        window.setMockWorkflowStep(step);
+        QCoreApplication::processEvents();
+        const auto buttons = window.findChildren<QPushButton*>();
+        for (QPushButton* button : buttons) {
+            if (button->isVisibleTo(&window) && button->isEnabled()) {
+                QVERIFY2(!button->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见启用按钮缺少 objectName：%2")
+                                        .arg(step)
+                                        .arg(button->text())));
+            }
+        }
+        const auto radios = window.findChildren<QRadioButton*>();
+        for (QRadioButton* radio : radios) {
+            if (radio->isVisibleTo(&window) && radio->isEnabled()) {
+                QVERIFY2(!radio->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见单选控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+        const auto checks = window.findChildren<QCheckBox*>();
+        for (QCheckBox* check : checks) {
+            if (check->isVisibleTo(&window) && check->isEnabled()) {
+                QVERIFY2(!check->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见复选控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+        const auto combos = window.findChildren<QComboBox*>();
+        for (QComboBox* combo : combos) {
+            if (combo->isVisibleTo(&window) && combo->isEnabled()) {
+                QVERIFY2(!combo->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见下拉控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+        const auto edits = window.findChildren<QLineEdit*>();
+        for (QLineEdit* edit : edits) {
+            if (edit->isVisibleTo(&window) && edit->isEnabled()) {
+                QVERIFY2(!edit->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见输入控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+        const auto lists = window.findChildren<QListWidget*>();
+        for (QListWidget* list : lists) {
+            if (list->isVisibleTo(&window) && list->isEnabled()) {
+                QVERIFY2(!list->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见列表控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+        const auto tables = window.findChildren<QTableWidget*>();
+        for (QTableWidget* table : tables) {
+            if (table->isVisibleTo(&window) && table->isEnabled()) {
+                QVERIFY2(!table->objectName().isEmpty(),
+                         qPrintable(QStringLiteral("步骤 %1 的可见表格控件缺少 objectName")
+                                        .arg(step)));
+            }
+        }
+    };
+    for (int step = 1; step <= 13; ++step) {
+        assertNamedVisibleControls(step);
+    }
+
+    window.setMockWorkflowStep(1);
+    window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("02"));
+
+    auto* primaryScene = window.findChild<QComboBox*>(QStringLiteral("PrimarySceneCombo"));
+    auto* target = window.findChild<QComboBox*>(QStringLiteral("TargetCombo"));
+    auto* templateSearch = window.findChild<QLineEdit*>(QStringLiteral("TemplateSearchEdit"));
+    auto* templateList = window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
+    QVERIFY(primaryScene);
+    QVERIFY(target);
+    QVERIFY(templateSearch);
+    QVERIFY(templateList);
+    QCOMPARE(primaryScene->currentData().toString(), QStringLiteral("结构与形态成像"));
+    QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
+    QVERIFY(templateList->currentItem());
+    QVERIFY(templateList->currentItem()->text().contains(QStringLiteral("水模横断位")));
+    const QString waterTemplateText = templateList->currentItem()->text();
+
+    QVERIFY(target->count() > 1);
+    target->setCurrentIndex(1);
+    QVERIFY(templateList->count() > 0);
+    QVERIFY(templateList->currentItem());
+    QVERIFY(templateList->currentItem()->text() != waterTemplateText);
+    target->setCurrentIndex(target->findData(QStringLiteral("标准水模")));
+    QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
+
+    QVERIFY(primaryScene->count() > 1);
+    primaryScene->setCurrentIndex(1);
+    QVERIFY(target->count() > 0);
+    QVERIFY(templateList->count() > 0);
+    primaryScene->setCurrentIndex(
+        primaryScene->findData(QStringLiteral("结构与形态成像")));
+    target->setCurrentIndex(target->findData(QStringLiteral("标准水模")));
+
+    templateSearch->setText(QStringLiteral("no-such-template"));
+    QCOMPARE(templateList->count(), 0);
+    templateSearch->setText(QStringLiteral("PTScan"));
+    QCOMPARE(templateList->count(), 1);
+    QVERIFY(templateList->currentItem());
+    QVERIFY(templateList->currentItem()->isSelected());
+    templateSearch->clear();
+
+    auto* repeat =
+        window.findChild<QRadioButton*>(QStringLiteral("RepeatTemplateRecommendationRadio"));
+    auto* repeatCard =
+        window.findChild<QWidget*>(QStringLiteral("RepeatTemplateRecommendation"));
+    QVERIFY(repeat);
+    QVERIFY(repeatCard);
+    repeat->click();
+    QVERIFY(repeat->isChecked());
+    QVERIFY(repeatCard->property("selected").toBool());
+    window.findChild<QPushButton*>(QStringLiteral("SceneSelectionBackButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("01"));
+    window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton"))->click();
+    window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+
+    window.findChild<QPushButton*>(QStringLiteral("AddComparisonButton"))->click();
+    QVERIFY(window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"))
+                ->text()
+                .contains(QStringLiteral("FSE B")));
+    window.findChild<QPushButton*>(QStringLiteral("TemplateBackButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("02"));
+    window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))->click();
+    window.findChild<QPushButton*>(QStringLiteral("AcceptTemplateButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("04"));
+
+    window.findChild<QPushButton*>(QStringLiteral("PreparationBackButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+    window.findChild<QPushButton*>(QStringLiteral("AcceptTemplateButton"))->click();
+    window.findChild<QPushButton*>(QStringLiteral("SavePreparationButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("05"));
+    window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("仅本次使用")));
+    window.findChild<QPushButton*>(QStringLiteral("ProtocolSaveVersionButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("版本保存待真实接入")));
+    window.findChild<QPushButton*>(QStringLiteral("ContinueProtocolButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("06"));
+
+    auto* stop = window.findChild<QPushButton*>(QStringLiteral("LeftMockStopButton"));
+    QVERIFY(stop->isEnabled());
+    stop->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("05"));
+    window.setMockWorkflowStep(6);
+    window.findChild<QPushButton*>(QStringLiteral("OpenLocalizationPlanningButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("07"));
+
+    auto* more = window.findChild<QPushButton*>(QStringLiteral("MoreOrientationButton"));
+    more->click();
+    QVERIFY(more->text().contains(QStringLiteral("自定义斜切")));
+    window.findChild<QPushButton*>(QStringLiteral("ModifyImagingTargetButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("成像目标")));
+    window.findChild<QPushButton*>(QStringLiteral("ResearchParametersButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("L3")));
+    window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("08"));
+
+    auto* check = window.findChild<QCheckBox*>(QStringLiteral("RunConfirmationCheck1"));
+    QVERIFY(check);
+    QVERIFY(!check->isChecked());
+    check->click();
+    QVERIFY(check->isChecked());
+    window.findChild<QPushButton*>(QStringLiteral("RunConfirmationBackButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("07"));
+    window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"))->click();
+    window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+    stop->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("08"));
+
+    window.setMockWorkflowStep(10);
+    window.findChild<QPushButton*>(QStringLiteral("CompleteMockProcessingButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("11"));
+    window.findChild<QPushButton*>(QStringLiteral("ReturnToLocalizationButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("07"));
+    window.setMockWorkflowStep(11);
+    window.findChild<QPushButton*>(QStringLiteral("ConfirmResultButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
+
+    window.findChild<QPushButton*>(QStringLiteral("OpenResultLocationButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("Mock 未生成磁盘结果目录")));
+    window.findChild<QPushButton*>(QStringLiteral("ExternalAnalysisButton"))->click();
+    QVERIFY(feedback->text().contains(QStringLiteral("真实结果生成后")));
+    window.findChild<QPushButton*>(QStringLiteral("OpenHistoryButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("13"));
+
+    auto* actionState = window.findChild<QLabel*>(QStringLiteral("HistoryActionState"));
+    auto* history = window.findChild<QTableWidget*>(QStringLiteral("HistoryReadOnlyTable"));
+    auto* sampleFilter =
+        window.findChild<QComboBox*>(QStringLiteral("HistorySampleFilter"));
+    auto* templateFilter =
+        window.findChild<QComboBox*>(QStringLiteral("HistoryTemplateFilter"));
+    auto* dateFilter =
+        window.findChild<QComboBox*>(QStringLiteral("HistoryDateFilter"));
+    auto* historyFilter = window.findChild<QLineEdit*>(QStringLiteral("HistoryFilter"));
+    QVERIFY(actionState);
+    QVERIFY(history);
+    QVERIFY(sampleFilter);
+    QVERIFY(templateFilter);
+    QVERIFY(dateFilter);
+    QVERIFY(historyFilter);
+
+    sampleFilter->setCurrentText(QStringLiteral("SAMPLE-002"));
+    QVERIFY(history->isRowHidden(0));
+    QVERIFY(!history->isRowHidden(2));
+    sampleFilter->setCurrentIndex(0);
+
+    templateFilter->setCurrentIndex(1);
+    QCOMPARE(templateFilter->currentText(), QStringLiteral("内部结构成像模板"));
+    QVERIFY(!history->isRowHidden(0));
+    templateFilter->setCurrentIndex(0);
+
+    dateFilter->setCurrentText(QStringLiteral("2026-07-22"));
+    QVERIFY(history->isRowHidden(0));
+    QVERIFY(!history->isRowHidden(2));
+    dateFilter->setCurrentIndex(0);
+
+    historyFilter->setText(QStringLiteral("SAMPLE-003"));
+    QVERIFY(history->isRowHidden(0));
+    QVERIFY(!history->isRowHidden(3));
+    historyFilter->clear();
+
+    window.findChild<QPushButton*>(QStringLiteral("HistoryOpenButton"))->click();
+    QVERIFY(actionState->text().contains(QStringLiteral("已打开")));
+    window.findChild<QPushButton*>(QStringLiteral("HistoryCompareButton"))->click();
+    QVERIFY(actionState->text().contains(QStringLiteral("对比参考")));
+    window.findChild<QPushButton*>(QStringLiteral("HistorySourceButton"))->click();
+    QVERIFY(actionState->text().contains(QStringLiteral("来源记录")));
+    window.findChild<QPushButton*>(QStringLiteral("BackToResultsButton"))->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
+}
+
+void MainWindowTest::captureInteractionQaScreensWhenRequested()
+{
+    const QString outputDirectory =
+        qEnvironmentVariable("INTERACTION_QA_CAPTURE_DIR").trimmed();
+    if (outputDirectory.isEmpty()) {
+        QSKIP("INTERACTION_QA_CAPTURE_DIR is not set");
+    }
+    QVERIFY(QDir().mkpath(outputDirectory));
+    QFile styleFile(QStringLiteral(":/app.qss"));
+    QVERIFY(styleFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    qApp->setStyleSheet(QString::fromUtf8(styleFile.readAll()));
+
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    for (int step = 1; step <= 13; ++step) {
+        window.setMockWorkflowStep(step);
+        QTest::qWait(50);
+        const QString target =
+            QDir(outputDirectory).filePath(QStringLiteral("interaction-%1.png")
+                                                .arg(step, 2, 10, QLatin1Char('0')));
+        QVERIFY2(window.grab().save(target, "PNG"), qPrintable(target));
+    }
 }
 
 void MainWindowTest::galleryLayoutUsesStableThreeColumnsAndContextPanels()

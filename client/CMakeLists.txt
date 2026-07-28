@@ -144,6 +144,7 @@ if(BUILD_TESTING)
         src/app/SceneCatalog.cpp
         src/app/SceneCatalog.h
         src/app/SceneTemplate.h
+        resources/app.qrc
     )
     target_include_directories(test_main_window PRIVATE src)
     target_link_libraries(test_main_window PRIVATE Qt6::Widgets Qt6::Test)

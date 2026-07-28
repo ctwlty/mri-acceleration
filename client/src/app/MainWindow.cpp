@@ -552,7 +552,8 @@ QWidget* MainWindow::buildLeftPane()
     m_controlModeCombo->setObjectName("ControlModeCombo");
     m_controlModeCombo->addItem(QStringLiteral("自动化基线（Mock）"), QStringLiteral("mock"));
     m_controlModeCombo->setEnabled(false);
-    m_automationStatusLabel = new QLabel(QStringLiteral("Ready · 真实 Run：HOLD"), modePanel);
+    m_automationStatusLabel =
+        new QLabel(QStringLiteral("等待现场确认 · 未通过真实预检"), modePanel);
     m_automationStatusLabel->setObjectName("AutomationStatusLabel");
     m_automationStatusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     modeLayout->addWidget(modeLabel, 0, 0);
@@ -564,29 +565,35 @@ QWidget* MainWindow::buildLeftPane()
     buttons->setHorizontalSpacing(10);
     buttons->setVerticalSpacing(10);
 
-    m_loadSdkButton = new QPushButton(QStringLiteral("加载 SDK（HOLD）"), frame);
+    m_loadSdkButton = new QPushButton(QStringLiteral("加载 SDK（本轮禁用）"), frame);
+    m_loadSdkButton->setObjectName(QStringLiteral("LoadSdkButton"));
     m_loadSdkButton->setProperty("class", "secondary");
     m_loadSdkButton->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
-    m_connectButton = new QPushButton(QStringLiteral("一键建链（HOLD）"), frame);
+    m_connectButton = new QPushButton(QStringLiteral("一键建链（本轮禁用）"), frame);
+    m_connectButton->setObjectName(QStringLiteral("ConnectDeviceButton"));
     m_connectButton->setProperty("class", "primary");
     m_connectButton->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-    auto* precheckBtn = new QPushButton(QStringLiteral("校准向导（HOLD）"), frame);
+    auto* precheckBtn = new QPushButton(QStringLiteral("真实预检（未执行）"), frame);
+    precheckBtn->setObjectName(QStringLiteral("RealPrecheckButton"));
     precheckBtn->setProperty("class", "secondary");
     auto* dryRunBtn = new QPushButton(QStringLiteral("DRY_RUN"), frame);
+    dryRunBtn->setObjectName(QStringLiteral("DryRunButton"));
     dryRunBtn->setProperty("class", "secondary");
     m_leftMockStartButton = new QPushButton(QStringLiteral("开始采集（Mock）"), frame);
     m_leftMockStartButton->setObjectName(QStringLiteral("LeftMockStartButton"));
     m_leftMockStartButton->setProperty("class", "success");
     m_leftMockStartButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    m_startButton = new QPushButton(QStringLiteral("Real Run（HOLD）"), frame);
+    m_startButton = new QPushButton(QStringLiteral("真实 Run（等待现场确认）"), frame);
     m_startButton->setObjectName("RealRunButton");
     m_startButton->setProperty("class", "secondary");
     m_pauseButton = new QPushButton(QStringLiteral("暂停（Mock）"), frame);
+    m_pauseButton->setObjectName(QStringLiteral("MockPauseButton"));
     m_pauseButton->setProperty("class", "warning");
     m_pauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     m_pauseButton->setToolTip(QStringLiteral("当前 SDK 未提供暂停/继续接口"));
     m_pauseButton->setEnabled(false);
     m_abortButton = new QPushButton(QStringLiteral("真实 Abort（HOLD）"), frame);
+    m_abortButton->setObjectName(QStringLiteral("RealAbortButton"));
     m_abortButton->setVisible(false);
     m_abortButton->setEnabled(false);
     m_leftMockStopButton = new QPushButton(QStringLiteral("急停（Mock-only）"), frame);
@@ -798,12 +805,12 @@ QWidget* MainWindow::makeWorkflowPage(int step)
     switch (step) {
     case 1: {
         layout->addSpacing(165);
-        auto* hero = new QLabel(QStringLiteral("开始一次科研扫描"), page);
+        auto* hero = new QLabel(QStringLiteral("开始一次水模横断位扫描"), page);
         hero->setProperty("class", "workflowHero");
         hero->setAlignment(Qt::AlignCenter);
         layout->addWidget(hero);
         auto* copy = new QLabel(
-            QStringLiteral("从科研场景和检测对象开始，Agent MRI 将推荐可复现的模块化任务模板。"),
+            QStringLiteral("以当前水模为对象，按横断位 LOC → 单次 PTScan 采集 → 原程序既有重建与结果显示推进。"),
             page);
         copy->setProperty("class", "workflowLead");
         copy->setAlignment(Qt::AlignCenter);
@@ -887,9 +894,9 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             };
         auto primaryChoice = makeTemplateChoice(
             QStringLiteral("PrimaryTemplateRecommendation"),
-            QStringLiteral("内部结构成像模板"),
-            QStringLiteral("2D/3D 结构图像、标准重建与通用图像质控\n"
-                           "开发预设　·　待设备适配"),
+            QStringLiteral("水模横断位成像模板"),
+            QStringLiteral("水模横断位定位、单次采集、既有重建与基础图像质控\n"
+                           "真实采集　·　等待现场确认"),
             QStringLiteral("采集协议　｜　准备与预检　｜　定位与采集　｜　处理与重建"),
             true);
         auto* primaryRecommendation = primaryChoice.first;
@@ -924,9 +931,11 @@ QWidget* MainWindow::makeWorkflowPage(int step)
 
         auto* actions = new QHBoxLayout;
         auto* back = new QPushButton(QStringLiteral("返回"), page);
+        back->setObjectName(QStringLiteral("SceneSelectionBackButton"));
         back->setProperty("class", "secondary");
         connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(1); });
         auto* generate = new QPushButton(QStringLiteral("查看推荐模板"), page);
+        generate->setObjectName(QStringLiteral("ShowRecommendedTemplateButton"));
         generate->setProperty("class", "primary");
         connect(generate, &QPushButton::clicked, this, [this] { setWorkflowStep(3); });
         actions->addStretch();
@@ -947,10 +956,10 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         auto* recommendationLayout = new QVBoxLayout(recommendation);
         recommendationLayout->setContentsMargins(18, 16, 18, 16);
         recommendationLayout->setSpacing(10);
-        auto* templateTitle = new QLabel(QStringLiteral("内部结构成像模板"), recommendation);
+        auto* templateTitle = new QLabel(QStringLiteral("水模横断位成像模板"), recommendation);
         templateTitle->setProperty("class", "templateChoiceTitle");
         auto* metadata = new QLabel(
-            QStringLiteral("TPL-STRUCT-001 · v1.0　｜　系统模板 · 只读　｜　开发预设 · 待设备适配"),
+            QStringLiteral("TPL-PHANTOM-AXIAL · v1.0　｜　系统模板 · 只读　｜　开发预设 · 待设备适配"),
             recommendation);
         metadata->setProperty("class", "templateMetadata");
         recommendationLayout->addWidget(templateTitle);
@@ -959,8 +968,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         capabilityGrid->setHorizontalSpacing(18);
         capabilityGrid->setVerticalSpacing(8);
         const QList<QPair<QString, QString>> capabilities = {
-            {QStringLiteral("目标输出"), QStringLiteral("2D/3D 结构图像")},
-            {QStringLiteral("默认主采集"), QStringLiteral("FSE 结构成像（FSE A）")},
+            {QStringLiteral("目标输出"), QStringLiteral("水模横断位图像")},
+            {QStringLiteral("默认主采集"), QStringLiteral("PTScan 基线（单次）")},
             {QStringLiteral("第二组采集"), QStringLiteral("按需增加，不默认执行")},
             {QStringLiteral("重建方式"), QStringLiteral("标准重建与基础处理")},
             {QStringLiteral("质控"), QStringLiteral("SNR、均匀性、畸变/尺寸、分辨率、伪影、重复稳定性")}
@@ -977,7 +986,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         capabilityGrid->setColumnStretch(1, 1);
         recommendationLayout->addLayout(capabilityGrid, 1);
         layout->addWidget(recommendation);
-        m_protocolChainLabel = new QLabel(QStringLiteral("LOC → FSE A（默认 Mock 协议链）"), page);
+        m_protocolChainLabel =
+            new QLabel(QStringLiteral("横断位 LOC → PTScan（单次基线；当前 HOLD）"), page);
         m_protocolChainLabel->setObjectName(QStringLiteral("ProtocolChainLabel"));
         m_protocolChainLabel->setProperty("class", "workflowProtocol");
         layout->addWidget(m_protocolChainLabel);
@@ -998,9 +1008,11 @@ QWidget* MainWindow::makeWorkflowPage(int step)
 
         auto* actions = new QHBoxLayout;
         auto* back = new QPushButton(QStringLiteral("返回推荐列表"), page);
+        back->setObjectName(QStringLiteral("TemplateBackButton"));
         back->setProperty("class", "secondary");
         connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(2); });
         auto* accept = new QPushButton(QStringLiteral("采用模板并继续"), page);
+        accept->setObjectName(QStringLiteral("AcceptTemplateButton"));
         accept->setProperty("class", "primary");
         connect(accept, &QPushButton::clicked, this, [this] { setWorkflowStep(4); });
         actions->addStretch();
@@ -1025,17 +1037,20 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         sampleGrid->setHorizontalSpacing(24);
         sampleGrid->setVerticalSpacing(7);
         const QList<QPair<QString, QString>> sampleRows = {
-            {QStringLiteral("样品编号"), QStringLiteral("RH2-20260723-001")},
-            {QStringLiteral("样品名称"), QStringLiteral("根茎样品-01")},
-            {QStringLiteral("样品类型"), QStringLiteral("根茎组织")},
-            {QStringLiteral("装样方式"), QStringLiteral("居中固定")},
-            {QStringLiteral("样品温度"), QStringLiteral("24.0 ℃")},
-            {QStringLiteral("备注"), QStringLiteral("无 · Mock 示例")}
+            {QStringLiteral("样品编号"), QStringLiteral("WATER-PHANTOM-001")},
+            {QStringLiteral("样品名称"), QStringLiteral("水模")},
+            {QStringLiteral("样品类型"), QStringLiteral("标准水模")},
+            {QStringLiteral("装样方式"), QStringLiteral("中心固定 · 需现场确认")},
+            {QStringLiteral("样品温度"), QStringLiteral("待读取")},
+            {QStringLiteral("备注"), QStringLiteral("目标方向：横断位")}
         };
         for (int row = 0; row < sampleRows.size(); ++row) {
             auto* name = new QLabel(sampleRows.at(row).first, sampleCard);
             name->setProperty("class", "precheckRowName");
             auto* value = new QLabel(sampleRows.at(row).second, sampleCard);
+            if (row == 1) {
+                value->setObjectName(QStringLiteral("SampleProfileLabel"));
+            }
             value->setProperty("class", "precheckRowValue");
             sampleGrid->addWidget(name, row, 0);
             sampleGrid->addWidget(value, row, 1);
@@ -1058,17 +1073,17 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         precheckGrid->setHorizontalSpacing(18);
         precheckGrid->setVerticalSpacing(8);
         const QList<QPair<QString, QString>> precheckRows = {
-            {QStringLiteral("✓ 样品尺寸适配线圈空间"), QStringLiteral("已通过 · Mock")},
-            {QStringLiteral("✓ 样品已居中并固定"), QStringLiteral("已通过 · Mock")},
-            {QStringLiteral("✓ 接收线圈已选择"), QStringLiteral("已通过 · Mock")},
-            {QStringLiteral("✓ 存储空间可用"), QStringLiteral("已通过 · Mock")},
-            {QStringLiteral("! 设备连接与 SDK 映射"), QStringLiteral("待实机确认")}
+            {QStringLiteral("水模与线圈空间"), QStringLiteral("待现场确认")},
+            {QStringLiteral("水模中心与固定"), QStringLiteral("待现场确认")},
+            {QStringLiteral("接收线圈"), QStringLiteral("待现场确认")},
+            {QStringLiteral("输出目录可写"), QStringLiteral("未执行检查")},
+            {QStringLiteral("设备连接 / 温度 / ScanStatus"), QStringLiteral("未执行真实预检")}
         };
         for (int row = 0; row < precheckRows.size(); ++row) {
             auto* name = new QLabel(precheckRows.at(row).first, precheckCard);
-            name->setProperty("class", row == 4 ? "precheckWarningName" : "precheckPassName");
+            name->setProperty("class", "precheckWarningName");
             auto* state = new QLabel(precheckRows.at(row).second, precheckCard);
-            state->setProperty("class", row == 4 ? "precheckWarningState" : "precheckPassState");
+            state->setProperty("class", "precheckWarningState");
             state->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
             precheckGrid->addWidget(name, row, 0);
             precheckGrid->addWidget(state, row, 1);
@@ -1078,8 +1093,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addWidget(precheckCard);
 
         auto* preparationNote = new QLabel(
-            QStringLiteral("建议样品完整落在 φ50 mm、长度 70 mm 的最大线圈空间内；"
-                           "设备连接与 SDK 映射保持“待实机确认”。"),
+            QStringLiteral("水模需落在 φ50 mm、长度 70 mm 线圈空间内并现场确认；连接、温度、ScanStatus 与输出目录尚未真实预检。"),
             page);
         preparationNote->setProperty("class", "evidenceLabel");
         preparationNote->setWordWrap(false);
@@ -1091,6 +1105,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         back->setProperty("class", "secondary");
         connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(3); });
         auto* save = new QPushButton(QStringLiteral("保存并继续"), page);
+        save->setObjectName(QStringLiteral("SavePreparationButton"));
         save->setProperty("class", "primary");
         connect(save, &QPushButton::clicked, this, [this] { setWorkflowStep(5); });
         actions->addStretch();
@@ -1110,8 +1125,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         planSummaryLayout->setHorizontalSpacing(16);
         planSummaryLayout->setVerticalSpacing(7);
         const QList<QPair<QString, QString>> planRows = {
-            {QStringLiteral("系统模板"), QStringLiteral("内部结构成像模板 · TPL-STRUCT-001 v1.0")},
-            {QStringLiteral("当前方案"), QStringLiteral("我的根茎成像方案 v2")}
+            {QStringLiteral("系统模板"), QStringLiteral("水模横断位成像模板 · TPL-PHANTOM-AXIAL v1.0")},
+            {QStringLiteral("当前方案"), QStringLiteral("水模横断位 · PTScan 基线 · 单次")}
         };
         for (int row = 0; row < planRows.size(); ++row) {
             auto* name = new QLabel(planRows.at(row).first, planSummary);
@@ -1124,7 +1139,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         planSummaryLayout->setColumnStretch(1, 1);
         layout->addWidget(planSummary);
 
-        m_scanPlanChainLabel = new QLabel(QStringLiteral("协议链　LOC → FSE A"), page);
+        m_scanPlanChainLabel =
+            new QLabel(QStringLiteral("协议链　横断位 LOC → PTScan（单次基线）"), page);
         m_scanPlanChainLabel->setProperty("class", "workflowProtocol");
         m_scanPlanChainLabel->setFixedHeight(48);
         layout->addWidget(m_scanPlanChainLabel);
@@ -1222,15 +1238,16 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         l3Detail->setProperty("class", "workflowCardDetail");
         l3Detail->setWordWrap(true);
         l3Detail->setVisible(false);
-        auto* showL3 = new QPushButton(QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　展开 >"), page);
+        auto* showL3 =
+            new QPushButton(QStringLiteral("专家参数（L3）｜仅影响当前 Mock 候选协议　展开 >"), page);
         showL3->setObjectName(QStringLiteral("ShowL3Button"));
         showL3->setProperty("class", "secondary");
         connect(showL3, &QPushButton::clicked, this, [showL3, l3Detail] {
             const bool visible = !l3Detail->isVisible();
             l3Detail->setVisible(visible);
             showL3->setText(visible
-                                ? QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　收起")
-                                : QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　展开 >"));
+                                ? QStringLiteral("专家参数（L3）｜仅影响当前 Mock 候选协议　收起")
+                                : QStringLiteral("专家参数（L3）｜仅影响当前 Mock 候选协议　展开 >"));
         });
         layout->addWidget(showL3);
         layout->addWidget(l3Detail);
@@ -1238,11 +1255,26 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addStretch();
         auto* actions = new QHBoxLayout;
         auto* useOnce = new QPushButton(QStringLiteral("仅本次使用"), page);
+        useOnce->setObjectName(QStringLiteral("ProtocolUseOnceButton"));
         useOnce->setProperty("class", "secondary");
         auto* saveVersion = new QPushButton(QStringLiteral("另存为新版本"), page);
+        saveVersion->setObjectName(QStringLiteral("ProtocolSaveVersionButton"));
         saveVersion->setProperty("class", "secondary");
         auto* continueButton = new QPushButton(QStringLiteral("确认方案并继续"), page);
+        continueButton->setObjectName(QStringLiteral("ContinueProtocolButton"));
         continueButton->setProperty("class", "primary");
+        connect(useOnce, &QPushButton::clicked, this, [this] {
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("仅本次使用 · Mock 参数快照 · 未写入 SDK"));
+            }
+        });
+        connect(saveVersion, &QPushButton::clicked, this, [this] {
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("版本保存待真实接入 · 当前未写文件/SDK"));
+            }
+        });
         connect(continueButton, &QPushButton::clicked, this, [this] { setWorkflowStep(6); });
         actions->addWidget(useOnce);
         actions->addWidget(saveVersion);
@@ -1276,6 +1308,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         evidence->setWordWrap(true);
         layout->addWidget(evidence);
         auto* planning = new QPushButton(QStringLiteral("进入切片规划"), page);
+        planning->setObjectName(QStringLiteral("OpenLocalizationPlanningButton"));
         planning->setProperty("class", "primary");
         connect(planning, &QPushButton::clicked, this, [this] { setWorkflowStep(7); });
         layout->addWidget(planning, 0, Qt::AlignRight);
@@ -1399,6 +1432,13 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         auto* modifyTarget = new QPushButton(QStringLiteral("修改"), page);
         modifyTarget->setObjectName(QStringLiteral("ModifyImagingTargetButton"));
         modifyTarget->setProperty("class", "secondary");
+        connect(modifyTarget, &QPushButton::clicked, this, [this, targetChoice] {
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("成像目标已应用：%1 · Mock 规划")
+                        .arg(targetChoice->currentText()));
+            }
+        });
         targetRow->addWidget(targetLabel);
         targetRow->addWidget(targetChoice);
         targetRow->addWidget(modifyTarget);
@@ -1414,7 +1454,14 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         auto* researchParameters = new QPushButton(QStringLiteral("科研参数 >"), page);
         researchParameters->setObjectName(QStringLiteral("ResearchParametersButton"));
         researchParameters->setProperty("class", "secondary");
+        connect(researchParameters, &QPushButton::clicked, this, [this] {
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("科研参数入口：请在第 05 步展开 L3 · 未写入 SDK"));
+            }
+        });
         auto* confirm = new QPushButton(QStringLiteral("确认定位"), page);
+        confirm->setObjectName(QStringLiteral("ConfirmLocalizationButton"));
         confirm->setProperty("class", "primary");
         connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(8); });
         planningActions->addStretch();
@@ -1433,14 +1480,14 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             {QStringLiteral("确认项"), QStringLiteral("当前快照")});
         const QList<QPair<QString, QString>> confirmations = {
             {QStringLiteral("1　样品"),
-             QStringLiteral("RH2-20260723-001 · 根茎样品-01 · 居中固定")},
+             QStringLiteral("WATER-PHANTOM-001 · 水模 · 位置待现场确认")},
             {QStringLiteral("2　任务与方案"),
-             QStringLiteral("TPL-STRUCT-001 v1.0 · 我的根茎成像方案 v2")},
+             QStringLiteral("水模横断位 · PTScan.par 基线 · 仅允许单次 Run")},
             {QStringLiteral("3　采集步骤"),
-             QStringLiteral("定位 LOC（已完成）→ FSE 结构成像（待执行）· 当前协议 FSE A")},
+             QStringLiteral("横断位 LOC → 真实 PTScan → 状态/RAW → eggcontrollerV2 既有结果入口")},
             {QStringLiteral("4　定位与主要参数"),
-             QStringLiteral("横断 · FOV 50×50 mm · 128×128 · 层厚 3.5 mm · "
-                            "层间距 1.25 mm · 11 层 · NEX 1")}
+             QStringLiteral("横断位 · FOV 50×50 mm · 128×128 · 层厚 3.5 mm · "
+                             "层间距 1.25 mm · 11 层 · NEX 1")}
         };
         for (int row = 0; row < confirmations.size(); ++row) {
             auto* name = new QTableWidgetItem(confirmations.at(row).first);
@@ -1462,8 +1509,9 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addWidget(confirmationTable);
 
         auto* snapshot = new QLabel(
-            QStringLiteral("本次运行参数快照：RUN-PENDING-001　｜　确认后冻结　｜　Mock 设计示例"),
+            QStringLiteral("RUN-PENDING-001　｜　水模 · 横断位 · PTScan.par · 单次 Run　｜　等待现场确认"),
             page);
+        snapshot->setObjectName(QStringLiteral("RealAcquisitionPlanSummary"));
         snapshot->setProperty("class", "evidenceLabel");
         snapshot->setWordWrap(false);
         snapshot->setFixedHeight(42);
@@ -1482,22 +1530,31 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         checks->setContentsMargins(14, 8, 14, 8);
         checks->setSpacing(16);
         const QStringList checkLabels = {
-            QStringLiteral("样品与任务一致"),
-            QStringLiteral("定位覆盖已确认"),
-            QStringLiteral("参数变化已复核")
+            QStringLiteral("水模/线圈位置已现场确认"),
+            QStringLiteral("横断位覆盖已复核"),
+            QStringLiteral("连接/温度/空闲/输出已预检")
         };
         for (int index = 0; index < checkLabels.size(); ++index) {
             auto* check = new QCheckBox(checkLabels.at(index), checksCard);
             check->setObjectName(QStringLiteral("RunConfirmationCheck%1").arg(index + 1));
-            check->setChecked(true);
+            check->setChecked(false);
             checks->addWidget(check);
         }
         checks->addStretch();
         layout->addWidget(checksCard);
-        m_realRunButton = new QPushButton(QStringLiteral("真实 Run（HOLD）"), page);
+        auto* gateState = new QLabel(
+            QStringLiteral("真实采集：等待现场确认 · 未通过真实预检 · 本轮不会调用 Run/Abort"),
+            page);
+        gateState->setObjectName(QStringLiteral("RealAcquisitionGateState"));
+        gateState->setProperty("class", "warningNote");
+        gateState->setWordWrap(true);
+        gateState->setFixedHeight(72);
+        layout->addWidget(gateState);
+        m_realRunButton = new QPushButton(QStringLiteral("真实 Run（等待现场确认）"), page);
         m_realRunButton->setObjectName(QStringLiteral("WorkflowRealRunButton"));
         m_realRunButton->setEnabled(false);
-        m_mockAcquireButton = new QPushButton(QStringLiteral("确认并进入 Mock 采集"), page);
+        m_mockAcquireButton =
+            new QPushButton(QStringLiteral("确认并进入 PTScan Mock 采集"), page);
         m_mockAcquireButton->setObjectName(QStringLiteral("MockAcquireButton"));
         m_mockAcquireButton->setProperty("class", "primary");
         connect(m_mockAcquireButton, &QPushButton::clicked, this, [this] {
@@ -1521,7 +1578,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
     case 9: {
         addImageEvidence(QStringLiteral(":/mock-fse-acquisition.png"),
                          QStringLiteral("MockAcquisitionImage"),
-                         QStringLiteral("FSE A Mock 采集图像 · 64% 进行中；完成后自动进入处理，未触发 SDK 或设备"));
+                          QStringLiteral("PTScan 基线 Mock 采集图像 · 64% 进行中；完成后自动进入处理，未触发 SDK 或设备"));
         break;
     }
     case 10: {
@@ -1565,7 +1622,16 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         warning->setProperty("class", "warningNote");
         warning->setWordWrap(true);
         layout->addWidget(warning);
+        auto* reconstructionPath = new QLabel(
+            QStringLiteral("既有结果路径：eggcontrollerV2 负责 RAW → PNG；"
+                           "当前仓库 HCController=console_mock，真实入口尚未通过放行核验。"),
+            page);
+        reconstructionPath->setObjectName(QStringLiteral("ExistingReconstructionPathSummary"));
+        reconstructionPath->setProperty("class", "evidenceLabel");
+        reconstructionPath->setWordWrap(true);
+        layout->addWidget(reconstructionPath);
         auto* result = new QPushButton(QStringLiteral("Mock 处理完成并查看结果"), page);
+        result->setObjectName(QStringLiteral("CompleteMockProcessingButton"));
         result->setProperty("class", "primary");
         connect(result, &QPushButton::clicked, this, [this] { setWorkflowStep(11); });
         layout->addWidget(result, 0, Qt::AlignRight);
@@ -1581,7 +1647,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                                                    QStringLiteral("定位图 LOC"), false, page), 1);
         resultRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-phantom.png"),
                                                    QStringLiteral("ResultFseThumbnail"),
-                                                   QStringLiteral("FSE · 当前"), true, page), 1);
+                                                   QStringLiteral("PTScan · 当前"), true, page), 1);
         resultRail->addStretch();
         resultRow->addLayout(resultRail);
         resultRow->addWidget(new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
@@ -1602,6 +1668,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         connect(returnToLocalization, &QPushButton::clicked, this,
                 [this] { setWorkflowStep(7); });
         auto* confirm = new QPushButton(QStringLiteral("确认结果"), page);
+        confirm->setObjectName(QStringLiteral("ConfirmResultButton"));
         confirm->setProperty("class", "primary");
         connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(12); });
         controls->addWidget(returnToLocalization);
@@ -1629,9 +1696,9 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         }
         auto* metadata = new QLabel(
             QStringLiteral("结果包 ID　RUN-MOCK-001\n"
-                           "样品 ID　　SAMPLE-001\n"
-                           "方案　　　 我的根茎成像方案 v2\n"
-                           "模板　　　 内部结构成像模板"),
+                           "样品 ID　　WATER-PHANTOM-001\n"
+                           "方案　　　 水模横断位 · PTScan 基线\n"
+                           "模板　　　 水模横断位成像模板"),
             page);
         metadata->setObjectName(QStringLiteral("ResultPackageMetadata"));
         metadata->setProperty("class", "evidenceLabel");
@@ -1659,6 +1726,20 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         connect(save, &QPushButton::clicked, this, [save, saveState] {
             save->setEnabled(false);
             saveState->setText(QStringLiteral("Mock 结果包已保存 · 任务已结束（未调用 SDK）"));
+        });
+        connect(openLocation, &QPushButton::clicked, this, [this, saveState] {
+            saveState->setText(QStringLiteral("Mock 未生成磁盘结果目录 · 未打开外部位置"));
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("Mock 未生成磁盘结果目录 · 未调用外部程序"));
+            }
+        });
+        connect(external, &QPushButton::clicked, this, [this, saveState] {
+            saveState->setText(QStringLiteral("真实结果生成后方可交给外部数据分析软件"));
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("真实结果生成后方可移交外部分析 · 当前未执行"));
+            }
         });
         actions->addWidget(save);
         actions->addWidget(openLocation);
@@ -2039,7 +2120,7 @@ void MainWindow::refreshWorkflow()
     static const QStringList titles = {
         QStringLiteral("进入系统"), QStringLiteral("选择场景与对象"), QStringLiteral("确认任务模板"),
         QStringLiteral("样品登记与预检"), QStringLiteral("扫描方案"), QStringLiteral("LOC定位采集"),
-        QStringLiteral("切片规划"), QStringLiteral("运行前确认"), QStringLiteral("FSE采集"),
+        QStringLiteral("切片规划"), QStringLiteral("运行前确认"), QStringLiteral("PTScan采集"),
         QStringLiteral("RAW保存与重建"), QStringLiteral("标准结果与QC"),
         QStringLiteral("保存结果包"), QStringLiteral("历史记录")
     };
@@ -2049,7 +2130,7 @@ void MainWindow::refreshWorkflow()
     if (m_workflowStatusLabel) {
         if (m_workflowStep == 13) {
             m_workflowStatusLabel->setText(
-                QStringLiteral("按需工具：历史记录　｜　当前任务：内部结构成像模板　｜　← 返回当前结果"));
+                QStringLiteral("按需工具：历史记录　｜　当前任务：水模横断位基线　｜　← 返回当前结果"));
         } else {
             const QString completed = m_workflowStep == 1
                 ? QStringLiteral("—")
@@ -2076,19 +2157,27 @@ void MainWindow::refreshWorkflow()
         m_leftMockStartButton->style()->unpolish(m_leftMockStartButton);
         m_leftMockStartButton->style()->polish(m_leftMockStartButton);
     }
-    if (m_pauseButton) m_pauseButton->setEnabled(m_workflowStep == 6 || m_workflowStep == 9);
+    if (m_pauseButton) {
+        const bool mockStep = m_workflowStep == 6 || m_workflowStep == 9;
+        if (!mockStep) {
+            m_pauseButton->setProperty("mockPaused", false);
+            m_pauseButton->setText(QStringLiteral("暂停（Mock）"));
+        }
+        m_pauseButton->setEnabled(mockStep);
+    }
     if (m_leftMockStopButton)
         m_leftMockStopButton->setEnabled(m_workflowStep == 6 || m_workflowStep == 9);
     if (m_protocolChainLabel) {
-        m_protocolChainLabel->setText(m_comparisonEnabled
-                                          ? QStringLiteral("LOC → FSE A → FSE B 对照（用户已主动添加，Mock）")
-                                          : QStringLiteral("LOC → FSE A（默认 Mock 协议链）"));
+        m_protocolChainLabel->setText(
+            m_comparisonEnabled
+                ? QStringLiteral("横断位 LOC → PTScan → FSE B 对照（用户已主动添加，Mock）")
+                : QStringLiteral("横断位 LOC → PTScan（单次基线；当前 HOLD）"));
     }
     if (m_scanPlanChainLabel) {
         m_scanPlanChainLabel->setText(
             m_comparisonEnabled
-                ? QStringLiteral("协议链　LOC → FSE A → FSE B（用户主动添加的对照）")
-                : QStringLiteral("协议链　LOC → FSE A"));
+                ? QStringLiteral("协议链　横断位 LOC → PTScan → FSE B（用户主动添加的对照）")
+                : QStringLiteral("协议链　横断位 LOC → PTScan（单次基线）"));
     }
     if (m_workflowOutputSummary) {
         m_workflowOutputSummary->setText(QStringLiteral("当前步骤 %1 · 所有图像、数值和输出均为 Mock/设计示例").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
@@ -2144,26 +2233,26 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
                   QStringLiteral("warning"));
         break;
     case 2:
-        addStatus(QStringLiteral("科研目标"), QStringLiteral("观察内部结构与形态"));
-        addStatus(QStringLiteral("检测对象"), QStringLiteral("根茎样品 · Mock"));
-        addStatus(QStringLiteral("当前建议"), QStringLiteral("默认单 FSE 主采集"));
-        addStatus(QStringLiteral("候选协议"), QStringLiteral("FSE A / FSE B；默认仅一套"));
+        addStatus(QStringLiteral("科研目标"), QStringLiteral("水模横断位基线成像"));
+        addStatus(QStringLiteral("检测对象"), QStringLiteral("水模 · 位置待现场确认"));
+        addStatus(QStringLiteral("当前建议"), QStringLiteral("横断位 LOC → 单次 PTScan"));
+        addStatus(QStringLiteral("候选协议"), QStringLiteral("PTScan.par · 待核验"));
         break;
     case 3:
         addStatus(QStringLiteral("参数状态"), QStringLiteral("系统模板 · 只读"));
-        addStatus(QStringLiteral("设备能力"), QStringLiteral("支持 2D / 3D（设计示例）"));
-        addStatus(QStringLiteral("首轮范围"), QStringLiteral("2D FSE"));
+        addStatus(QStringLiteral("定位方向"), QStringLiteral("横断位 · 待现场复核"));
+        addStatus(QStringLiteral("首轮协议"), QStringLiteral("LOC → 单次 PTScan · 待核验"));
         addStatus(QStringLiteral("真实 Run"), QStringLiteral("HOLD"), QStringLiteral("warning"));
         break;
     case 4:
-        addStatus(QStringLiteral("样品信息"), QStringLiteral("已填写"), QStringLiteral("success"));
-        addStatus(QStringLiteral("装样"), QStringLiteral("已确认"), QStringLiteral("success"));
-        addStatus(QStringLiteral("存储"), QStringLiteral("可用 · Mock"), QStringLiteral("success"));
-        addStatus(QStringLiteral("设备适配"), QStringLiteral("待实机确认"), QStringLiteral("warning"));
-        addWarningNote(QStringLiteral("真实采集前必须完成设备连接与参数映射；当前仅为 Mock 预检。"));
+        addStatus(QStringLiteral("样品信息"), QStringLiteral("水模 · 已登记"));
+        addStatus(QStringLiteral("水模/线圈位置"), QStringLiteral("待现场确认"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("存储"), QStringLiteral("未执行真实检查"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("连接/温度/空闲"), QStringLiteral("未执行真实预检"), QStringLiteral("warning"));
+        addWarningNote(QStringLiteral("真实采集前必须完成水模/线圈位置、横断位、连接/温度/空闲和输出目录确认。"));
         break;
     case 5:
-        addStatus(QStringLiteral("预计步骤"), QStringLiteral("定位 + 1 组 FSE"));
+        addStatus(QStringLiteral("预计步骤"), QStringLiteral("横断位定位 + 单次 PTScan"));
         addStatus(QStringLiteral("第二组采集"), QStringLiteral("未加入"));
         addStatus(QStringLiteral("参数来源"), QStringLiteral("开发预设 · Mock"));
         addStatus(QStringLiteral("设备适配"), QStringLiteral("待实机确认"), QStringLiteral("warning"));
@@ -2193,16 +2282,16 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
         }
         break;
     case 8:
-        addStatus(QStringLiteral("准备与预检"), QStringLiteral("完成 · Mock"), QStringLiteral("success"));
-        addStatus(QStringLiteral("定位 LOC"), QStringLiteral("完成 · Mock"), QStringLiteral("success"));
-        addStatus(QStringLiteral("参数快照"), QStringLiteral("待冻结"));
-        addStatus(QStringLiteral("存储"), QStringLiteral("可用 · Mock"), QStringLiteral("success"));
-        addStatus(QStringLiteral("设备适配"), QStringLiteral("待确认"), QStringLiteral("warning"));
-        addWarningNote(QStringLiteral("确认只生成当前 Mock 流程与参数快照，不会触发真实设备。"));
+        addStatus(QStringLiteral("水模/线圈位置"), QStringLiteral("待现场确认"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("横断位规划"), QStringLiteral("待现场复核"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("连接/温度/空闲"), QStringLiteral("未通过真实预检"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("输出目录"), QStringLiteral("未执行可写检查"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("单次真实 Run"), QStringLiteral("等待现场确认"), QStringLiteral("warning"));
+        addWarningNote(QStringLiteral("当前仅可进入 Mock；不会加载 SDK、调用 Run/Abort 或生成 RAW。"));
         break;
     case 9:
-        addStatus(QStringLiteral("序列"), QStringLiteral("FSE 结构成像 · Mock"));
-        addStatus(QStringLiteral("协议"), QStringLiteral("FSE A"));
+        addStatus(QStringLiteral("序列"), QStringLiteral("PTScan 基线 · Mock"));
+        addStatus(QStringLiteral("协议"), QStringLiteral("PTScan.par"));
         addStatus(QStringLiteral("层面进度"), QStringLiteral("7 / 11"));
         addStatus(QStringLiteral("数据接收"), QStringLiteral("Mock"));
         addStatus(QStringLiteral("异常"), QStringLiteral("无"), QStringLiteral("success"));
@@ -2236,10 +2325,10 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
     }
     case 12:
         addStatus(QStringLiteral("采集"), QStringLiteral("Mock 已完成"), QStringLiteral("success"));
-        addStatus(QStringLiteral("重建"), QStringLiteral("已完成"), QStringLiteral("success"));
-        addStatus(QStringLiteral("QC"), QStringLiteral("科研用户已确认"), QStringLiteral("success"));
+        addStatus(QStringLiteral("重建"), QStringLiteral("Mock 已完成"), QStringLiteral("success"));
+        addStatus(QStringLiteral("QC"), QStringLiteral("Mock 待科研用户确认"), QStringLiteral("warning"));
         addStatus(QStringLiteral("结果包"), QStringLiteral("待保存"));
-        addStatus(QStringLiteral("外部分析"), QStringLiteral("可移交"));
+        addStatus(QStringLiteral("外部分析"), QStringLiteral("真实结果生成后方可移交"), QStringLiteral("warning"));
         addStatus(QStringLiteral("留存策略"),
                   QStringLiteral("内部完整留存，首页只展示关键状态和结果包信息。"));
         break;
@@ -2949,6 +3038,10 @@ void MainWindow::handlePrecheck()
 void MainWindow::handleDryRun()
 {
     appendLog(QStringLiteral("Mock 参数快照已保留；未写入 SDK。"));
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(
+            QStringLiteral("DRY_RUN 完成 · Mock 参数快照 · 未写入 SDK"));
+    }
 }
 
 void MainWindow::handleStart()
@@ -2958,12 +3051,28 @@ void MainWindow::handleStart()
 
 void MainWindow::handlePause()
 {
-    appendLog(QStringLiteral("Mock 工作流不调用真实暂停。"));
+    if (!m_pauseButton) {
+        return;
+    }
+    const bool paused = !m_pauseButton->property("mockPaused").toBool();
+    m_pauseButton->setProperty("mockPaused", paused);
+    m_pauseButton->setText(paused ? QStringLiteral("继续（Mock）")
+                                 : QStringLiteral("暂停（Mock）"));
+    appendLog(paused ? QStringLiteral("Mock 已暂停；未调用真实暂停。")
+                     : QStringLiteral("Mock 已继续；未调用真实继续。"));
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(
+            paused ? QStringLiteral("Mock 已暂停 · 未调用设备")
+                   : QStringLiteral("Mock 已继续 · 未调用设备"));
+    }
 }
 
 void MainWindow::handleResume()
 {
     appendLog(QStringLiteral("Mock 工作流不调用真实继续。"));
+    if (m_automationStatusLabel) {
+        m_automationStatusLabel->setText(QStringLiteral("Mock 已继续 · 未调用设备"));
+    }
 }
 
 void MainWindow::handleAbort()

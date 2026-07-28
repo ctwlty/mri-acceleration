@@ -77,6 +77,27 @@ QList<SceneTemplate> SceneCatalog::defaults()
     return {
         makeTemplate(
             QStringLiteral("结构与形态成像"),
+            QStringLiteral("标准水模"),
+            QStringLiteral("水模横断位 PTScan 基线"),
+            QStringLiteral("横断位水模候选结果结构：RAW 引用、PNG 结果与 QC 记录（真实绑定待核验）"),
+            QStringLiteral("LOC_017T / PTScan.par"),
+            QStringLiteral("横断位 LOC + 单次 PTScan 基线采集"),
+            QStringLiteral("确认水模、接收线圈、固定、连接和输出目录"),
+            QStringLiteral("默认横断位，复核中心、FOV 与切片覆盖"),
+            QStringLiteral("eggcontrollerV2 既有 RAW→PNG 入口候选；当前 HCController=console_mock，待真实放行核验"),
+            QStringLiteral("水模图像质控；保存协议、参数快照、来源和结果"),
+            loc017tParams()
+                + QStringLiteral("\nPTScan.par：启动默认路径 C:/MRIScanner/Scan/PTScan.par；"
+                                 "实际文件、参数哈希及横断位覆盖须在真实预检中确认。"),
+            QStringLiteral("水模/线圈位置、连接、温度、ScanStatus、输出目录和自动化真实导入均待确认"),
+            QStringLiteral("RAW 引用、PNG 结果、协议快照和 QC 记录（真实结果待核验）"),
+            QStringLiteral("待真实结果"),
+            QStringLiteral("待真实结果"),
+            QStringLiteral("待真实结果"),
+            QStringLiteral("单次扫描；不自动重复"),
+            QStringLiteral("当前水模横断位基线；真实 Run 等待现场确认并保持 HOLD。")),
+        makeTemplate(
+            QStringLiteral("结构与形态成像"),
             QStringLiteral("标准模体、组织样品、根茎样品"),
             QStringLiteral("内部结构成像模板"),
             QStringLiteral("2D/3D 结构图像、协议和 QC 记录"),
