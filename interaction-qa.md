@@ -15,10 +15,10 @@
 | 工作树 | `C:\Users\Administrator\.codex\worktrees\33be\核磁共振场景化平台` |
 | 分支 | `codex/migrate-verified-mri-runtime` |
 | Release 目标 | `C:\tmp\nmr_ui_33be\client\build-release-ascii\dist-full-flow-ui-v2\scenario_nmr_client.exe` |
-| 交互截图 | `C:\tmp\interaction-qa-final-20260728-210229\interaction-01.png` 至 `interaction-13.png`（13 张，共 4,406,242 字节） |
+| 交互截图 | `C:\tmp\navigation-audit-final-v3-20260729\interaction-01.png` 至 `interaction-13.png`（13 张，共 4,516,867 字节） |
 | 截图方式 | Release 配置的 Qt 测试目标加载同一 QSS/资源，逐页 `QWidget::grab`；仅 Mock 状态 |
-| 外部可见窗口 | exact Release 无参数启动；PID `22160`；启动时间 `2026-07-28 21:04:10 +08:00`；标题“场景化核磁共振控制台”；窗口句柄 `8587734`；响应正常 |
-| Release 身份 | `3,645,097` 字节；SHA-256 `D98B25528D0B5EDC127351F6B2426908BEBE528F95B81B6AE60B0271C9C21895` |
+| 外部可见窗口 | exact Release 无参数启动；PID `1864`；启动时间 `2026-07-29 02:34:32 +08:00`；标题“场景化核磁共振控制台”；窗口句柄 `9374166`；响应正常 |
+| Release 身份 | `3,657,187` 字节；SHA-256 `BB77106CD4CB0179DB6F6BEC56212CB9E3917D4CA16C5FC8222B84CA4D8EDDAA` |
 | Windows Graphics Capture | 当前主机返回 `SetIsBorderRequired failed: 不支持此接口 (0x80004002)`；未把该失败冒充成外窗截图 |
 | 交互自动化 | `enabledWorkflowActionsExposeVisibleFeedback`、`visibleWorkflowControlsHaveNamesAndObservableBehavior`；覆盖按钮、单选、复选、下拉、输入、列表和表格 |
 | 安全门禁自动化 | `realActionsExplainWhyTheyAreUnavailable` |
@@ -39,11 +39,14 @@
 | 一键建链 | `ConnectDeviceButton` | 否 | 槽存在但 GUI 入口硬 HOLD | 按钮写明“本轮禁用” | PASS，未点击 |
 | 真实预检 | `RealPrecheckButton` | 否 | 槽存在但 GUI 入口硬 HOLD | 按钮写明“未执行” | PASS，未点击 |
 | DRY_RUN | `DryRunButton` | 是 | `clicked → handleDryRun` | 左栏显示“DRY_RUN 完成 · Mock 参数快照 · 未写入 SDK” | PASS；原死按钮已修复 |
-| 开始采集（Mock） | `LeftMockStartButton` | 仅 06 | `clicked → 09` | 切页并显示“运行中（Mock）” | PASS |
-| 暂停/继续（Mock） | `MockPauseButton` | 06、09 | `clicked → handlePause` | 按钮在暂停/继续间切换；左栏显示状态 | PASS；原隐藏日志问题已修复 |
+| 使用所选模板 | `UseSelectedTemplateButton` | 仅水模横断位基线；09 采集中禁用 | `clicked → applyScene → 03` | 明确进入模板确认；其他科研模板显示“仅供浏览”；采集中提示先返回或停止 | PASS |
+| 开始采集（Mock） | `LeftMockStartButton` | 仅 08 且三项确认全部勾选 | 代理 `MockAcquireButton` | 切至 09 并显示“运行中（Mock）” | PASS；不再从 06 绕过定位与确认 |
+| 暂停/继续（Mock） | `MockPauseButton` | 仅 09 | `clicked → handlePause` | 按钮和状态同步切换，自动推进计时器真实暂停/续跑 | PASS |
 | 真实 Run | `RealRunButton` | 否 | `handleStart` 仍不调用 SDK | “真实 Run（等待现场确认）” | PASS，未点击 |
-| Mock-only 停止 | `LeftMockStopButton` | 06、09 | 06→05、09→08 | 返回上一安全页面 | PASS |
+| Mock-only 停止 | `LeftMockStopButton` | 仅 09 | 09→08 | 停止 Mock 自动推进并返回运行前确认；三项确认失效 | PASS |
 | 真实 Abort | `RealAbortButton` | 否且隐藏 | `handleAbort` 仍不调用 SDK | 不在 Mock 界面暴露 | PASS，未点击 |
+| 全局返回 | `WorkflowBackButton` | 02–13 | `clicked → 上一安全步骤` | 每页底部始终可见；10 返回 08，避免回到无计时器的伪采集中状态 | PASS |
+| 全局下一步 | `WorkflowNextButton` | 01–12；08 受确认门控制，09 自动推进 | `clicked → 下一步` 或代理 `MockAcquireButton` | 每页始终可见；不可执行时显示明确原因 | PASS |
 
 ## 01–13 页面控件矩阵
 
@@ -70,10 +73,10 @@
 | 07 | 修改 / `ModifyImagingTargetButton` | 是；读取当前目标并更新状态 | 左栏显示已应用的 Mock 目标，PASS；原死按钮已修复 |
 | 07 | 科研参数 / `ResearchParametersButton` | 是；更新状态 | 明示转到第 05 页 L3、未写 SDK，PASS；原死按钮已修复 |
 | 07 | 确认定位 / `ConfirmLocalizationButton` | 是；→08 | 页面切换，PASS |
-| 08 | 三项确认 / `RunConfirmationCheck1..3` | 是；Qt 勾选态 | 勾选状态可见；不用于放行真实 Run，PASS |
+| 08 | 三项确认 / `RunConfirmationCheck1..3` | 是；三项全部勾选才放行 Mock | 勾选状态可见；离开 08、返回调整或切换目录选择后全部失效；真实 Run 始终 HOLD，PASS |
 | 08 | 真实 Run / `WorkflowRealRunButton` | 否 | 无设备调用 | 文案“等待现场确认”；紧凑门禁条写明未通过真实预检，PASS |
-| 08 | 返回调整定位 / `RunConfirmationBackButton`；PTScan Mock 采集 / `MockAcquireButton` | 是；→07、→09 | 页面切换；Mock 自动推进 10，PASS |
-| 09 | 无中栏动作；使用全局暂停/Mock-only 停止 | 全局规则 | 状态或安全返回 08，PASS |
+| 08 | 返回调整定位 / `RunConfirmationBackButton`；PTScan Mock 采集 / `MockAcquireButton` | 返回始终可用；采集受三项确认和水模基线身份控制 | 页面切换；Mock 自动推进 10，PASS |
+| 09 | 全局返回、暂停/继续、Mock-only 停止 | 全局规则 | 暂停会暂停计时；返回/停止会取消计时并回到 08，PASS |
 | 10 | Mock 处理完成并查看结果 / `CompleteMockProcessingButton` | 是；→11 | 页面切换，PASS |
 | 11 | 返回定位/重新采集 / `ReturnToLocalizationButton`；确认结果 / `ConfirmResultButton` | 是；→07、→12 | 页面切换，PASS |
 | 12 | 保存结果包 / `SaveResultPackageButton` | 是；本地 Mock 状态更新后禁用自身 | 显示“Mock 结果包已保存；未调用 SDK”，PASS |
@@ -89,7 +92,20 @@
 
 - 02 的模板卡片、06/07/11 的缩略图、12 的六项结果包卡均为 `QFrame/QLabel`，不是 `QAbstractButton`，无按钮焦点、无按压信号。
 - 处理表、参数快照和历史表按各自合同设置为只读或仅选择，不伪装为可编辑控件。
-- 隐藏的 `WorkflowBackButton/WorkflowNextButton` 不是用户可见控件，不计入可见按钮矩阵。
+- `WorkflowBackButton/WorkflowNextButton` 现为主流程的持久可见出口；在 `1280×760` 最小窗口下逐页验证完整可见。
+
+## 2026-07-29 导航闭环复盘
+
+| 已定位问题 | 根因 | 修复与回归 |
+|---|---|---|
+| 选中参考模板后没有可见“下一步” | 左栏模板列表只有选中信号；继续按钮不存在；隐藏的全局下一步被旧测试程序式点击造成假通过 | 新增 `UseSelectedTemplateButton`；水模基线可进入 03，非水模明确“仅供浏览”；新增真实窗口尺寸下的可见性与行为测试 |
+| 第 12 页没有返回 | 全局返回创建后被永久隐藏，页面本身也没有返回动作 | 02–13 显示持久返回；第 12 页可回 11，也可进入历史 13 |
+| 05/06/07/10 等页缺统一退路 | 页面级按钮不完整且无持久导航 | 01–12 均显示下一步，02–13 均显示返回；08/09 使用受控状态文案 |
+| 06 可直接跳到 09 | 左栏 Mock 开始按钮按步骤号硬跳，绕过 07/08 | 左栏开始仅在 08 三项确认通过后代理同一个 `MockAcquireButton` |
+| 08 确认框只是装饰 | 采集按钮未绑定复选状态 | 三项 `all-of` 门禁；离开/重入及目录变更失效；全局下一步与页内按钮共用同一门 |
+| 暂停后仍自动进入处理 | 旧实现使用不可暂停的 `QTimer::singleShot` | 改为单次成员计时器，保存剩余时间，暂停/继续行为回归覆盖 |
+| 10 返回 09 后永久停在“采集中” | 只有首次采集点击才启动计时器 | 10 的返回目标改为 08，必须重新确认后才能再次进入 Mock |
+| 非水模模板可误入水模硬编码流程 | 左栏目录选择与已实现主流程没有身份门 | 非水模仅浏览；在 03–12 改选会回 02，且即使程序性重勾确认也不能启用采集 |
 
 ## 已确认死按钮、根因与修复
 
@@ -140,9 +156,9 @@
 
 ## 构建、测试与安全记录
 
-- TDD：新增真实性与完整交互断言后先出现 `2 failed`；修正文案及测试目标后聚焦回归 `4 passed, 0 failed`。
-- Debug：提交后最终全量 CTest `10/10 passed`，总计 `6.80 s`。
-- Release：提交后最终全量 CTest `10/10 passed`，总计 `6.77 s`。
+- TDD：分别保存了导航缺失、暂停失效、确认失效和模板身份错位的失败证据；最终导航/门禁聚焦回归 `9 passed, 0 failed`。
+- Debug：最新代码全量 CTest `10/10 passed`，总计 `17.37 s`。
+- Release：最新代码全量 CTest `10/10 passed`，总计 `16.90 s`。
 - 独立代码复审：最终无剩余 Critical / Important；显式 `--auto-connect` 被确认是未扩大的基线 opt-in 路径，不属于可见 GUI HOLD 的死按钮修复范围。
 - 测试中的 SDK/代理均为 fake/临时目录；没有加载真实 `mridll.dll`。
 - 最终可见 Release 仅有一个实例，命令行只有 EXE 本身；进程模块中未发现 MRI DLL。

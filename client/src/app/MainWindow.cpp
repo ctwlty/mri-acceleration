@@ -39,6 +39,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 static QString badgeClassForState(const QString& state)
 {
     if (state == QStringLiteral("已连接") || state == QStringLiteral("扫描中") || state == QStringLiteral("Demo执行") || state == QStringLiteral("正常")) {
@@ -83,6 +85,15 @@ MainWindow::MainWindow(QWidget* parent)
     setWindowTitle(QStringLiteral("场景化核磁共振控制台"));
     resize(1570, 953);
     setMinimumSize(1280, 760);
+
+    m_mockAcquisitionTimer = new QTimer(this);
+    m_mockAcquisitionTimer->setSingleShot(true);
+    connect(m_mockAcquisitionTimer, &QTimer::timeout, this, [this] {
+        m_mockAcquisitionRemainingMs = 3200;
+        if (m_workflowStep == 9) {
+            setWorkflowStep(10);
+        }
+    });
 
     auto* root = new QWidget(this);
     auto* rootLayout = new QVBoxLayout(root);
@@ -154,6 +165,9 @@ MainWindow::MainWindow(QWidget* parent)
         emptyRecommendation->setTextAlignment(Qt::AlignCenter);
         emptyRecommendation->setSizeHint(QSize(0, 104));
         emptyRecommendation->setData(Qt::UserRole, -1);
+        if (m_useSelectedTemplateButton) {
+            m_useSelectedTemplateButton->setEnabled(false);
+        }
     }
     refreshWorkflow();
 }
@@ -543,6 +557,14 @@ QWidget* MainWindow::buildLeftPane()
     m_sceneList->setUniformItemSizes(false);
     layout->addWidget(m_sceneList);
 
+    m_useSelectedTemplateButton =
+        new QPushButton(QStringLiteral("使用所选模板 → 确认任务"), frame);
+    m_useSelectedTemplateButton->setObjectName(QStringLiteral("UseSelectedTemplateButton"));
+    m_useSelectedTemplateButton->setProperty("class", "primary");
+    m_useSelectedTemplateButton->setEnabled(false);
+    m_useSelectedTemplateButton->setMinimumHeight(38);
+    layout->addWidget(m_useSelectedTemplateButton);
+
     auto* modePanel = makePanel("SelectorFilterPanel");
     auto* modeLayout = new QGridLayout(modePanel);
     modeLayout->setContentsMargins(12, 10, 12, 10);
@@ -623,19 +645,29 @@ QWidget* MainWindow::buildLeftPane()
     connect(m_targetCombo, &QComboBox::currentIndexChanged, this, &MainWindow::handleTargetChanged);
     connect(m_templateSearchEdit, &QLineEdit::textChanged, this, &MainWindow::handleTemplateSearchChanged);
     connect(m_sceneList, &QListWidget::currentRowChanged, this, &MainWindow::handleSceneChanged);
+    connect(m_useSelectedTemplateButton, &QPushButton::clicked, this, [this] {
+        if (!m_sceneList || !m_sceneList->currentItem()
+            || m_sceneList->currentItem()->data(Qt::UserRole).toInt() != 0) {
+            return;
+        }
+        applyScene(currentScene());
+        setWorkflowStep(3);
+    });
     connect(m_controlModeCombo, &QComboBox::currentIndexChanged, this, &MainWindow::updateControlMode);
     connect(m_loadSdkButton, &QPushButton::clicked, this, &MainWindow::handleLoadSdk);
     connect(m_connectButton, &QPushButton::clicked, this, &MainWindow::handleConnect);
     connect(precheckBtn, &QPushButton::clicked, this, &MainWindow::handlePrecheck);
     connect(dryRunBtn, &QPushButton::clicked, this, &MainWindow::handleDryRun);
     connect(m_leftMockStartButton, &QPushButton::clicked, this, [this] {
-        setWorkflowStep(m_workflowStep < 6 ? 6 : 9);
+        if (m_workflowStep == 8 && m_mockAcquireButton
+            && m_mockAcquireButton->isEnabled()) {
+            m_mockAcquireButton->click();
+        }
     });
     connect(m_startButton, &QPushButton::clicked, this, &MainWindow::handleStart);
     connect(m_pauseButton, &QPushButton::clicked, this, &MainWindow::handlePause);
     connect(m_abortButton, &QPushButton::clicked, this, &MainWindow::handleAbort);
     connect(m_leftMockStopButton, &QPushButton::clicked, this, [this] {
-        if (m_workflowStep == 6) setWorkflowStep(5);
         if (m_workflowStep == 9) setWorkflowStep(8);
     });
 
@@ -685,20 +717,40 @@ QWidget* MainWindow::buildCenterPane()
     m_workflowBackButton->setObjectName(QStringLiteral("WorkflowBackButton"));
     m_workflowBackButton->setProperty("class", "secondary");
     m_workflowBackButton->setVisible(false);
+    m_workflowBackButton->setMinimumWidth(170);
+    m_workflowBackButton->setMinimumHeight(38);
     m_workflowNextButton = new QPushButton(QStringLiteral("下一步"), frame);
     m_workflowNextButton->setObjectName(QStringLiteral("WorkflowNextButton"));
     m_workflowNextButton->setProperty("class", "primary");
     m_workflowNextButton->setVisible(false);
+    m_workflowNextButton->setMinimumWidth(230);
+    m_workflowNextButton->setMinimumHeight(38);
     navRow->addWidget(m_workflowBackButton);
     navRow->addStretch();
     navRow->addWidget(m_workflowNextButton);
     layout->addLayout(navRow);
 
     connect(m_workflowBackButton, &QPushButton::clicked, this, [this] {
-        setWorkflowStep(m_workflowStep == 13 ? 12 : qMax(1, m_workflowStep - 1));
+        const int targetStep =
+            m_workflowStep == 13 ? 12
+            : m_workflowStep == 10 ? 8
+                                   : qMax(1, m_workflowStep - 1);
+        setWorkflowStep(targetStep);
     });
     connect(m_workflowNextButton, &QPushButton::clicked, this, [this] {
-        if (m_workflowStep < 12) setWorkflowStep(m_workflowStep + 1);
+        if (m_workflowStep == 8) {
+            if (m_mockAcquireButton && m_mockAcquireButton->isEnabled()) {
+                m_mockAcquireButton->click();
+            }
+        } else if (m_workflowStep == 2) {
+            if (m_sceneList && m_sceneList->currentItem()
+                && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0) {
+                applyScene(currentScene());
+                setWorkflowStep(3);
+            }
+        } else if (m_workflowStep < 13 && m_workflowStep != 9) {
+            setWorkflowStep(m_workflowStep + 1);
+        }
     });
     refreshWorkflow();
 
@@ -927,6 +979,11 @@ QWidget* MainWindow::makeWorkflowPage(int step)
                     repeatRecommendation->style()->unpolish(repeatRecommendation);
                     repeatRecommendation->style()->polish(repeatRecommendation);
                 });
+        connect(repeatChoice.second, &QRadioButton::toggled, this,
+                [this](bool checked) {
+                    m_comparisonEnabled = checked;
+                    refreshWorkflow();
+                });
         layout->addStretch();
 
         auto* actions = new QHBoxLayout;
@@ -937,7 +994,14 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         auto* generate = new QPushButton(QStringLiteral("查看推荐模板"), page);
         generate->setObjectName(QStringLiteral("ShowRecommendedTemplateButton"));
         generate->setProperty("class", "primary");
-        connect(generate, &QPushButton::clicked, this, [this] { setWorkflowStep(3); });
+        connect(generate, &QPushButton::clicked, this, [this] {
+            if (!m_sceneList || !m_sceneList->currentItem()
+                || m_sceneList->currentItem()->data(Qt::UserRole).toInt() != 0) {
+                return;
+            }
+            applyScene(currentScene());
+            setWorkflowStep(3);
+        });
         actions->addStretch();
         actions->addWidget(back);
         actions->addWidget(generate);
@@ -1534,11 +1598,13 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             QStringLiteral("横断位覆盖已复核"),
             QStringLiteral("连接/温度/空闲/输出已预检")
         };
+        QList<QCheckBox*> runConfirmationChecks;
         for (int index = 0; index < checkLabels.size(); ++index) {
             auto* check = new QCheckBox(checkLabels.at(index), checksCard);
             check->setObjectName(QStringLiteral("RunConfirmationCheck%1").arg(index + 1));
             check->setChecked(false);
             checks->addWidget(check);
+            runConfirmationChecks.append(check);
         }
         checks->addStretch();
         layout->addWidget(checksCard);
@@ -1557,11 +1623,33 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             new QPushButton(QStringLiteral("确认并进入 PTScan Mock 采集"), page);
         m_mockAcquireButton->setObjectName(QStringLiteral("MockAcquireButton"));
         m_mockAcquireButton->setProperty("class", "primary");
+        m_mockAcquireButton->setEnabled(false);
+        const auto updateMockAcquisitionGate = [this, runConfirmationChecks] {
+            const bool allConfirmed = std::all_of(
+                runConfirmationChecks.cbegin(), runConfirmationChecks.cend(),
+                [](const QCheckBox* check) { return check->isChecked(); });
+            const bool baselineTemplateSelected =
+                m_sceneList && m_sceneList->currentItem()
+                && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+            const bool canStartMock = allConfirmed && baselineTemplateSelected;
+            m_mockAcquireButton->setEnabled(canStartMock);
+            if (m_leftMockStartButton && m_workflowStep == 8) {
+                m_leftMockStartButton->setEnabled(canStartMock);
+            }
+            refreshWorkflow();
+        };
+        for (QCheckBox* check : runConfirmationChecks) {
+            connect(check, &QCheckBox::toggled, this,
+                    [updateMockAcquisitionGate](bool) { updateMockAcquisitionGate(); });
+        }
         connect(m_mockAcquireButton, &QPushButton::clicked, this, [this] {
             setWorkflowStep(9);
-            QTimer::singleShot(3200, this, [this] {
-                if (m_workflowStep == 9) setWorkflowStep(10);
-            });
+            m_mockAcquisitionRemainingMs = 3200;
+            if (m_pauseButton) {
+                m_pauseButton->setProperty("mockPaused", false);
+                m_pauseButton->setText(QStringLiteral("暂停（Mock）"));
+            }
+            m_mockAcquisitionTimer->start(m_mockAcquisitionRemainingMs);
         });
         auto* actions = new QHBoxLayout;
         auto* back = new QPushButton(QStringLiteral("返回调整定位"), page);
@@ -1707,7 +1795,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         content->addLayout(packageLayout, 2);
         layout->addLayout(content, 1);
         auto* actions = new QHBoxLayout;
-        auto* save = new QPushButton(QStringLiteral("保存结果包并结束任务"), page);
+        auto* save = new QPushButton(QStringLiteral("保存 Mock 结果包"), page);
         save->setObjectName(QStringLiteral("SaveResultPackageButton"));
         save->setProperty("class", "primary");
         auto* openLocation = new QPushButton(QStringLiteral("打开结果位置"), page);
@@ -1725,7 +1813,7 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         saveState->setProperty("class", "evidenceLabel");
         connect(save, &QPushButton::clicked, this, [save, saveState] {
             save->setEnabled(false);
-            saveState->setText(QStringLiteral("Mock 结果包已保存 · 任务已结束（未调用 SDK）"));
+            saveState->setText(QStringLiteral("Mock 结果包已保存 · 可返回核对或打开历史（未调用 SDK）"));
         });
         connect(openLocation, &QPushButton::clicked, this, [this, saveState] {
             saveState->setText(QStringLiteral("Mock 未生成磁盘结果目录 · 未打开外部位置"));
@@ -2099,9 +2187,33 @@ QWidget* MainWindow::makeLegacyWorkflowPage(int step)
     return page;
 }
 
+void MainWindow::resetRunConfirmations()
+{
+    for (int index = 1; index <= 3; ++index) {
+        if (auto* check = findChild<QCheckBox*>(
+                QStringLiteral("RunConfirmationCheck%1").arg(index))) {
+            check->setChecked(false);
+        }
+    }
+    if (m_mockAcquireButton) {
+        m_mockAcquireButton->setEnabled(false);
+    }
+    if (m_leftMockStartButton) {
+        m_leftMockStartButton->setEnabled(false);
+    }
+}
+
 void MainWindow::setWorkflowStep(int step)
 {
-    m_workflowStep = qBound(1, step, 13);
+    const int nextStep = qBound(1, step, 13);
+    if (m_workflowStep == 9 && nextStep != 9 && m_mockAcquisitionTimer) {
+        m_mockAcquisitionTimer->stop();
+        m_mockAcquisitionRemainingMs = 3200;
+    }
+    if (nextStep == 8 && m_workflowStep != 8) {
+        resetRunConfirmations();
+    }
+    m_workflowStep = nextStep;
     if (m_workflowStep > 1 && m_primarySceneCombo && m_primarySceneCombo->currentIndex() < 0) {
         m_primarySceneCombo->setCurrentIndex(0);
     }
@@ -2143,22 +2255,92 @@ void MainWindow::refreshWorkflow()
                     .arg(completed, titles.at(m_workflowStep - 1), next));
         }
     }
-    if (m_workflowBackButton) m_workflowBackButton->setEnabled(m_workflowStep > 1);
-    if (m_workflowNextButton) m_workflowNextButton->setEnabled(m_workflowStep < 12 && m_workflowStep != 8);
+    if (m_workflowBackButton) {
+        const bool canGoBack = m_workflowStep > 1;
+        m_workflowBackButton->setVisible(canGoBack);
+        m_workflowBackButton->setEnabled(canGoBack);
+        if (canGoBack) {
+            m_workflowBackButton->setText(m_workflowStep == 10
+                                              ? QStringLiteral("返回：运行前确认")
+                                              : QStringLiteral("返回：%1").arg(
+                                                    titles.at(m_workflowStep - 2)));
+        }
+    }
+    if (m_workflowNextButton) {
+        const bool isMainWorkflowPage = m_workflowStep <= 12;
+        const bool runConfirmationReady =
+            m_workflowStep == 8 && m_mockAcquireButton
+            && m_mockAcquireButton->isEnabled();
+        const bool baselineTemplateSelected =
+            m_sceneList && m_sceneList->currentItem()
+            && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+        const bool unsupportedTemplateSelected =
+            m_workflowStep == 2 && !baselineTemplateSelected;
+        const bool waitsForControlledTransition =
+            (m_workflowStep == 8 && !runConfirmationReady)
+            || m_workflowStep == 9 || unsupportedTemplateSelected;
+        m_workflowNextButton->setVisible(isMainWorkflowPage);
+        m_workflowNextButton->setEnabled(
+            isMainWorkflowPage && !waitsForControlledTransition);
+        if (unsupportedTemplateSelected) {
+            m_workflowNextButton->setText(
+                QStringLiteral("当前模板仅供浏览，请选择水模基线"));
+        } else if (m_workflowStep == 8 && !runConfirmationReady) {
+            m_workflowNextButton->setText(QStringLiteral("请先完成运行前确认"));
+        } else if (m_workflowStep == 8) {
+            m_workflowNextButton->setText(
+                QStringLiteral("开始 PTScan Mock 采集"));
+        } else if (m_workflowStep == 9) {
+            m_workflowNextButton->setText(QStringLiteral("PTScan Mock 采集中"));
+        } else if (m_workflowStep < 13) {
+            m_workflowNextButton->setText(
+                QStringLiteral("下一步：%1").arg(titles.at(m_workflowStep)));
+        }
+    }
+    if (auto* showRecommended =
+            findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))) {
+        const bool baselineTemplateSelected =
+            m_sceneList && m_sceneList->currentItem()
+            && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+        showRecommended->setEnabled(baselineTemplateSelected);
+    }
+    if (m_useSelectedTemplateButton) {
+        const bool hasTemplate =
+            m_sceneList && m_sceneList->currentItem()
+            && m_sceneList->currentItem()->data(Qt::UserRole).toInt() >= 0;
+        const bool baselineTemplateSelected =
+            hasTemplate
+            && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+        const bool mockAcquisitionRunning = m_workflowStep == 9;
+        m_useSelectedTemplateButton->setEnabled(
+            baselineTemplateSelected && !mockAcquisitionRunning);
+        m_useSelectedTemplateButton->setText(
+            mockAcquisitionRunning
+                ? QStringLiteral("Mock 采集中，请先返回或停止")
+            : baselineTemplateSelected
+                ? QStringLiteral("使用所选模板 → 确认任务")
+            : hasTemplate
+                ? QStringLiteral("当前模板仅供浏览（主流程仅水模基线）")
+                : QStringLiteral("请选择场景与检测对象"));
+    }
     if (m_leftMockStartButton) {
         const bool mockAcquisitionRunning = m_workflowStep == 9;
         m_leftMockStartButton->setText(mockAcquisitionRunning
                                            ? QStringLiteral("运行中（Mock）")
-                                           : QStringLiteral("开始采集（Mock）"));
+                                           : m_workflowStep == 8
+                                               ? QStringLiteral("开始采集（Mock）")
+                                               : QStringLiteral("采集入口（待确认）"));
         m_leftMockStartButton->setProperty(
             "class", mockAcquisitionRunning ? QStringLiteral("running")
-                                             : QStringLiteral("success"));
-        m_leftMockStartButton->setEnabled(m_workflowStep == 6);
+                                              : QStringLiteral("success"));
+        m_leftMockStartButton->setEnabled(
+            m_workflowStep == 8 && m_mockAcquireButton
+            && m_mockAcquireButton->isEnabled());
         m_leftMockStartButton->style()->unpolish(m_leftMockStartButton);
         m_leftMockStartButton->style()->polish(m_leftMockStartButton);
     }
     if (m_pauseButton) {
-        const bool mockStep = m_workflowStep == 6 || m_workflowStep == 9;
+        const bool mockStep = m_workflowStep == 9;
         if (!mockStep) {
             m_pauseButton->setProperty("mockPaused", false);
             m_pauseButton->setText(QStringLiteral("暂停（Mock）"));
@@ -2166,7 +2348,7 @@ void MainWindow::refreshWorkflow()
         m_pauseButton->setEnabled(mockStep);
     }
     if (m_leftMockStopButton)
-        m_leftMockStopButton->setEnabled(m_workflowStep == 6 || m_workflowStep == 9);
+        m_leftMockStopButton->setEnabled(m_workflowStep == 9);
     if (m_protocolChainLabel) {
         m_protocolChainLabel->setText(
             m_comparisonEnabled
@@ -2945,6 +3127,16 @@ void MainWindow::populateTemplatesForSelection()
     if (m_sceneList->count() > 0) {
         m_sceneList->setCurrentRow(0);
     }
+    if (m_useSelectedTemplateButton) {
+        const bool baselineTemplateSelected =
+            m_sceneList->currentItem()
+            && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+        m_useSelectedTemplateButton->setEnabled(baselineTemplateSelected);
+        m_useSelectedTemplateButton->setText(
+            baselineTemplateSelected
+                ? QStringLiteral("使用所选模板 → 确认任务")
+                : QStringLiteral("当前模板仅供浏览（主流程仅水模基线）"));
+    }
 }
 
 void MainWindow::handlePrimarySceneChanged()
@@ -2967,7 +3159,19 @@ void MainWindow::handleTemplateSearchChanged()
 
 void MainWindow::handleSceneChanged()
 {
-    applyScene(currentScene());
+    resetRunConfirmations();
+    const bool baselineTemplateSelected =
+        m_sceneList && m_sceneList->currentItem()
+        && m_sceneList->currentItem()->data(Qt::UserRole).toInt() == 0;
+    if (!baselineTemplateSelected && m_workflowStep > 2) {
+        setWorkflowStep(2);
+        return;
+    }
+    if (baselineTemplateSelected) {
+        applyScene(currentScene());
+    } else {
+        refreshWorkflow();
+    }
 }
 
 MriSdkResult MainWindow::loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config)
@@ -3051,10 +3255,19 @@ void MainWindow::handleStart()
 
 void MainWindow::handlePause()
 {
-    if (!m_pauseButton) {
+    if (!m_pauseButton || m_workflowStep != 9 || !m_mockAcquisitionTimer) {
         return;
     }
     const bool paused = !m_pauseButton->property("mockPaused").toBool();
+    if (paused) {
+        if (m_mockAcquisitionTimer->isActive()) {
+            m_mockAcquisitionRemainingMs =
+                qMax(1, m_mockAcquisitionTimer->remainingTime());
+        }
+        m_mockAcquisitionTimer->stop();
+    } else {
+        m_mockAcquisitionTimer->start(qMax(1, m_mockAcquisitionRemainingMs));
+    }
     m_pauseButton->setProperty("mockPaused", paused);
     m_pauseButton->setText(paused ? QStringLiteral("继续（Mock）")
                                  : QStringLiteral("暂停（Mock）"));
@@ -3267,6 +3480,7 @@ void MainWindow::showEggControllerArtifacts(const EggControllerArtifacts& artifa
 
 void MainWindow::applyScene(const SceneTemplate& scene)
 {
+    resetRunConfirmations();
     if (m_sceneTitle) {
         m_sceneTitle->setText(QStringLiteral("任务选择"));
     }

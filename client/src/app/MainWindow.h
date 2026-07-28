@@ -15,6 +15,7 @@ class QPlainTextEdit;
 class QPushButton;
 class QStackedWidget;
 class QCloseEvent;
+class QTimer;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -80,6 +81,7 @@ private:
     void populateTemplatesForSelection();
     void setOperationChain(const SceneTemplate& scene);
     void showEggControllerArtifacts(const EggControllerArtifacts& artifacts);
+    void resetRunConfirmations();
     void setWorkflowStep(int step);
     void refreshWorkflow();
     bool isEggControllerMode() const;
@@ -89,6 +91,7 @@ private:
     QComboBox* m_controlModeCombo = nullptr;
     QLineEdit* m_templateSearchEdit = nullptr;
     QListWidget* m_sceneList = nullptr;
+    QPushButton* m_useSelectedTemplateButton = nullptr;
     QLabel* m_sceneTitle = nullptr;
     QLabel* m_sceneTarget = nullptr;
     QLabel* m_sceneSequence = nullptr;
@@ -162,6 +165,7 @@ private:
     QPushButton* m_realRunButton = nullptr;
     QPushButton* m_addComparisonButton = nullptr;
     QPushButton* m_mockAcquireButton = nullptr;
+    QTimer* m_mockAcquisitionTimer = nullptr;
     QPushButton* m_openHistoryButton = nullptr;
     QPushButton* m_backToResultsButton = nullptr;
     QWidget* m_localizationPlanner = nullptr;
@@ -172,6 +176,7 @@ private:
     QString m_selectedDllPath;
     bool m_precheckRequested = false;
     int m_workflowStep = 1;
+    int m_mockAcquisitionRemainingMs = 3200;
     bool m_comparisonEnabled = false;
     QList<SceneTemplate> m_catalog;
 };

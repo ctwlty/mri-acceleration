@@ -43,6 +43,14 @@ private slots:
     void realActionsExplainWhyTheyAreUnavailable();
     void workflowUsesWaterPhantomTransverseSemantics();
     void visibleWorkflowControlsHaveNamesAndObservableBehavior();
+    void selectedTemplateOffersVisibleContinuationFromAnyWorkflowPage();
+    void persistentWorkflowNavigationIsVisibleAtCommonWindowSize();
+    void mockAcquisitionRequiresAllRunConfirmations();
+    void mockPauseStopsAndResumesAutomaticProgression();
+    void runConfirmationsResetAfterLeavingConfirmationStep();
+    void backFromProcessingReturnsToRunConfirmation();
+    void unsupportedCatalogTemplateIsClearlyBrowseOnly();
+    void templateRestartIsUnavailableDuringMockAcquisition();
     void captureInteractionQaScreensWhenRequested();
 };
 
@@ -300,11 +308,16 @@ void MainWindowTest::workflowUsesMockNavigationAndKeepsRealRunOnHold()
         next->click();
     }
     QCOMPARE(currentStep->text(), QStringLiteral("08"));
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
     QVERIFY(mockAcquire->isEnabled());
     mockAcquire->click();
     QCOMPARE(currentStep->text(), QStringLiteral("09"));
 
-    for (int i = 0; i < 3; ++i) {
+    QTRY_COMPARE_WITH_TIMEOUT(currentStep->text(), QStringLiteral("10"), 3600);
+    for (int i = 0; i < 2; ++i) {
         next->click();
     }
     QCOMPARE(currentStep->text(), QStringLiteral("12"));
@@ -337,7 +350,7 @@ void MainWindowTest::enabledWorkflowActionsExposeVisibleFeedback()
     saveVersion->click();
     QVERIFY(feedback->text().contains(QStringLiteral("版本保存待真实接入")));
 
-    window.setMockWorkflowStep(6);
+    window.setMockWorkflowStep(9);
     auto* pause = window.findChild<QPushButton*>(QStringLiteral("MockPauseButton"));
     QVERIFY(pause);
     QVERIFY(pause->isEnabled());
@@ -604,6 +617,9 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
     window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton"))->click();
     window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))->click();
     QCOMPARE(currentStep->text(), QStringLiteral("03"));
+    QVERIFY(window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"))
+                ->text()
+                .contains(QStringLiteral("FSE B")));
 
     window.findChild<QPushButton*>(QStringLiteral("AddComparisonButton"))->click();
     QVERIFY(window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"))
@@ -628,10 +644,7 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
     QCOMPARE(currentStep->text(), QStringLiteral("06"));
 
     auto* stop = window.findChild<QPushButton*>(QStringLiteral("LeftMockStopButton"));
-    QVERIFY(stop->isEnabled());
-    stop->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("05"));
-    window.setMockWorkflowStep(6);
+    QVERIFY(!stop->isEnabled());
     window.findChild<QPushButton*>(QStringLiteral("OpenLocalizationPlanningButton"))->click();
     QCOMPARE(currentStep->text(), QStringLiteral("07"));
 
@@ -653,8 +666,16 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
     window.findChild<QPushButton*>(QStringLiteral("RunConfirmationBackButton"))->click();
     QCOMPARE(currentStep->text(), QStringLiteral("07"));
     window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"))->click();
-    window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"))->click();
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
+    auto* reacquire =
+        window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    QVERIFY(reacquire->isEnabled());
+    reacquire->click();
     QCOMPARE(currentStep->text(), QStringLiteral("09"));
+    QVERIFY(stop->isEnabled());
     stop->click();
     QCOMPARE(currentStep->text(), QStringLiteral("08"));
 
@@ -718,6 +739,273 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
     QVERIFY(actionState->text().contains(QStringLiteral("来源记录")));
     window.findChild<QPushButton*>(QStringLiteral("BackToResultsButton"))->click();
     QCOMPARE(currentStep->text(), QStringLiteral("12"));
+}
+
+void MainWindowTest::selectedTemplateOffersVisibleContinuationFromAnyWorkflowPage()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(12);
+    QCoreApplication::processEvents();
+
+    auto* templateList = window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
+    auto* continueButton =
+        window.findChild<QPushButton*>(QStringLiteral("UseSelectedTemplateButton"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(templateList);
+    QVERIFY(templateList->currentItem());
+    QVERIFY2(continueButton,
+             "Selecting a template from the persistent task panel must expose a continuation.");
+    QVERIFY(continueButton->isEnabled());
+    QVERIFY(continueButton->isVisibleTo(&window));
+
+    const QRect buttonRect(continueButton->mapTo(&window, QPoint(0, 0)),
+                           continueButton->size());
+    QVERIFY2(window.rect().contains(buttonRect),
+             "The template continuation must be fully inside the common viewport.");
+
+    QTest::mouseClick(continueButton, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+}
+
+void MainWindowTest::persistentWorkflowNavigationIsVisibleAtCommonWindowSize()
+{
+    MainWindow window;
+    window.resize(1280, 760);
+    window.show();
+
+    auto* back = window.findChild<QPushButton*>(QStringLiteral("WorkflowBackButton"));
+    auto* next = window.findChild<QPushButton*>(QStringLiteral("WorkflowNextButton"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(back);
+    QVERIFY(next);
+    QVERIFY(currentStep);
+
+    const auto assertFullyVisible = [&window](QPushButton* button, const char* message) {
+        QVERIFY2(button->isVisibleTo(&window), message);
+        const QRect buttonRect(button->mapTo(&window, QPoint(0, 0)), button->size());
+        QVERIFY2(window.rect().contains(buttonRect), message);
+    };
+
+    for (int step = 2; step <= 13; ++step) {
+        window.setMockWorkflowStep(step);
+        QCoreApplication::processEvents();
+        QVERIFY2(back->isEnabled(), qPrintable(QStringLiteral("步骤 %1 的返回按钮不可用").arg(step)));
+        assertFullyVisible(back, "Every non-entry workflow page needs a visible Back action.");
+    }
+
+    for (int step = 1; step <= 12; ++step) {
+        window.setMockWorkflowStep(step);
+        QCoreApplication::processEvents();
+        assertFullyVisible(next, "Every main workflow page must show the next-state control.");
+    }
+
+    window.setMockWorkflowStep(2);
+    QVERIFY(next->isEnabled());
+    QTest::mouseClick(next, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+
+    window.setMockWorkflowStep(8);
+    QVERIFY(!next->isEnabled());
+    window.setMockWorkflowStep(9);
+    QVERIFY(!next->isEnabled());
+
+    window.setMockWorkflowStep(12);
+    QTest::mouseClick(back, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("11"));
+}
+
+void MainWindowTest::mockAcquisitionRequiresAllRunConfirmations()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(8);
+
+    auto* acquire = window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    auto* leftStart = window.findChild<QPushButton*>(QStringLiteral("LeftMockStartButton"));
+    auto* next = window.findChild<QPushButton*>(QStringLiteral("WorkflowNextButton"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(acquire);
+    QVERIFY(leftStart);
+    QVERIFY(next);
+    QVERIFY(currentStep);
+    QVERIFY(!acquire->isEnabled());
+    QVERIFY(!leftStart->isEnabled());
+    QVERIFY(!next->isEnabled());
+
+    for (int index = 1; index <= 2; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QTest::mouseClick(check, Qt::LeftButton);
+        QVERIFY(!acquire->isEnabled());
+        QVERIFY(!leftStart->isEnabled());
+    }
+
+    auto* finalCheck =
+        window.findChild<QCheckBox*>(QStringLiteral("RunConfirmationCheck3"));
+    QVERIFY(finalCheck);
+    QTest::mouseClick(finalCheck, Qt::LeftButton);
+    QVERIFY(acquire->isEnabled());
+    QVERIFY(leftStart->isEnabled());
+    QVERIFY(next->isEnabled());
+
+    QTest::mouseClick(next, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+}
+
+void MainWindowTest::mockPauseStopsAndResumesAutomaticProgression()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(8);
+
+    for (int index = 1; index <= 3; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QTest::mouseClick(check, Qt::LeftButton);
+    }
+
+    auto* acquire = window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    auto* pause = window.findChild<QPushButton*>(QStringLiteral("MockPauseButton"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(acquire);
+    QVERIFY(pause);
+    QVERIFY(currentStep);
+
+    QTest::mouseClick(acquire, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+    QVERIFY(pause->isEnabled());
+
+    QTest::mouseClick(pause, Qt::LeftButton);
+    QTest::qWait(3400);
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+
+    QTest::mouseClick(pause, Qt::LeftButton);
+    QTRY_COMPARE_WITH_TIMEOUT(currentStep->text(), QStringLiteral("10"), 3600);
+}
+
+void MainWindowTest::runConfirmationsResetAfterLeavingConfirmationStep()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(8);
+
+    for (int index = 1; index <= 3; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QTest::mouseClick(check, Qt::LeftButton);
+        QVERIFY(check->isChecked());
+    }
+    auto* acquire = window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    QVERIFY(acquire);
+    QVERIFY(acquire->isEnabled());
+
+    window.setMockWorkflowStep(7);
+    window.setMockWorkflowStep(8);
+
+    for (int index = 1; index <= 3; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QVERIFY(!check->isChecked());
+    }
+    QVERIFY(!acquire->isEnabled());
+
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
+    QVERIFY(acquire->isEnabled());
+    auto* primaryScene =
+        window.findChild<QComboBox*>(QStringLiteral("PrimarySceneCombo"));
+    auto* currentStep =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(primaryScene);
+    QVERIFY(currentStep);
+    QVERIFY(primaryScene->count() > 1);
+    primaryScene->setCurrentIndex(1);
+    QCoreApplication::processEvents();
+    QCOMPARE(currentStep->text(), QStringLiteral("02"));
+    QVERIFY(!acquire->isEnabled());
+    for (int index = 1; index <= 3; ++index) {
+        auto* check = window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index));
+        QVERIFY(check);
+        QVERIFY(!check->isChecked());
+        check->setChecked(true);
+    }
+    QVERIFY(!acquire->isEnabled());
+}
+
+void MainWindowTest::backFromProcessingReturnsToRunConfirmation()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(10);
+
+    auto* back = window.findChild<QPushButton*>(QStringLiteral("WorkflowBackButton"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    QVERIFY(back);
+    QVERIFY(currentStep);
+    QVERIFY(back->isEnabled());
+
+    QTest::mouseClick(back, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("08"));
+}
+
+void MainWindowTest::unsupportedCatalogTemplateIsClearlyBrowseOnly()
+{
+    MainWindow window;
+    window.resize(1280, 760);
+    window.show();
+    window.setMockWorkflowStep(2);
+
+    auto* primaryScene =
+        window.findChild<QComboBox*>(QStringLiteral("PrimarySceneCombo"));
+    auto* templateList =
+        window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
+    auto* useSelected =
+        window.findChild<QPushButton*>(QStringLiteral("UseSelectedTemplateButton"));
+    auto* next =
+        window.findChild<QPushButton*>(QStringLiteral("WorkflowNextButton"));
+    auto* showRecommended =
+        window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"));
+    QVERIFY(primaryScene);
+    QVERIFY(templateList);
+    QVERIFY(useSelected);
+    QVERIFY(next);
+    QVERIFY(showRecommended);
+    QVERIFY(primaryScene->count() > 1);
+
+    primaryScene->setCurrentIndex(1);
+    QCoreApplication::processEvents();
+
+    QVERIFY(templateList->currentItem());
+    QVERIFY(templateList->currentItem()->data(Qt::UserRole).toInt() != 0);
+    QVERIFY(!useSelected->isEnabled());
+    QVERIFY(useSelected->text().contains(QStringLiteral("仅供浏览")));
+    QVERIFY(!next->isEnabled());
+    QVERIFY(!showRecommended->isEnabled());
+}
+
+void MainWindowTest::templateRestartIsUnavailableDuringMockAcquisition()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(9);
+
+    auto* useSelected =
+        window.findChild<QPushButton*>(QStringLiteral("UseSelectedTemplateButton"));
+    QVERIFY(useSelected);
+    QVERIFY(!useSelected->isEnabled());
+    QVERIFY(useSelected->text().contains(QStringLiteral("Mock 采集中")));
+
+    window.setMockWorkflowStep(12);
+    QVERIFY(useSelected->isEnabled());
 }
 
 void MainWindowTest::captureInteractionQaScreensWhenRequested()
@@ -832,7 +1120,16 @@ void MainWindowTest::galleryLayoutUsesStableThreeColumnsAndContextPanels()
     window.setMockWorkflowStep(1);
     QVERIFY(!leftMockStart->isEnabled());
     window.setMockWorkflowStep(6);
+    QVERIFY(!leftMockStart->isEnabled());
+    window.setMockWorkflowStep(8);
+    QVERIFY(!leftMockStart->isEnabled());
+    for (int index = 1; index <= 3; ++index) {
+        window.findChild<QCheckBox*>(
+            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+    }
     QVERIFY(leftMockStart->isEnabled());
+    leftMockStart->click();
+    QCOMPARE(centerStack->currentIndex(), 8);
 
     window.setMockWorkflowStep(5);
     auto* autoResult = window.findChild<QLabel*>(QStringLiteral("ProtocolAutoResultValue"));
