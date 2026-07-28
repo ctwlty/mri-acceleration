@@ -4,6 +4,8 @@
 #include "ImageQualityEvaluator.h"
 
 #include <QCryptographicHash>
+#include <QButtonGroup>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QFrame>
 #include <QComboBox>
@@ -23,6 +25,7 @@
 #include <QPixmap>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QStackedWidget>
 #include <QScrollArea>
 #include <QSignalBlocker>
@@ -33,6 +36,7 @@
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QTime>
+#include <QTimer>
 #include <QVBoxLayout>
 
 static QString badgeClassForState(const QString& state)
@@ -77,15 +81,13 @@ MainWindow::MainWindow(QWidget* parent)
 {
     setObjectName("MainWindow");
     setWindowTitle(QStringLiteral("场景化核磁共振控制台"));
-    resize(1560, 960);
-    setMinimumSize(1380, 860);
+    resize(1570, 953);
+    setMinimumSize(1280, 760);
 
     auto* root = new QWidget(this);
     auto* rootLayout = new QVBoxLayout(root);
     rootLayout->setContentsMargins(16, 16, 16, 16);
     rootLayout->setSpacing(12);
-
-    rootLayout->addWidget(buildHeader());
 
     auto* splitter = new QSplitter(Qt::Horizontal, root);
     splitter->setChildrenCollapsible(false);
@@ -95,10 +97,8 @@ MainWindow::MainWindow(QWidget* parent)
     splitter->setStretchFactor(0, 0);
     splitter->setStretchFactor(1, 1);
     splitter->setStretchFactor(2, 0);
-    splitter->setSizes({360, 760, 440});
+    splitter->setSizes({330, 880, 330});
     rootLayout->addWidget(splitter, 1);
-
-    rootLayout->addWidget(buildFooter());
     setCentralWidget(root);
 
     connect(m_bridge, &DeviceBridge::logAppended, this, &MainWindow::appendLog);
@@ -141,6 +141,20 @@ MainWindow::MainWindow(QWidget* parent)
 
     populatePrimaryScenes();
     handleSceneChanged();
+    {
+        const QSignalBlocker primaryBlocker(m_primarySceneCombo);
+        const QSignalBlocker targetBlocker(m_targetCombo);
+        const QSignalBlocker templateBlocker(m_sceneList);
+        m_primarySceneCombo->setCurrentIndex(-1);
+        m_targetCombo->setCurrentIndex(-1);
+        m_sceneList->clear();
+        auto* emptyRecommendation = new QListWidgetItem(
+            QStringLiteral("选择场景与检测对象后生成推荐模板"), m_sceneList);
+        emptyRecommendation->setFlags(Qt::NoItemFlags);
+        emptyRecommendation->setTextAlignment(Qt::AlignCenter);
+        emptyRecommendation->setSizeHint(QSize(0, 104));
+        emptyRecommendation->setData(Qt::UserRole, -1);
+    }
     refreshWorkflow();
 }
 
@@ -153,6 +167,7 @@ public:
         setMouseTracking(true);
         setProperty("readPhaseSwapped", false);
         setProperty("planningCoverageModified", false);
+        setProperty("selectedOrientation", QStringLiteral("横断"));
     }
 
     void swapReadPhase()
@@ -162,10 +177,83 @@ public:
         update();
     }
 
+    void setOrientation(const QString& orientation)
+    {
+        m_orientation = orientation;
+        setProperty("selectedOrientation", orientation);
+        update();
+    }
+
+    void autoPlan()
+    {
+        m_boxX = 0.12;
+        m_boxY = 0.10;
+        m_boxWidth = 0.76;
+        m_boxHeight = 0.76;
+        m_centerX = 0.50;
+        m_centerY = 0.50;
+        m_slice = 0.50;
+        setProperty("planningCoverageModified", true);
+        update();
+    }
+
+    void resetPlanning()
+    {
+        m_boxX = 0.16;
+        m_boxY = 0.20;
+        m_boxWidth = 0.66;
+        m_boxHeight = 0.56;
+        m_centerX = 0.50;
+        m_centerY = 0.50;
+        m_slice = 0.50;
+        setProperty("planningCoverageModified", false);
+        update();
+    }
+
 protected:
     void paintEvent(QPaintEvent*) override
     {
         QPainter painter(this);
+        painter.fillRect(rect(), QColor(QStringLiteral("#05070a")));
+        const QPixmap reference(QStringLiteral(":/mock-localization.png"));
+        if (!reference.isNull()) {
+            const QSize target = reference.size().scaled(size() - QSize(12, 12), Qt::KeepAspectRatio);
+            const QRect targetRect((width() - target.width()) / 2, (height() - target.height()) / 2,
+                                   target.width(), target.height());
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.drawPixmap(targetRect, reference);
+            if (property("planningCoverageModified").toBool()) {
+                const QRectF coverage(targetRect.left() + targetRect.width() * m_boxX,
+                                      targetRect.top() + targetRect.height() * m_boxY,
+                                      targetRect.width() * m_boxWidth,
+                                      targetRect.height() * m_boxHeight);
+                painter.setPen(QPen(QColor(QStringLiteral("#00cfd1")), 2));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRect(coverage);
+                const QPointF center(coverage.left() + coverage.width() * m_centerX,
+                                     coverage.top() + coverage.height() * m_centerY);
+                painter.drawLine(QPointF(coverage.left(), center.y()), QPointF(coverage.right(), center.y()));
+                painter.drawLine(QPointF(center.x(), coverage.top()), QPointF(center.x(), coverage.bottom()));
+                painter.setPen(QPen(QColor(QStringLiteral("#168cff")), 1, Qt::DashLine));
+                for (int line = 1; line < 8; ++line) {
+                    const qreal y = coverage.top() + coverage.height() * line / 8.0;
+                    painter.drawLine(QPointF(coverage.left(), y), QPointF(coverage.right(), y));
+                }
+            }
+            if (m_orientation != QStringLiteral("横断") || m_axesSwapped) {
+                const QString axes = m_axesSwapped
+                    ? QStringLiteral("Phase / Read")
+                    : QStringLiteral("Read / Phase");
+                const QString caption = QStringLiteral("Mock 当前方位：%1　%2")
+                                            .arg(m_orientation, axes);
+                painter.setPen(QColor(QStringLiteral("#eaf3ff")));
+                painter.setBrush(QColor(5, 18, 35, 205));
+                const QRect badge(targetRect.left() + 14, targetRect.top() + 14, 230, 30);
+                painter.drawRoundedRect(badge, 4, 4);
+                painter.drawText(badge.adjusted(10, 0, -8, 0), Qt::AlignVCenter | Qt::AlignLeft, caption);
+            }
+            return;
+        }
         painter.fillRect(rect(), QColor(QStringLiteral("#111923")));
         painter.setRenderHint(QPainter::Antialiasing);
         const int margin = 18;
@@ -241,6 +329,7 @@ protected:
 
 private:
     bool m_axesSwapped = false;
+    QString m_orientation = QStringLiteral("横断");
     int m_dragMode = 0;
     qreal m_boxX = 0.16;
     qreal m_boxY = 0.20;
@@ -300,6 +389,38 @@ private:
     QString m_caption;
 };
 
+class ReferenceImageView final : public QWidget {
+public:
+    ReferenceImageView(const QString& resourcePath, const QString& objectName, QWidget* parent = nullptr,
+                       int minimumHeight = 260)
+        : QWidget(parent), m_pixmap(resourcePath)
+    {
+        setObjectName(objectName);
+        setMinimumHeight(minimumHeight);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), QColor(QStringLiteral("#07090c")));
+        if (m_pixmap.isNull()) {
+            painter.setPen(Qt::white);
+            painter.drawText(rect(), Qt::AlignCenter, QStringLiteral("Mock 图像资产不可用"));
+            return;
+        }
+        const QSize target = m_pixmap.size().scaled(size() - QSize(16, 16), Qt::KeepAspectRatio);
+        const QRect destination((width() - target.width()) / 2, (height() - target.height()) / 2,
+                                target.width(), target.height());
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawPixmap(destination, m_pixmap);
+    }
+
+private:
+    QPixmap m_pixmap;
+};
+
 void MainWindow::configureEggController(const EggControllerLaunchConfig& config)
 {
     m_eggControllerConfig = config;
@@ -357,6 +478,15 @@ QWidget* MainWindow::buildHeader()
 
 QWidget* MainWindow::buildLeftPane()
 {
+    auto* outer = new QWidget;
+    outer->setObjectName(QStringLiteral("LeftColumn"));
+    outer->setMinimumWidth(290);
+    outer->setMaximumWidth(335);
+    auto* outerLayout = new QVBoxLayout(outer);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->setSpacing(0);
+    outerLayout->addSpacing(92);
+
     auto* frame = makePanel("Panel");
     auto* layout = new QVBoxLayout(frame);
     layout->setContentsMargins(16, 16, 16, 16);
@@ -406,8 +536,8 @@ QWidget* MainWindow::buildLeftPane()
 
     m_sceneList = new QListWidget(frame);
     m_sceneList->setObjectName("TemplateList");
-    m_sceneList->setMinimumHeight(170);
-    m_sceneList->setMaximumHeight(260);
+    m_sceneList->setMinimumHeight(116);
+    m_sceneList->setMaximumHeight(150);
     m_sceneList->setSpacing(8);
     m_sceneList->setWordWrap(true);
     m_sceneList->setUniformItemSizes(false);
@@ -420,9 +550,9 @@ QWidget* MainWindow::buildLeftPane()
     modeLabel->setObjectName("MutedLabel");
     m_controlModeCombo = new QComboBox(modePanel);
     m_controlModeCombo->setObjectName("ControlModeCombo");
-    m_controlModeCombo->addItem(QStringLiteral("Mock 工作流（安全）"), QStringLiteral("mock"));
+    m_controlModeCombo->addItem(QStringLiteral("自动化基线（Mock）"), QStringLiteral("mock"));
     m_controlModeCombo->setEnabled(false);
-    m_automationStatusLabel = new QLabel(QStringLiteral("真实设备：HOLD"), modePanel);
+    m_automationStatusLabel = new QLabel(QStringLiteral("Ready · 真实 Run：HOLD"), modePanel);
     m_automationStatusLabel->setObjectName("AutomationStatusLabel");
     m_automationStatusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     modeLayout->addWidget(modeLabel, 0, 0);
@@ -434,43 +564,51 @@ QWidget* MainWindow::buildLeftPane()
     buttons->setHorizontalSpacing(10);
     buttons->setVerticalSpacing(10);
 
-    m_loadSdkButton = new QPushButton(QStringLiteral("真实 SDK（HOLD）"), frame);
+    m_loadSdkButton = new QPushButton(QStringLiteral("加载 SDK（HOLD）"), frame);
     m_loadSdkButton->setProperty("class", "secondary");
     m_loadSdkButton->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
-    m_connectButton = new QPushButton(QStringLiteral("真实设备连接（HOLD）"), frame);
+    m_connectButton = new QPushButton(QStringLiteral("一键建链（HOLD）"), frame);
     m_connectButton->setProperty("class", "primary");
     m_connectButton->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-    auto* precheckBtn = new QPushButton(QStringLiteral("真实预检（HOLD）"), frame);
+    auto* precheckBtn = new QPushButton(QStringLiteral("校准向导（HOLD）"), frame);
     precheckBtn->setProperty("class", "secondary");
-    auto* dryRunBtn = new QPushButton(QStringLiteral("参数快照（Mock）"), frame);
+    auto* dryRunBtn = new QPushButton(QStringLiteral("DRY_RUN"), frame);
     dryRunBtn->setProperty("class", "secondary");
-    m_startButton = new QPushButton(QStringLiteral("真实 Run（HOLD）"), frame);
+    m_leftMockStartButton = new QPushButton(QStringLiteral("开始采集（Mock）"), frame);
+    m_leftMockStartButton->setObjectName(QStringLiteral("LeftMockStartButton"));
+    m_leftMockStartButton->setProperty("class", "success");
+    m_leftMockStartButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    m_startButton = new QPushButton(QStringLiteral("Real Run（HOLD）"), frame);
     m_startButton->setObjectName("RealRunButton");
-    m_startButton->setProperty("class", "success");
-    m_startButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    m_pauseButton = new QPushButton(QStringLiteral("暂停（不支持）"), frame);
+    m_startButton->setProperty("class", "secondary");
+    m_pauseButton = new QPushButton(QStringLiteral("暂停（Mock）"), frame);
     m_pauseButton->setProperty("class", "warning");
     m_pauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     m_pauseButton->setToolTip(QStringLiteral("当前 SDK 未提供暂停/继续接口"));
     m_pauseButton->setEnabled(false);
     m_abortButton = new QPushButton(QStringLiteral("真实 Abort（HOLD）"), frame);
-    m_abortButton->setProperty("class", "danger");
-    m_abortButton->setIcon(style()->standardIcon(QStyle::SP_BrowserStop));
+    m_abortButton->setVisible(false);
+    m_abortButton->setEnabled(false);
+    m_leftMockStopButton = new QPushButton(QStringLiteral("急停（Mock-only）"), frame);
+    m_leftMockStopButton->setObjectName(QStringLiteral("LeftMockStopButton"));
+    m_leftMockStopButton->setProperty("class", "danger");
+    m_leftMockStopButton->setIcon(style()->standardIcon(QStyle::SP_BrowserStop));
 
     buttons->addWidget(m_loadSdkButton, 0, 0);
     buttons->addWidget(m_connectButton, 0, 1);
     buttons->addWidget(precheckBtn, 1, 0);
     buttons->addWidget(dryRunBtn, 1, 1);
-    buttons->addWidget(m_startButton, 2, 0);
+    buttons->addWidget(m_leftMockStartButton, 2, 0);
     buttons->addWidget(m_pauseButton, 2, 1);
-    buttons->addWidget(m_abortButton, 3, 0, 1, 2);
+    buttons->addWidget(m_startButton, 3, 0, 1, 2);
+    buttons->addWidget(m_leftMockStopButton, 4, 0, 1, 2);
     layout->addLayout(buttons);
 
     m_loadSdkButton->setEnabled(false);
     m_connectButton->setEnabled(false);
     precheckBtn->setEnabled(false);
     m_startButton->setEnabled(false);
-    m_abortButton->setEnabled(false);
+    m_leftMockStopButton->setEnabled(false);
 
     layout->addStretch();
 
@@ -483,18 +621,27 @@ QWidget* MainWindow::buildLeftPane()
     connect(m_connectButton, &QPushButton::clicked, this, &MainWindow::handleConnect);
     connect(precheckBtn, &QPushButton::clicked, this, &MainWindow::handlePrecheck);
     connect(dryRunBtn, &QPushButton::clicked, this, &MainWindow::handleDryRun);
+    connect(m_leftMockStartButton, &QPushButton::clicked, this, [this] {
+        setWorkflowStep(m_workflowStep < 6 ? 6 : 9);
+    });
     connect(m_startButton, &QPushButton::clicked, this, &MainWindow::handleStart);
     connect(m_pauseButton, &QPushButton::clicked, this, &MainWindow::handlePause);
     connect(m_abortButton, &QPushButton::clicked, this, &MainWindow::handleAbort);
+    connect(m_leftMockStopButton, &QPushButton::clicked, this, [this] {
+        if (m_workflowStep == 6) setWorkflowStep(5);
+        if (m_workflowStep == 9) setWorkflowStep(8);
+    });
 
-    return frame;
+    outerLayout->addWidget(frame, 1);
+    return outer;
 }
 
 QWidget* MainWindow::buildCenterPane()
 {
-    auto* frame = makePanel("Panel");
+    auto* frame = new QWidget;
+    frame->setObjectName(QStringLiteral("CenterColumn"));
     auto* layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setContentsMargins(0, 28, 0, 0);
     layout->setSpacing(10);
 
     auto* statusRow = new QHBoxLayout;
@@ -502,14 +649,21 @@ QWidget* MainWindow::buildCenterPane()
     m_workflowStatusLabel = new QLabel(frame);
     m_workflowStatusLabel->setObjectName(QStringLiteral("WorkflowStatusStrip"));
     m_workflowStatusLabel->setProperty("class", "workflowStatus");
-    m_workflowStatusLabel->setWordWrap(true);
+    m_workflowStatusLabel->setWordWrap(false);
+    m_workflowStatusLabel->setAlignment(Qt::AlignCenter);
+    m_workflowStatusLabel->setMinimumWidth(700);
+    m_workflowStatusLabel->setMaximumWidth(820);
+    m_workflowStatusLabel->setFixedHeight(48);
     m_workflowCurrentStepLabel = new QLabel(frame);
     m_workflowCurrentStepLabel->setObjectName(QStringLiteral("WorkflowCurrentStep"));
     m_workflowCurrentStepLabel->setProperty("class", "workflowStepChip");
     m_workflowCurrentStepLabel->setAlignment(Qt::AlignCenter);
     m_workflowCurrentStepLabel->setFixedWidth(38);
-    statusRow->addWidget(m_workflowStatusLabel, 1);
+    m_workflowCurrentStepLabel->setVisible(false);
+    statusRow->addStretch(1);
+    statusRow->addWidget(m_workflowStatusLabel);
     statusRow->addWidget(m_workflowCurrentStepLabel);
+    statusRow->addStretch(1);
     layout->addLayout(statusRow);
 
     m_workflowPages = new QStackedWidget(frame);
@@ -523,9 +677,11 @@ QWidget* MainWindow::buildCenterPane()
     m_workflowBackButton = new QPushButton(QStringLiteral("上一步"), frame);
     m_workflowBackButton->setObjectName(QStringLiteral("WorkflowBackButton"));
     m_workflowBackButton->setProperty("class", "secondary");
+    m_workflowBackButton->setVisible(false);
     m_workflowNextButton = new QPushButton(QStringLiteral("下一步"), frame);
     m_workflowNextButton->setObjectName(QStringLiteral("WorkflowNextButton"));
     m_workflowNextButton->setProperty("class", "primary");
+    m_workflowNextButton->setVisible(false);
     navRow->addWidget(m_workflowBackButton);
     navRow->addStretch();
     navRow->addWidget(m_workflowNextButton);
@@ -542,7 +698,1118 @@ QWidget* MainWindow::buildCenterPane()
     return frame;
 }
 
+static QFrame* makeGalleryCard(const QString& title, const QString& detail, QWidget* parent = nullptr)
+{
+    auto* card = makePanel(QStringLiteral("WorkflowCard"));
+    if (parent) card->setParent(parent);
+    auto* layout = new QVBoxLayout(card);
+    layout->setContentsMargins(14, 12, 14, 12);
+    layout->setSpacing(6);
+    auto* titleLabel = new QLabel(title, card);
+    titleLabel->setProperty("class", "workflowCardTitle");
+    auto* detailLabel = new QLabel(detail, card);
+    detailLabel->setProperty("class", "workflowCardDetail");
+    detailLabel->setWordWrap(true);
+    detailLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    layout->addWidget(titleLabel);
+    layout->addWidget(detailLabel);
+    card->setMinimumHeight(64);
+    return card;
+}
+
+static QFrame* makeGalleryThumbnail(const QString& resource, const QString& objectName,
+                                    const QString& caption, bool selected, QWidget* parent)
+{
+    auto* thumbnail = makePanel(QStringLiteral("WorkflowCard"));
+    thumbnail->setParent(parent);
+    thumbnail->setObjectName(objectName);
+    thumbnail->setProperty("selected", selected);
+    thumbnail->setFixedWidth(104);
+    auto* thumbnailLayout = new QVBoxLayout(thumbnail);
+    thumbnailLayout->setContentsMargins(5, 5, 5, 5);
+    thumbnailLayout->setSpacing(3);
+    auto* imageLayer = new QWidget(thumbnail);
+    auto* imageLayerLayout = new QGridLayout(imageLayer);
+    imageLayerLayout->setContentsMargins(0, 0, 0, 0);
+    auto* image = new ReferenceImageView(
+        resource, QStringLiteral("%1Image").arg(objectName), imageLayer, 70);
+    imageLayerLayout->addWidget(image, 0, 0);
+    QString badgeText;
+    QString badgeClass;
+    if (caption.contains(QStringLiteral("完成"))) {
+        badgeText = QStringLiteral("✓");
+        badgeClass = QStringLiteral("galleryBadgeSuccess");
+    } else if (caption.contains(QStringLiteral("68%"))) {
+        badgeText = QStringLiteral("68%");
+        badgeClass = QStringLiteral("galleryBadgeProgress");
+    } else if (caption.contains(QStringLiteral("等待"))) {
+        badgeText = QStringLiteral("待");
+        badgeClass = QStringLiteral("galleryBadgeWaiting");
+    }
+    if (!badgeText.isEmpty()) {
+        auto* badge = new QLabel(badgeText, imageLayer);
+        badge->setProperty("class", badgeClass);
+        badge->setAlignment(Qt::AlignCenter);
+        badge->setFixedSize(badgeText == QStringLiteral("68%") ? QSize(42, 42) : QSize(32, 32));
+        imageLayerLayout->addWidget(badge, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+    }
+    thumbnailLayout->addWidget(imageLayer, 1);
+    auto* label = new QLabel(caption, thumbnail);
+    label->setAlignment(Qt::AlignCenter);
+    label->setProperty("class", "evidenceLabel");
+    thumbnailLayout->addWidget(label);
+    return thumbnail;
+}
+
+static QLabel* makeGallerySectionTitle(const QString& text, QWidget* parent)
+{
+    auto* label = new QLabel(text, parent);
+    label->setProperty("class", "workflowSectionTitle");
+    label->setWordWrap(true);
+    return label;
+}
+
 QWidget* MainWindow::makeWorkflowPage(int step)
+{
+    auto* page = new QWidget;
+    page->setObjectName(QStringLiteral("WorkflowPage%1").arg(step, 2, 10, QLatin1Char('0')));
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(10);
+
+    const auto addTitle = [page, layout](const QString& text) {
+        auto* title = makeGallerySectionTitle(text, page);
+        title->setObjectName(QStringLiteral("WorkflowBodyLabel"));
+        layout->addWidget(title);
+        return title;
+    };
+    const auto addImageEvidence = [page, layout](const QString& resource, const QString& objectName,
+                                                 const QString& evidence) {
+        auto* image = new ReferenceImageView(resource, objectName, page);
+        layout->addWidget(image, 1);
+        auto* note = new QLabel(evidence, page);
+        note->setObjectName(QStringLiteral("MockImageEvidenceLabel"));
+        note->setProperty("class", "evidenceLabel");
+        note->setWordWrap(true);
+        layout->addWidget(note);
+        return image;
+    };
+
+    switch (step) {
+    case 1: {
+        layout->addSpacing(165);
+        auto* hero = new QLabel(QStringLiteral("开始一次科研扫描"), page);
+        hero->setProperty("class", "workflowHero");
+        hero->setAlignment(Qt::AlignCenter);
+        layout->addWidget(hero);
+        auto* copy = new QLabel(
+            QStringLiteral("从科研场景和检测对象开始，Agent MRI 将推荐可复现的模块化任务模板。"),
+            page);
+        copy->setProperty("class", "workflowLead");
+        copy->setAlignment(Qt::AlignCenter);
+        copy->setWordWrap(true);
+        layout->addWidget(copy);
+        auto* begin = new QPushButton(QStringLiteral("开始选择任务"), page);
+        begin->setObjectName(QStringLiteral("BeginResearchButton"));
+        begin->setProperty("class", "primary");
+        begin->setMinimumWidth(190);
+        connect(begin, &QPushButton::clicked, this, [this] { setWorkflowStep(2); });
+        layout->addWidget(begin, 0, Qt::AlignHCenter);
+        layout->addSpacing(150);
+        auto* readiness = makePanel(QStringLiteral("WorkflowCard"));
+        readiness->setObjectName(QStringLiteral("EntryReadinessSummary"));
+        readiness->setMinimumHeight(210);
+        auto* readinessLayout = new QGridLayout(readiness);
+        readinessLayout->setContentsMargins(18, 14, 18, 14);
+        readinessLayout->setHorizontalSpacing(34);
+        readinessLayout->setVerticalSpacing(12);
+        const QStringList readinessNames = {
+            QStringLiteral("SDK"), QStringLiteral("设备连接"),
+            QStringLiteral("存储空间"), QStringLiteral("真实 Run")
+        };
+        const QStringList readinessValues = {
+            QStringLiteral("未加载"), QStringLiteral("未连接"),
+            QStringLiteral("可用 · Mock"), QStringLiteral("HOLD")
+        };
+        for (int row = 0; row < readinessNames.size(); ++row) {
+            auto* name = new QLabel(readinessNames.at(row), readiness);
+            name->setProperty("class", "workflowCardTitle");
+            auto* value = new QLabel(readinessValues.at(row), readiness);
+            value->setProperty("class", row == 3 ? "warningText" : "workflowCardDetail");
+            readinessLayout->addWidget(name, row, 0);
+            readinessLayout->addWidget(value, row, 1);
+        }
+        readinessLayout->setColumnStretch(1, 1);
+        layout->addWidget(readiness);
+        layout->addStretch();
+        break;
+    }
+    case 2: {
+        layout->addSpacing(85);
+        addTitle(QStringLiteral("根据科研目标推荐任务模板"));
+        auto* lead = new QLabel(
+            QStringLiteral("基于当前选择的一级场景与检测对象，推荐最适合的任务模板作为默认流程。"), page);
+        lead->setProperty("class", "workflowLead");
+        lead->setWordWrap(true);
+        layout->addWidget(lead);
+
+        const auto makeTemplateChoice =
+            [page](const QString& objectName, const QString& title, const QString& detail,
+                   const QString& modules, bool selected) {
+                auto* card = makePanel(QStringLiteral("WorkflowCard"));
+                card->setParent(page);
+                card->setObjectName(objectName);
+                card->setProperty("selected", selected);
+                auto* cardLayout = new QHBoxLayout(card);
+                cardLayout->setContentsMargins(18, 16, 18, 16);
+                cardLayout->setSpacing(14);
+                auto* choice = new QRadioButton(card);
+                choice->setObjectName(QStringLiteral("%1Radio").arg(objectName));
+                choice->setChecked(selected);
+                choice->setProperty("class", "templateChoice");
+                cardLayout->addWidget(choice, 0, Qt::AlignTop);
+                auto* copy = new QVBoxLayout;
+                copy->setSpacing(8);
+                auto* heading = new QLabel(title, card);
+                heading->setProperty("class", "templateChoiceTitle");
+                auto* description = new QLabel(detail, card);
+                description->setProperty("class", "templateChoiceDetail");
+                description->setWordWrap(true);
+                auto* flow = new QLabel(modules, card);
+                flow->setProperty("class", "templateChoiceFlow");
+                flow->setWordWrap(true);
+                copy->addWidget(heading);
+                copy->addWidget(description);
+                copy->addStretch();
+                copy->addWidget(flow);
+                cardLayout->addLayout(copy, 1);
+                return qMakePair(card, choice);
+            };
+        auto primaryChoice = makeTemplateChoice(
+            QStringLiteral("PrimaryTemplateRecommendation"),
+            QStringLiteral("内部结构成像模板"),
+            QStringLiteral("2D/3D 结构图像、标准重建与通用图像质控\n"
+                           "开发预设　·　待设备适配"),
+            QStringLiteral("采集协议　｜　准备与预检　｜　定位与采集　｜　处理与重建"),
+            true);
+        auto* primaryRecommendation = primaryChoice.first;
+        primaryRecommendation->setObjectName(QStringLiteral("PrimaryTemplateRecommendation"));
+        primaryRecommendation->setFixedHeight(178);
+        layout->addWidget(primaryRecommendation);
+
+        auto repeatChoice = makeTemplateChoice(
+            QStringLiteral("RepeatTemplateRecommendation"),
+            QStringLiteral("对照重复扫描"),
+            QStringLiteral("按需增加，用于重复稳定性对照；不属于默认主流程。"),
+            QStringLiteral("仅在用户主动添加对照时加入"),
+            false);
+        auto* repeatRecommendation = repeatChoice.first;
+        repeatRecommendation->setObjectName(QStringLiteral("RepeatTemplateRecommendation"));
+        repeatRecommendation->setFixedHeight(116);
+        layout->addWidget(repeatRecommendation);
+        auto* choiceGroup = new QButtonGroup(page);
+        choiceGroup->setExclusive(true);
+        choiceGroup->addButton(primaryChoice.second);
+        choiceGroup->addButton(repeatChoice.second);
+        connect(primaryChoice.second, &QRadioButton::toggled, this,
+                [primaryRecommendation, repeatRecommendation](bool checked) {
+                    primaryRecommendation->setProperty("selected", checked);
+                    repeatRecommendation->setProperty("selected", !checked);
+                    primaryRecommendation->style()->unpolish(primaryRecommendation);
+                    primaryRecommendation->style()->polish(primaryRecommendation);
+                    repeatRecommendation->style()->unpolish(repeatRecommendation);
+                    repeatRecommendation->style()->polish(repeatRecommendation);
+                });
+        layout->addStretch();
+
+        auto* actions = new QHBoxLayout;
+        auto* back = new QPushButton(QStringLiteral("返回"), page);
+        back->setProperty("class", "secondary");
+        connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(1); });
+        auto* generate = new QPushButton(QStringLiteral("查看推荐模板"), page);
+        generate->setProperty("class", "primary");
+        connect(generate, &QPushButton::clicked, this, [this] { setWorkflowStep(3); });
+        actions->addStretch();
+        actions->addWidget(back);
+        actions->addWidget(generate);
+        layout->addLayout(actions);
+        break;
+    }
+    case 3: {
+        layout->addSpacing(65);
+        addTitle(QStringLiteral("确认推荐任务模板"));
+        auto* recommendation = makePanel(QStringLiteral("WorkflowCard"));
+        recommendation->setParent(page);
+        recommendation->setObjectName(QStringLiteral("TemplateDetailsCard"));
+        recommendation->setProperty("class", "selectedTemplate");
+        recommendation->setProperty("selected", true);
+        recommendation->setMinimumHeight(365);
+        auto* recommendationLayout = new QVBoxLayout(recommendation);
+        recommendationLayout->setContentsMargins(18, 16, 18, 16);
+        recommendationLayout->setSpacing(10);
+        auto* templateTitle = new QLabel(QStringLiteral("内部结构成像模板"), recommendation);
+        templateTitle->setProperty("class", "templateChoiceTitle");
+        auto* metadata = new QLabel(
+            QStringLiteral("TPL-STRUCT-001 · v1.0　｜　系统模板 · 只读　｜　开发预设 · 待设备适配"),
+            recommendation);
+        metadata->setProperty("class", "templateMetadata");
+        recommendationLayout->addWidget(templateTitle);
+        recommendationLayout->addWidget(metadata);
+        auto* capabilityGrid = new QGridLayout;
+        capabilityGrid->setHorizontalSpacing(18);
+        capabilityGrid->setVerticalSpacing(8);
+        const QList<QPair<QString, QString>> capabilities = {
+            {QStringLiteral("目标输出"), QStringLiteral("2D/3D 结构图像")},
+            {QStringLiteral("默认主采集"), QStringLiteral("FSE 结构成像（FSE A）")},
+            {QStringLiteral("第二组采集"), QStringLiteral("按需增加，不默认执行")},
+            {QStringLiteral("重建方式"), QStringLiteral("标准重建与基础处理")},
+            {QStringLiteral("质控"), QStringLiteral("SNR、均匀性、畸变/尺寸、分辨率、伪影、重复稳定性")}
+        };
+        for (int row = 0; row < capabilities.size(); ++row) {
+            auto* name = new QLabel(capabilities.at(row).first, recommendation);
+            name->setProperty("class", "capabilityName");
+            auto* value = new QLabel(capabilities.at(row).second, recommendation);
+            value->setProperty("class", "capabilityValue");
+            value->setWordWrap(true);
+            capabilityGrid->addWidget(name, row, 0, Qt::AlignTop);
+            capabilityGrid->addWidget(value, row, 1);
+        }
+        capabilityGrid->setColumnStretch(1, 1);
+        recommendationLayout->addLayout(capabilityGrid, 1);
+        layout->addWidget(recommendation);
+        m_protocolChainLabel = new QLabel(QStringLiteral("LOC → FSE A（默认 Mock 协议链）"), page);
+        m_protocolChainLabel->setObjectName(QStringLiteral("ProtocolChainLabel"));
+        m_protocolChainLabel->setProperty("class", "workflowProtocol");
+        layout->addWidget(m_protocolChainLabel);
+        m_addComparisonButton = new QPushButton(QStringLiteral("添加 FSE B 对照协议"), page);
+        m_addComparisonButton->setObjectName(QStringLiteral("AddComparisonButton"));
+        m_addComparisonButton->setProperty("class", "secondary");
+        connect(m_addComparisonButton, &QPushButton::clicked, this, [this] {
+            m_comparisonEnabled = true;
+            refreshWorkflow();
+        });
+        layout->addWidget(m_addComparisonButton, 0, Qt::AlignLeft);
+        auto* boundary = new QLabel(
+            QStringLiteral("系统模板为只读，无法覆盖；后续仅开放白名单科研参数进行编辑。"), page);
+        boundary->setProperty("class", "evidenceLabel");
+        boundary->setWordWrap(true);
+        layout->addWidget(boundary);
+        layout->addStretch();
+
+        auto* actions = new QHBoxLayout;
+        auto* back = new QPushButton(QStringLiteral("返回推荐列表"), page);
+        back->setProperty("class", "secondary");
+        connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(2); });
+        auto* accept = new QPushButton(QStringLiteral("采用模板并继续"), page);
+        accept->setProperty("class", "primary");
+        connect(accept, &QPushButton::clicked, this, [this] { setWorkflowStep(4); });
+        actions->addStretch();
+        actions->addWidget(back);
+        actions->addWidget(accept);
+        layout->addLayout(actions);
+        break;
+    }
+    case 4: {
+        addTitle(QStringLiteral("样品登记与准备预检"));
+        auto* sampleCard = makePanel(QStringLiteral("WorkflowCard"));
+        sampleCard->setObjectName(QStringLiteral("SampleInfoCard"));
+        sampleCard->setParent(page);
+        sampleCard->setFixedHeight(240);
+        auto* sampleLayout = new QVBoxLayout(sampleCard);
+        sampleLayout->setContentsMargins(16, 14, 16, 14);
+        sampleLayout->setSpacing(8);
+        auto* sampleTitle = new QLabel(QStringLiteral("A. 样品信息"), sampleCard);
+        sampleTitle->setProperty("class", "workflowSectionTitle");
+        sampleLayout->addWidget(sampleTitle);
+        auto* sampleGrid = new QGridLayout;
+        sampleGrid->setHorizontalSpacing(24);
+        sampleGrid->setVerticalSpacing(7);
+        const QList<QPair<QString, QString>> sampleRows = {
+            {QStringLiteral("样品编号"), QStringLiteral("RH2-20260723-001")},
+            {QStringLiteral("样品名称"), QStringLiteral("根茎样品-01")},
+            {QStringLiteral("样品类型"), QStringLiteral("根茎组织")},
+            {QStringLiteral("装样方式"), QStringLiteral("居中固定")},
+            {QStringLiteral("样品温度"), QStringLiteral("24.0 ℃")},
+            {QStringLiteral("备注"), QStringLiteral("无 · Mock 示例")}
+        };
+        for (int row = 0; row < sampleRows.size(); ++row) {
+            auto* name = new QLabel(sampleRows.at(row).first, sampleCard);
+            name->setProperty("class", "precheckRowName");
+            auto* value = new QLabel(sampleRows.at(row).second, sampleCard);
+            value->setProperty("class", "precheckRowValue");
+            sampleGrid->addWidget(name, row, 0);
+            sampleGrid->addWidget(value, row, 1);
+        }
+        sampleGrid->setColumnStretch(1, 1);
+        sampleLayout->addLayout(sampleGrid, 1);
+        layout->addWidget(sampleCard);
+
+        auto* precheckCard = makePanel(QStringLiteral("WorkflowCard"));
+        precheckCard->setObjectName(QStringLiteral("PreparationPrecheckCard"));
+        precheckCard->setParent(page);
+        precheckCard->setFixedHeight(245);
+        auto* precheckLayout = new QVBoxLayout(precheckCard);
+        precheckLayout->setContentsMargins(16, 14, 16, 14);
+        precheckLayout->setSpacing(8);
+        auto* precheckTitle = new QLabel(QStringLiteral("B. 扫描前检查"), precheckCard);
+        precheckTitle->setProperty("class", "workflowSectionTitle");
+        precheckLayout->addWidget(precheckTitle);
+        auto* precheckGrid = new QGridLayout;
+        precheckGrid->setHorizontalSpacing(18);
+        precheckGrid->setVerticalSpacing(8);
+        const QList<QPair<QString, QString>> precheckRows = {
+            {QStringLiteral("✓ 样品尺寸适配线圈空间"), QStringLiteral("已通过 · Mock")},
+            {QStringLiteral("✓ 样品已居中并固定"), QStringLiteral("已通过 · Mock")},
+            {QStringLiteral("✓ 接收线圈已选择"), QStringLiteral("已通过 · Mock")},
+            {QStringLiteral("✓ 存储空间可用"), QStringLiteral("已通过 · Mock")},
+            {QStringLiteral("! 设备连接与 SDK 映射"), QStringLiteral("待实机确认")}
+        };
+        for (int row = 0; row < precheckRows.size(); ++row) {
+            auto* name = new QLabel(precheckRows.at(row).first, precheckCard);
+            name->setProperty("class", row == 4 ? "precheckWarningName" : "precheckPassName");
+            auto* state = new QLabel(precheckRows.at(row).second, precheckCard);
+            state->setProperty("class", row == 4 ? "precheckWarningState" : "precheckPassState");
+            state->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            precheckGrid->addWidget(name, row, 0);
+            precheckGrid->addWidget(state, row, 1);
+        }
+        precheckGrid->setColumnStretch(0, 1);
+        precheckLayout->addLayout(precheckGrid, 1);
+        layout->addWidget(precheckCard);
+
+        auto* preparationNote = new QLabel(
+            QStringLiteral("建议样品完整落在 φ50 mm、长度 70 mm 的最大线圈空间内；"
+                           "设备连接与 SDK 映射保持“待实机确认”。"),
+            page);
+        preparationNote->setProperty("class", "evidenceLabel");
+        preparationNote->setWordWrap(false);
+        preparationNote->setFixedHeight(42);
+        layout->addWidget(preparationNote);
+        auto* actions = new QHBoxLayout;
+        auto* back = new QPushButton(QStringLiteral("返回模板"), page);
+        back->setObjectName(QStringLiteral("PreparationBackButton"));
+        back->setProperty("class", "secondary");
+        connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(3); });
+        auto* save = new QPushButton(QStringLiteral("保存并继续"), page);
+        save->setProperty("class", "primary");
+        connect(save, &QPushButton::clicked, this, [this] { setWorkflowStep(5); });
+        actions->addStretch();
+        actions->addWidget(back);
+        actions->addWidget(save);
+        layout->addLayout(actions);
+        break;
+    }
+    case 5: {
+        addTitle(QStringLiteral("扫描方案与参数确认"));
+        auto* planSummary = makePanel(QStringLiteral("WorkflowCard"));
+        planSummary->setObjectName(QStringLiteral("ScanPlanSummaryCard"));
+        planSummary->setParent(page);
+        planSummary->setFixedHeight(92);
+        auto* planSummaryLayout = new QGridLayout(planSummary);
+        planSummaryLayout->setContentsMargins(14, 10, 14, 10);
+        planSummaryLayout->setHorizontalSpacing(16);
+        planSummaryLayout->setVerticalSpacing(7);
+        const QList<QPair<QString, QString>> planRows = {
+            {QStringLiteral("系统模板"), QStringLiteral("内部结构成像模板 · TPL-STRUCT-001 v1.0")},
+            {QStringLiteral("当前方案"), QStringLiteral("我的根茎成像方案 v2")}
+        };
+        for (int row = 0; row < planRows.size(); ++row) {
+            auto* name = new QLabel(planRows.at(row).first, planSummary);
+            name->setProperty("class", "capabilityName");
+            auto* value = new QLabel(planRows.at(row).second, planSummary);
+            value->setProperty("class", "capabilityValue");
+            planSummaryLayout->addWidget(name, row, 0);
+            planSummaryLayout->addWidget(value, row, 1);
+        }
+        planSummaryLayout->setColumnStretch(1, 1);
+        layout->addWidget(planSummary);
+
+        m_scanPlanChainLabel = new QLabel(QStringLiteral("协议链　LOC → FSE A"), page);
+        m_scanPlanChainLabel->setProperty("class", "workflowProtocol");
+        m_scanPlanChainLabel->setFixedHeight(48);
+        layout->addWidget(m_scanPlanChainLabel);
+
+        auto* level2Title = new QLabel(QStringLiteral("科研参数（L2，默认开放）"), page);
+        level2Title->setProperty("class", "workflowCardTitle");
+        layout->addWidget(level2Title);
+
+        auto* level2Row = new QHBoxLayout;
+        level2Row->setSpacing(10);
+        auto* table = new QTableWidget(5, 4, page);
+        table->setObjectName(QStringLiteral("ProtocolLevel2Table"));
+        table->setHorizontalHeaderLabels({QStringLiteral("参数"), QStringLiteral("模板值"),
+                                          QStringLiteral("当前值（可编辑）"), QStringLiteral("状态")});
+        const QStringList parameters = {QStringLiteral("FOV"), QStringLiteral("矩阵"),
+                                        QStringLiteral("层厚"), QStringLiteral("层间距"),
+                                        QStringLiteral("NEX")};
+        const QStringList values = {QStringLiteral("50×50 mm"), QStringLiteral("128×128"),
+                                    QStringLiteral("3.5 mm"), QStringLiteral("1.25 mm"),
+                                    QStringLiteral("1")};
+        QList<QLineEdit*> currentEditors;
+        for (int row = 0; row < parameters.size(); ++row) {
+            auto* name = new QTableWidgetItem(parameters.at(row));
+            auto* templateValue = new QTableWidgetItem(values.at(row));
+            auto* state = new QTableWidgetItem(QStringLiteral("✓ 有效"));
+            name->setFlags(name->flags() & ~Qt::ItemIsEditable);
+            templateValue->setFlags(templateValue->flags() & ~Qt::ItemIsEditable);
+            state->setFlags(state->flags() & ~Qt::ItemIsEditable);
+            table->setItem(row, 0, name);
+            table->setItem(row, 1, templateValue);
+            auto* editor = new QLineEdit(values.at(row), table);
+            editor->setObjectName(QStringLiteral("ProtocolL2Current%1").arg(row));
+            editor->setProperty("class", "tableEditor");
+            editor->setClearButtonEnabled(false);
+            editor->setToolTip(QStringLiteral("L2 白名单参数，可编辑；仅 Mock 方案"));
+            table->setCellWidget(row, 2, editor);
+            currentEditors.append(editor);
+            table->setItem(row, 3, state);
+            table->setRowHeight(row, 42);
+        }
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        table->verticalHeader()->setVisible(false);
+        table->setMinimumHeight(260);
+        table->setMaximumHeight(260);
+        level2Row->addWidget(table, 3, Qt::AlignTop);
+
+        auto* calculationCard = makePanel(QStringLiteral("WorkflowCard"));
+        calculationCard->setObjectName(QStringLiteral("ProtocolAutoResultCard"));
+        auto* calculationLayout = new QVBoxLayout(calculationCard);
+        calculationLayout->setContentsMargins(14, 14, 14, 14);
+        calculationLayout->setSpacing(8);
+        auto* calculationTitle = new QLabel(QStringLiteral("系统自动结果（实时计算）"), calculationCard);
+        calculationTitle->setProperty("class", "workflowCardTitle");
+        auto* calculation = new QLabel(
+            QStringLiteral("实际分辨率　0.39×0.39×3.5 mm\n"
+                           "层数　　　　11 层\n"
+                           "覆盖范围　　51 mm\n"
+                           "预计采集　　3分20秒\n"
+                           "SNR 趋势　　中\n\n"
+                           "由 L2 参数实时计算，不可编辑（Mock）"),
+            calculationCard);
+        calculation->setObjectName(QStringLiteral("ProtocolAutoResultValue"));
+        calculation->setProperty("class", "workflowCardDetail");
+        calculation->setWordWrap(true);
+        calculationLayout->addWidget(calculationTitle);
+        calculationLayout->addWidget(calculation);
+        calculationLayout->addStretch();
+        calculationCard->setMinimumHeight(260);
+        calculationCard->setMaximumHeight(260);
+        level2Row->addWidget(calculationCard, 2, Qt::AlignTop);
+        layout->addLayout(level2Row);
+
+        const auto updateCalculation = [currentEditors, calculation] {
+            const QString matrix = currentEditors.at(1)->text();
+            const QString fov = currentEditors.at(0)->text();
+            calculation->setText(
+                QStringLiteral("实际分辨率　0.39×0.39×3.5 mm\n"
+                               "层数　　　　11 层\n"
+                               "覆盖范围　　51 mm\n"
+                               "预计采集　　3分20秒\n"
+                               "SNR 趋势　　中\n\n"
+                               "已按 L2 更新：FOV %1 · 矩阵 %2（Mock）")
+                    .arg(fov, matrix));
+        };
+        for (auto* editor : currentEditors) {
+            connect(editor, &QLineEdit::textChanged, this,
+                    [updateCalculation](const QString&) { updateCalculation(); });
+        }
+
+        auto* l3Detail = new QLabel(
+            QStringLiteral("TR / TE / ETL / 接收带宽（Mock 专家参数）。L4 工程与 SDK 参数保持隐藏。"),
+            page);
+        l3Detail->setObjectName(QStringLiteral("L3DetailsLabel"));
+        l3Detail->setProperty("class", "workflowCardDetail");
+        l3Detail->setWordWrap(true);
+        l3Detail->setVisible(false);
+        auto* showL3 = new QPushButton(QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　展开 >"), page);
+        showL3->setObjectName(QStringLiteral("ShowL3Button"));
+        showL3->setProperty("class", "secondary");
+        connect(showL3, &QPushButton::clicked, this, [showL3, l3Detail] {
+            const bool visible = !l3Detail->isVisible();
+            l3Detail->setVisible(visible);
+            showL3->setText(visible
+                                ? QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　收起")
+                                : QStringLiteral("专家参数（L3）｜仅影响当前 FSE 协议　展开 >"));
+        });
+        layout->addWidget(showL3);
+        layout->addWidget(l3Detail);
+
+        layout->addStretch();
+        auto* actions = new QHBoxLayout;
+        auto* useOnce = new QPushButton(QStringLiteral("仅本次使用"), page);
+        useOnce->setProperty("class", "secondary");
+        auto* saveVersion = new QPushButton(QStringLiteral("另存为新版本"), page);
+        saveVersion->setProperty("class", "secondary");
+        auto* continueButton = new QPushButton(QStringLiteral("确认方案并继续"), page);
+        continueButton->setProperty("class", "primary");
+        connect(continueButton, &QPushButton::clicked, this, [this] { setWorkflowStep(6); });
+        actions->addWidget(useOnce);
+        actions->addWidget(saveVersion);
+        actions->addStretch();
+        actions->addWidget(continueButton);
+        layout->addLayout(actions);
+        break;
+    }
+    case 6: {
+        auto* locRow = new QHBoxLayout;
+        locRow->setSpacing(10);
+        auto* locRail = new QVBoxLayout;
+        locRail->setSpacing(8);
+        locRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-loc-axial.png"),
+                                                QStringLiteral("MockLocThumbnailAxial"),
+                                                QStringLiteral("横断 · 完成"), true, page), 1);
+        locRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-loc-coronal.png"),
+                                                QStringLiteral("MockLocThumbnailCoronal"),
+                                                QStringLiteral("冠状 · 68%"), false, page), 1);
+        locRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-loc-sagittal.png"),
+                                                QStringLiteral("MockLocThumbnailSagittal"),
+                                                QStringLiteral("矢状 · 等待"), false, page), 1);
+        locRow->addLayout(locRail);
+        locRow->addWidget(new ReferenceImageView(QStringLiteral(":/mock-loc-acquisition.png"),
+                                                 QStringLiteral("MockLocImage"), page), 1);
+        layout->addLayout(locRow, 1);
+        auto* evidence = new QLabel(
+            QStringLiteral("Mock LOC 图像 · 设计示例，非设备采集图像，不关联真实 RAW"), page);
+        evidence->setObjectName(QStringLiteral("MockImageEvidenceLabel"));
+        evidence->setProperty("class", "evidenceLabel");
+        evidence->setWordWrap(true);
+        layout->addWidget(evidence);
+        auto* planning = new QPushButton(QStringLiteral("进入切片规划"), page);
+        planning->setProperty("class", "primary");
+        connect(planning, &QPushButton::clicked, this, [this] { setWorkflowStep(7); });
+        layout->addWidget(planning, 0, Qt::AlignRight);
+        break;
+    }
+    case 7: {
+        auto* imagingPanel = new QWidget(page);
+        imagingPanel->setObjectName(QStringLiteral("LocalizationImagingPanel"));
+        imagingPanel->setMinimumHeight(520);
+        imagingPanel->setMaximumHeight(570);
+        auto* imagingRow = new QHBoxLayout(imagingPanel);
+        imagingRow->setContentsMargins(0, 0, 0, 0);
+        imagingRow->setSpacing(10);
+        auto* thumbnailRail = new QVBoxLayout;
+        thumbnailRail->setSpacing(8);
+        const QStringList thumbnailNames = {
+            QStringLiteral("LocalizationThumbnailAxial"),
+            QStringLiteral("LocalizationThumbnailCoronal"),
+            QStringLiteral("LocalizationThumbnailSagittal")
+        };
+        const QStringList thumbnailResources = {
+            QStringLiteral(":/mock-loc-axial.png"),
+            QStringLiteral(":/mock-loc-coronal.png"),
+            QStringLiteral(":/mock-loc-sagittal.png")
+        };
+        const QStringList thumbnailLabels = {
+            QStringLiteral("横断 · 当前"),
+            QStringLiteral("冠状"),
+            QStringLiteral("矢状")
+        };
+        for (int index = 0; index < thumbnailNames.size(); ++index) {
+            auto* thumbnail = makePanel(QStringLiteral("WorkflowCard"));
+            thumbnail->setObjectName(thumbnailNames.at(index));
+            thumbnail->setProperty("selected", index == 0);
+            thumbnail->setFixedWidth(104);
+            auto* thumbnailLayout = new QVBoxLayout(thumbnail);
+            thumbnailLayout->setContentsMargins(5, 5, 5, 5);
+            thumbnailLayout->setSpacing(3);
+            thumbnailLayout->addWidget(new ReferenceImageView(
+                thumbnailResources.at(index),
+                QStringLiteral("%1Image").arg(thumbnailNames.at(index)),
+                thumbnail, 70), 1);
+            auto* thumbnailLabel = new QLabel(thumbnailLabels.at(index), thumbnail);
+            thumbnailLabel->setAlignment(Qt::AlignCenter);
+            thumbnailLabel->setProperty("class", "evidenceLabel");
+            thumbnailLayout->addWidget(thumbnailLabel);
+            thumbnailRail->addWidget(thumbnail, 1);
+        }
+        imagingRow->addLayout(thumbnailRail);
+        m_localizationPlanner = new LocalizationPlannerView(page);
+        imagingRow->addWidget(m_localizationPlanner, 1);
+        layout->addWidget(imagingPanel, 1);
+
+        auto* controls = new QHBoxLayout;
+        const QStringList orientations = {QStringLiteral("横断"), QStringLiteral("冠状"),
+                                          QStringLiteral("矢状")};
+        const QStringList orientationObjectNames = {
+            QStringLiteral("OrientationAxialButton"),
+            QStringLiteral("OrientationCoronalButton"),
+            QStringLiteral("OrientationSagittalButton")
+        };
+        for (int index = 0; index < orientations.size(); ++index) {
+            const QString orientation = orientations.at(index);
+            auto* button = new QPushButton(orientation, page);
+            button->setObjectName(orientationObjectNames.at(index));
+            button->setProperty("class", orientation == QStringLiteral("横断") ? "primary" : "secondary");
+            connect(button, &QPushButton::clicked, this, [this, page, button, orientation] {
+                static_cast<LocalizationPlannerView*>(m_localizationPlanner)->setOrientation(orientation);
+                const QStringList objectNames = {
+                    QStringLiteral("OrientationAxialButton"),
+                    QStringLiteral("OrientationCoronalButton"),
+                    QStringLiteral("OrientationSagittalButton")
+                };
+                for (const QString& objectName : objectNames) {
+                    if (auto* candidate = page->findChild<QPushButton*>(objectName)) {
+                        candidate->setProperty("class", candidate == button ? "primary" : "secondary");
+                        candidate->style()->unpolish(candidate);
+                        candidate->style()->polish(candidate);
+                    }
+                }
+            });
+            controls->addWidget(button);
+        }
+        auto* swap = new QPushButton(QStringLiteral("交换 Read / Phase"), page);
+        swap->setObjectName(QStringLiteral("ReadPhaseSwapButton"));
+        swap->setProperty("class", "secondary");
+        connect(swap, &QPushButton::clicked, this, [this] {
+            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->swapReadPhase();
+        });
+        controls->addWidget(swap);
+        auto* autoAdjust = new QPushButton(QStringLiteral("自动调整"), page);
+        autoAdjust->setObjectName(QStringLiteral("AutoPlanningButton"));
+        autoAdjust->setProperty("class", "secondary");
+        connect(autoAdjust, &QPushButton::clicked, this, [this] {
+            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->autoPlan();
+        });
+        controls->addWidget(autoAdjust);
+        auto* reset = new QPushButton(QStringLiteral("恢复推荐"), page);
+        reset->setObjectName(QStringLiteral("ResetPlanningButton"));
+        reset->setProperty("class", "secondary");
+        connect(reset, &QPushButton::clicked, this, [this] {
+            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->resetPlanning();
+        });
+        controls->addWidget(reset);
+        auto* more = new QPushButton(QStringLiteral("更多方位"), page);
+        more->setObjectName(QStringLiteral("MoreOrientationButton"));
+        more->setProperty("class", "secondary");
+        connect(more, &QPushButton::clicked, this, [more] {
+            more->setText(QStringLiteral("自定义斜切（Mock）"));
+        });
+        controls->addWidget(more);
+        controls->addStretch();
+        layout->addLayout(controls);
+        auto* targetRow = new QHBoxLayout;
+        auto* targetLabel = new QLabel(QStringLiteral("成像目标"), page);
+        targetLabel->setProperty("class", "capabilityName");
+        auto* targetChoice = new QComboBox(page);
+        targetChoice->setObjectName(QStringLiteral("ImagingTargetCombo"));
+        targetChoice->addItems({QStringLiteral("均衡"), QStringLiteral("结构细节"),
+                                QStringLiteral("覆盖优先")});
+        auto* modifyTarget = new QPushButton(QStringLiteral("修改"), page);
+        modifyTarget->setObjectName(QStringLiteral("ModifyImagingTargetButton"));
+        modifyTarget->setProperty("class", "secondary");
+        targetRow->addWidget(targetLabel);
+        targetRow->addWidget(targetChoice);
+        targetRow->addWidget(modifyTarget);
+        targetRow->addStretch();
+        layout->addLayout(targetRow);
+        auto* summary = new QLabel(
+            QStringLiteral("分辨率 0.39×0.39×3.5 mm　|　11 层　|　覆盖 51 mm　|　"
+                           "预计 3分20秒　|　SNR 中"),
+            page);
+        summary->setProperty("class", "evidenceLabel");
+        layout->addWidget(summary);
+        auto* planningActions = new QHBoxLayout;
+        auto* researchParameters = new QPushButton(QStringLiteral("科研参数 >"), page);
+        researchParameters->setObjectName(QStringLiteral("ResearchParametersButton"));
+        researchParameters->setProperty("class", "secondary");
+        auto* confirm = new QPushButton(QStringLiteral("确认定位"), page);
+        confirm->setProperty("class", "primary");
+        connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(8); });
+        planningActions->addStretch();
+        planningActions->addWidget(researchParameters);
+        planningActions->addWidget(confirm);
+        layout->addLayout(planningActions);
+        break;
+    }
+    case 8: {
+        auto* runConfirmationTitle =
+            addTitle(QStringLiteral("运行前确认与参数快照"));
+        runConfirmationTitle->setFixedHeight(90);
+        auto* confirmationTable = new QTableWidget(4, 2, page);
+        confirmationTable->setObjectName(QStringLiteral("RunConfirmationTable"));
+        confirmationTable->setHorizontalHeaderLabels(
+            {QStringLiteral("确认项"), QStringLiteral("当前快照")});
+        const QList<QPair<QString, QString>> confirmations = {
+            {QStringLiteral("1　样品"),
+             QStringLiteral("RH2-20260723-001 · 根茎样品-01 · 居中固定")},
+            {QStringLiteral("2　任务与方案"),
+             QStringLiteral("TPL-STRUCT-001 v1.0 · 我的根茎成像方案 v2")},
+            {QStringLiteral("3　采集步骤"),
+             QStringLiteral("定位 LOC（已完成）→ FSE 结构成像（待执行）· 当前协议 FSE A")},
+            {QStringLiteral("4　定位与主要参数"),
+             QStringLiteral("横断 · FOV 50×50 mm · 128×128 · 层厚 3.5 mm · "
+                            "层间距 1.25 mm · 11 层 · NEX 1")}
+        };
+        for (int row = 0; row < confirmations.size(); ++row) {
+            auto* name = new QTableWidgetItem(confirmations.at(row).first);
+            auto* value = new QTableWidgetItem(confirmations.at(row).second);
+            name->setFlags(name->flags() & ~Qt::ItemIsEditable);
+            value->setFlags(value->flags() & ~Qt::ItemIsEditable);
+            confirmationTable->setItem(row, 0, name);
+            confirmationTable->setItem(row, 1, value);
+            confirmationTable->setRowHeight(row, 72);
+        }
+        confirmationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        confirmationTable->setSelectionMode(QAbstractItemView::NoSelection);
+        confirmationTable->setFocusPolicy(Qt::NoFocus);
+        confirmationTable->verticalHeader()->setVisible(false);
+        confirmationTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        confirmationTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+        confirmationTable->setMinimumHeight(335);
+        confirmationTable->setMaximumHeight(335);
+        layout->addWidget(confirmationTable);
+
+        auto* snapshot = new QLabel(
+            QStringLiteral("本次运行参数快照：RUN-PENDING-001　｜　确认后冻结　｜　Mock 设计示例"),
+            page);
+        snapshot->setProperty("class", "evidenceLabel");
+        snapshot->setWordWrap(false);
+        snapshot->setFixedHeight(42);
+        layout->addWidget(snapshot);
+        auto* confirmationsDone = new QLabel(
+            QStringLiteral("运行前确认项"), page);
+        confirmationsDone->setObjectName(QStringLiteral("RunConfirmationChecks"));
+        confirmationsDone->setProperty("class", "workflowCardTitle");
+        confirmationsDone->setFixedHeight(30);
+        layout->addWidget(confirmationsDone);
+        auto* checksCard = makePanel(QStringLiteral("WorkflowCard"));
+        checksCard->setObjectName(QStringLiteral("RunConfirmationCheckCard"));
+        checksCard->setParent(page);
+        checksCard->setFixedHeight(64);
+        auto* checks = new QHBoxLayout(checksCard);
+        checks->setContentsMargins(14, 8, 14, 8);
+        checks->setSpacing(16);
+        const QStringList checkLabels = {
+            QStringLiteral("样品与任务一致"),
+            QStringLiteral("定位覆盖已确认"),
+            QStringLiteral("参数变化已复核")
+        };
+        for (int index = 0; index < checkLabels.size(); ++index) {
+            auto* check = new QCheckBox(checkLabels.at(index), checksCard);
+            check->setObjectName(QStringLiteral("RunConfirmationCheck%1").arg(index + 1));
+            check->setChecked(true);
+            checks->addWidget(check);
+        }
+        checks->addStretch();
+        layout->addWidget(checksCard);
+        m_realRunButton = new QPushButton(QStringLiteral("真实 Run（HOLD）"), page);
+        m_realRunButton->setObjectName(QStringLiteral("WorkflowRealRunButton"));
+        m_realRunButton->setEnabled(false);
+        m_mockAcquireButton = new QPushButton(QStringLiteral("确认并进入 Mock 采集"), page);
+        m_mockAcquireButton->setObjectName(QStringLiteral("MockAcquireButton"));
+        m_mockAcquireButton->setProperty("class", "primary");
+        connect(m_mockAcquireButton, &QPushButton::clicked, this, [this] {
+            setWorkflowStep(9);
+            QTimer::singleShot(3200, this, [this] {
+                if (m_workflowStep == 9) setWorkflowStep(10);
+            });
+        });
+        auto* actions = new QHBoxLayout;
+        auto* back = new QPushButton(QStringLiteral("返回调整定位"), page);
+        back->setObjectName(QStringLiteral("RunConfirmationBackButton"));
+        back->setProperty("class", "secondary");
+        connect(back, &QPushButton::clicked, this, [this] { setWorkflowStep(7); });
+        actions->addWidget(m_realRunButton);
+        actions->addWidget(back);
+        actions->addStretch();
+        actions->addWidget(m_mockAcquireButton);
+        layout->addLayout(actions);
+        break;
+    }
+    case 9: {
+        addImageEvidence(QStringLiteral(":/mock-fse-acquisition.png"),
+                         QStringLiteral("MockAcquisitionImage"),
+                         QStringLiteral("FSE A Mock 采集图像 · 64% 进行中；完成后自动进入处理，未触发 SDK 或设备"));
+        break;
+    }
+    case 10: {
+        auto* preview = addImageEvidence(
+            QStringLiteral(":/mock-reconstruction.png"),
+            QStringLiteral("MockReconstructionImage"),
+            QStringLiteral("原生输出保存与标准重建过程 · Mock 设计示例"));
+        preview->setMaximumHeight(380);
+
+        auto* processingSteps = new QTableWidget(5, 2, page);
+        processingSteps->setObjectName(QStringLiteral("MockProcessingSteps"));
+        processingSteps->setHorizontalHeaderLabels(
+            {QStringLiteral("处理步骤"), QStringLiteral("当前状态")});
+        processingSteps->verticalHeader()->setVisible(false);
+        processingSteps->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        processingSteps->setSelectionMode(QAbstractItemView::NoSelection);
+        processingSteps->setFocusPolicy(Qt::NoFocus);
+        processingSteps->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        processingSteps->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+        processingSteps->setMinimumHeight(190);
+        processingSteps->setMaximumHeight(210);
+        const QList<QPair<QString, QString>> processingRows = {
+            {QStringLiteral("1　谱仪原生采集输出"),
+             QStringLiteral("PTMRData00_1.raw 已保存 · Mock")},
+            {QStringLiteral("2　来源绑定"),
+             QStringLiteral("样品、方案与运行快照已关联 · Mock")},
+            {QStringLiteral("3　RAW 解析"), QStringLiteral("进行中 72% · Mock")},
+            {QStringLiteral("4　标准重建"), QStringLiteral("进行中 · Mock")},
+            {QStringLiteral("5　图像 QC"), QStringLiteral("等待中 · Mock")}
+        };
+        for (int row = 0; row < processingRows.size(); ++row) {
+            processingSteps->setItem(row, 0, new QTableWidgetItem(processingRows.at(row).first));
+            processingSteps->setItem(row, 1, new QTableWidgetItem(processingRows.at(row).second));
+        }
+        layout->addWidget(processingSteps);
+
+        auto* warning = new QLabel(
+            QStringLiteral("RAW 数据合同尚待设备实测验证；当前不开放任何 k-space 视图。"),
+            page);
+        warning->setObjectName(QStringLiteral("RawContractWarningLabel"));
+        warning->setProperty("class", "warningNote");
+        warning->setWordWrap(true);
+        layout->addWidget(warning);
+        auto* result = new QPushButton(QStringLiteral("Mock 处理完成并查看结果"), page);
+        result->setProperty("class", "primary");
+        connect(result, &QPushButton::clicked, this, [this] { setWorkflowStep(11); });
+        layout->addWidget(result, 0, Qt::AlignRight);
+        break;
+    }
+    case 11: {
+        auto* resultRow = new QHBoxLayout;
+        resultRow->setSpacing(10);
+        auto* resultRail = new QVBoxLayout;
+        resultRail->setSpacing(8);
+        resultRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-loc-axial.png"),
+                                                   QStringLiteral("ResultLocThumbnail"),
+                                                   QStringLiteral("定位图 LOC"), false, page), 1);
+        resultRail->addWidget(makeGalleryThumbnail(QStringLiteral(":/mock-phantom.png"),
+                                                   QStringLiteral("ResultFseThumbnail"),
+                                                   QStringLiteral("FSE · 当前"), true, page), 1);
+        resultRail->addStretch();
+        resultRow->addLayout(resultRail);
+        resultRow->addWidget(new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
+                                                    QStringLiteral("MockResultImage"), page), 1);
+        layout->addLayout(resultRow, 1);
+        auto* evidence = new QLabel(
+            QStringLiteral("标准重建 Mock 图像 · 非真实设备结果 · 等待科研用户确认"), page);
+        evidence->setObjectName(QStringLiteral("MockImageEvidenceLabel"));
+        evidence->setProperty("class", "evidenceLabel");
+        evidence->setWordWrap(true);
+        layout->addWidget(evidence);
+        auto* controls = new QHBoxLayout;
+        controls->addWidget(new QLabel(QStringLiteral("窗宽 1200　窗位 60%　缩放 100%"), page));
+        controls->addStretch();
+        auto* returnToLocalization = new QPushButton(QStringLiteral("返回定位 / 重新采集"), page);
+        returnToLocalization->setObjectName(QStringLiteral("ReturnToLocalizationButton"));
+        returnToLocalization->setProperty("class", "secondary");
+        connect(returnToLocalization, &QPushButton::clicked, this,
+                [this] { setWorkflowStep(7); });
+        auto* confirm = new QPushButton(QStringLiteral("确认结果"), page);
+        confirm->setProperty("class", "primary");
+        connect(confirm, &QPushButton::clicked, this, [this] { setWorkflowStep(12); });
+        controls->addWidget(returnToLocalization);
+        controls->addWidget(confirm);
+        layout->addLayout(controls);
+        break;
+    }
+    case 12: {
+        addTitle(QStringLiteral("结果包保存与任务结束"));
+        auto* content = new QHBoxLayout;
+        auto* image = new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
+                                             QStringLiteral("ResultPackageImage"), page);
+        content->addWidget(image, 3);
+        auto* packageLayout = new QVBoxLayout;
+        const QStringList packageItems = {
+            QStringLiteral("原始数据"), QStringLiteral("标准结果"),
+            QStringLiteral("QC记录"), QStringLiteral("协议与参数快照"),
+            QStringLiteral("来源记录"), QStringLiteral("任务说明")
+        };
+        for (const QString& item : packageItems) {
+            auto* card = makeGalleryCard(item, QStringLiteral("已包含 · Mock 结果包"), page);
+            card->setObjectName(QStringLiteral("ResultPackageItem"));
+            card->setProperty("resultItemName", item);
+            packageLayout->addWidget(card);
+        }
+        auto* metadata = new QLabel(
+            QStringLiteral("结果包 ID　RUN-MOCK-001\n"
+                           "样品 ID　　SAMPLE-001\n"
+                           "方案　　　 我的根茎成像方案 v2\n"
+                           "模板　　　 内部结构成像模板"),
+            page);
+        metadata->setObjectName(QStringLiteral("ResultPackageMetadata"));
+        metadata->setProperty("class", "evidenceLabel");
+        metadata->setWordWrap(true);
+        packageLayout->addWidget(metadata);
+        content->addLayout(packageLayout, 2);
+        layout->addLayout(content, 1);
+        auto* actions = new QHBoxLayout;
+        auto* save = new QPushButton(QStringLiteral("保存结果包并结束任务"), page);
+        save->setObjectName(QStringLiteral("SaveResultPackageButton"));
+        save->setProperty("class", "primary");
+        auto* openLocation = new QPushButton(QStringLiteral("打开结果位置"), page);
+        openLocation->setObjectName(QStringLiteral("OpenResultLocationButton"));
+        openLocation->setProperty("class", "secondary");
+        auto* external = new QPushButton(QStringLiteral("交给外部数据分析软件"), page);
+        external->setObjectName(QStringLiteral("ExternalAnalysisButton"));
+        external->setProperty("class", "secondary");
+        m_openHistoryButton = new QPushButton(QStringLiteral("打开历史记录"), page);
+        m_openHistoryButton->setObjectName(QStringLiteral("OpenHistoryButton"));
+        m_openHistoryButton->setProperty("class", "secondary");
+        connect(m_openHistoryButton, &QPushButton::clicked, this, [this] { setWorkflowStep(13); });
+        auto* saveState = new QLabel(QStringLiteral("结果包待保存 · Mock"), page);
+        saveState->setObjectName(QStringLiteral("ResultPackageSaveState"));
+        saveState->setProperty("class", "evidenceLabel");
+        connect(save, &QPushButton::clicked, this, [save, saveState] {
+            save->setEnabled(false);
+            saveState->setText(QStringLiteral("Mock 结果包已保存 · 任务已结束（未调用 SDK）"));
+        });
+        actions->addWidget(save);
+        actions->addWidget(openLocation);
+        actions->addWidget(external);
+        actions->addWidget(m_openHistoryButton);
+        actions->addStretch();
+        layout->addLayout(actions);
+        layout->addWidget(saveState);
+        break;
+    }
+    case 13: {
+        auto* historyHeader = new QHBoxLayout;
+        auto* historyTitle = makeGallerySectionTitle(QStringLiteral("历史记录"), page);
+        historyTitle->setObjectName(QStringLiteral("WorkflowBodyLabel"));
+        historyHeader->addWidget(historyTitle);
+        historyHeader->addStretch();
+        m_backToResultsButton = new QPushButton(QStringLiteral("← 返回当前结果"), page);
+        m_backToResultsButton->setObjectName(QStringLiteral("BackToResultsButton"));
+        m_backToResultsButton->setProperty("class", "secondary");
+        connect(m_backToResultsButton, &QPushButton::clicked, this, [this] { setWorkflowStep(12); });
+        historyHeader->addWidget(m_backToResultsButton);
+        layout->addLayout(historyHeader);
+
+        auto* filters = new QHBoxLayout;
+        auto* sampleFilter = new QComboBox(page);
+        sampleFilter->setObjectName(QStringLiteral("HistorySampleFilter"));
+        sampleFilter->addItems({QStringLiteral("全部样品"), QStringLiteral("SAMPLE-001"),
+                                QStringLiteral("SAMPLE-002"), QStringLiteral("SAMPLE-003")});
+        auto* templateFilter = new QComboBox(page);
+        templateFilter->setObjectName(QStringLiteral("HistoryTemplateFilter"));
+        templateFilter->addItems({QStringLiteral("全部模板"), QStringLiteral("内部结构成像模板")});
+        auto* dateFilter = new QComboBox(page);
+        dateFilter->setObjectName(QStringLiteral("HistoryDateFilter"));
+        dateFilter->addItems({QStringLiteral("全部时间"), QStringLiteral("2026-07-23"),
+                              QStringLiteral("2026-07-22"), QStringLiteral("2026-07-21")});
+        auto* filter = new QLineEdit(page);
+        filter->setObjectName(QStringLiteral("HistoryFilter"));
+        filter->setPlaceholderText(QStringLiteral("搜索运行 ID 或样品 ID"));
+        filters->addWidget(sampleFilter);
+        filters->addWidget(templateFilter);
+        filters->addWidget(dateFilter);
+        filters->addWidget(filter, 1);
+        layout->addLayout(filters);
+        auto* table = new QTableWidget(4, 6, page);
+        table->setObjectName(QStringLiteral("HistoryReadOnlyTable"));
+        table->setHorizontalHeaderLabels({QStringLiteral("时间"), QStringLiteral("样品ID"),
+                                          QStringLiteral("任务模板"), QStringLiteral("方案版本"),
+                                          QStringLiteral("结果包"), QStringLiteral("QC状态")});
+        const QStringList rows = {
+            QStringLiteral("2026-07-23 15:42|SAMPLE-001|内部结构成像模板|v2|完整|科研用户已确认"),
+            QStringLiteral("2026-07-23 14:10|SAMPLE-001|内部结构成像模板|v2|完整|待确认"),
+            QStringLiteral("2026-07-22 16:05|SAMPLE-002|内部结构成像模板|v1|完整|未确认"),
+            QStringLiteral("2026-07-21 11:32|SAMPLE-003|内部结构成像模板|v1|完整|科研用户已确认")
+        };
+        for (int row = 0; row < rows.size(); ++row) {
+            const QStringList values = rows.at(row).split(QLatin1Char('|'));
+            for (int column = 0; column < values.size(); ++column)
+                table->setItem(row, column, new QTableWidgetItem(values.at(column)));
+        }
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        table->setSelectionBehavior(QAbstractItemView::SelectRows);
+        table->setSelectionMode(QAbstractItemView::SingleSelection);
+        table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        table->verticalHeader()->setVisible(false);
+        table->setCurrentCell(0, 0);
+        layout->addWidget(table, 1);
+
+        const auto applyHistoryFilter = [table, sampleFilter, templateFilter, dateFilter, filter] {
+            const QString sample = sampleFilter->currentText();
+            const QString selectedTemplate = templateFilter->currentText();
+            const QString date = dateFilter->currentText();
+            const QString query = filter->text().trimmed();
+            for (int row = 0; row < table->rowCount(); ++row) {
+                const bool sampleMatches = sample == QStringLiteral("全部样品")
+                    || table->item(row, 1)->text() == sample;
+                const bool templateMatches = selectedTemplate == QStringLiteral("全部模板")
+                    || table->item(row, 2)->text() == selectedTemplate;
+                const bool dateMatches = date == QStringLiteral("全部时间")
+                    || table->item(row, 0)->text().startsWith(date);
+                const QString rowText = QStringLiteral("%1 %2")
+                    .arg(table->item(row, 0)->text(), table->item(row, 1)->text());
+                const bool queryMatches = query.isEmpty() || rowText.contains(query, Qt::CaseInsensitive);
+                table->setRowHidden(row, !(sampleMatches && templateMatches && dateMatches && queryMatches));
+            }
+        };
+        connect(sampleFilter, &QComboBox::currentTextChanged, this,
+                [applyHistoryFilter](const QString&) { applyHistoryFilter(); });
+        connect(templateFilter, &QComboBox::currentTextChanged, this,
+                [applyHistoryFilter](const QString&) { applyHistoryFilter(); });
+        connect(dateFilter, &QComboBox::currentTextChanged, this,
+                [applyHistoryFilter](const QString&) { applyHistoryFilter(); });
+        connect(filter, &QLineEdit::textChanged, this,
+                [applyHistoryFilter](const QString&) { applyHistoryFilter(); });
+
+        connect(table, &QTableWidget::currentCellChanged, this,
+                [this, table](int currentRow, int, int, int) {
+            if (currentRow < 0 || !m_historySelectionSummary) return;
+            m_historySelectionSummary->setText(
+                QStringLiteral("运行 ID　RUN-MOCK-%1\n"
+                               "样品 ID　%2\n"
+                               "结果包　　%3\n"
+                               "QC　　　　%4\n"
+                               "来源记录　完整 · Mock")
+                    .arg(currentRow + 1, 3, 10, QLatin1Char('0'))
+                    .arg(table->item(currentRow, 1)->text(),
+                         table->item(currentRow, 4)->text(),
+                         table->item(currentRow, 5)->text()));
+        });
+
+        auto* actions = new QHBoxLayout;
+        auto* open = new QPushButton(QStringLiteral("打开所选结果（只读）"), page);
+        open->setObjectName(QStringLiteral("HistoryOpenButton"));
+        open->setProperty("class", "primary");
+        auto* compare = new QPushButton(QStringLiteral("设为对比参考"), page);
+        compare->setObjectName(QStringLiteral("HistoryCompareButton"));
+        compare->setProperty("class", "secondary");
+        auto* source = new QPushButton(QStringLiteral("查看来源记录"), page);
+        source->setObjectName(QStringLiteral("HistorySourceButton"));
+        source->setProperty("class", "secondary");
+        auto* historyActionState = new QLabel(QStringLiteral("历史记录只读"), page);
+        historyActionState->setObjectName(QStringLiteral("HistoryActionState"));
+        historyActionState->setProperty("class", "evidenceLabel");
+        connect(open, &QPushButton::clicked, this, [historyActionState] {
+            historyActionState->setText(QStringLiteral("已打开所选结果（只读 Mock）"));
+        });
+        connect(compare, &QPushButton::clicked, this, [historyActionState] {
+            historyActionState->setText(QStringLiteral("已设为对比参考（Mock，不改写原结果）"));
+        });
+        connect(source, &QPushButton::clicked, this, [historyActionState] {
+            historyActionState->setText(QStringLiteral("来源记录完整（Mock 设计示例）"));
+        });
+        actions->addWidget(open);
+        actions->addWidget(compare);
+        actions->addWidget(source);
+        actions->addStretch();
+        layout->addLayout(actions);
+        layout->addWidget(historyActionState);
+        auto* readOnlyNote = new QLabel(
+            QStringLiteral("历史记录只读；基于历史参数创建新方案不会覆盖原结果。"), page);
+        readOnlyNote->setObjectName(QStringLiteral("HistoryReadOnlyNote"));
+        readOnlyNote->setProperty("class", "warningNote");
+        layout->addWidget(readOnlyNote);
+        break;
+    }
+    default:
+        break;
+    }
+    return page;
+}
+
+QWidget* MainWindow::makeLegacyWorkflowPage(int step)
 {
     auto* page = new QWidget;
     page->setObjectName(QStringLiteral("WorkflowPage%1").arg(step, 2, 10, QLatin1Char('0')));
@@ -754,40 +2021,284 @@ QWidget* MainWindow::makeWorkflowPage(int step)
 void MainWindow::setWorkflowStep(int step)
 {
     m_workflowStep = qBound(1, step, 13);
+    if (m_workflowStep > 1 && m_primarySceneCombo && m_primarySceneCombo->currentIndex() < 0) {
+        m_primarySceneCombo->setCurrentIndex(0);
+    }
     if (m_workflowPages) m_workflowPages->setCurrentIndex(m_workflowStep - 1);
+    if (m_workflowRightPages) m_workflowRightPages->setCurrentIndex(m_workflowStep - 1);
     refreshWorkflow();
+}
+
+void MainWindow::setMockWorkflowStep(int step)
+{
+    setWorkflowStep(step);
 }
 
 void MainWindow::refreshWorkflow()
 {
     static const QStringList titles = {
-        QStringLiteral("入口"), QStringLiteral("场景对象"), QStringLiteral("模板确认"),
-        QStringLiteral("登记预检"), QStringLiteral("协议参数"), QStringLiteral("LOC"),
-        QStringLiteral("定位规划"), QStringLiteral("运行前确认"), QStringLiteral("FSE A Mock"),
-        QStringLiteral("输出重建"), QStringLiteral("QC"), QStringLiteral("结果包"), QStringLiteral("历史记录")
+        QStringLiteral("进入系统"), QStringLiteral("选择场景与对象"), QStringLiteral("确认任务模板"),
+        QStringLiteral("样品登记与预检"), QStringLiteral("扫描方案"), QStringLiteral("LOC定位采集"),
+        QStringLiteral("切片规划"), QStringLiteral("运行前确认"), QStringLiteral("FSE采集"),
+        QStringLiteral("RAW保存与重建"), QStringLiteral("标准结果与QC"),
+        QStringLiteral("保存结果包"), QStringLiteral("历史记录")
     };
     if (m_workflowCurrentStepLabel) {
         m_workflowCurrentStepLabel->setText(QStringLiteral("%1").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
     }
     if (m_workflowStatusLabel) {
-        const QString completed = m_workflowStep == 1 ? QStringLiteral("—") : QStringLiteral("01–%1").arg(m_workflowStep - 1, 2, 10, QLatin1Char('0'));
-        const QString next = m_workflowStep == 13 ? QStringLiteral("返回结果包") : (m_workflowStep == 12 ? QStringLiteral("结果包完成 / 可进入历史") : titles.at(m_workflowStep));
-        m_workflowStatusLabel->setText(QStringLiteral("已完成｜当前｜下一步   %1 ｜ %2｜ %3（Mock/设计示例）")
-                                           .arg(completed, titles.at(m_workflowStep - 1), next));
+        if (m_workflowStep == 13) {
+            m_workflowStatusLabel->setText(
+                QStringLiteral("按需工具：历史记录　｜　当前任务：内部结构成像模板　｜　← 返回当前结果"));
+        } else {
+            const QString completed = m_workflowStep == 1
+                ? QStringLiteral("—")
+                : titles.at(m_workflowStep - 2);
+            const QString next = m_workflowStep == 12
+                ? QStringLiteral("按需历史")
+                : titles.at(m_workflowStep);
+            m_workflowStatusLabel->setText(
+                QStringLiteral("已完成：%1　｜　当前：%2　｜　下一步：%3")
+                    .arg(completed, titles.at(m_workflowStep - 1), next));
+        }
     }
     if (m_workflowBackButton) m_workflowBackButton->setEnabled(m_workflowStep > 1);
     if (m_workflowNextButton) m_workflowNextButton->setEnabled(m_workflowStep < 12 && m_workflowStep != 8);
+    if (m_leftMockStartButton) {
+        const bool mockAcquisitionRunning = m_workflowStep == 9;
+        m_leftMockStartButton->setText(mockAcquisitionRunning
+                                           ? QStringLiteral("运行中（Mock）")
+                                           : QStringLiteral("开始采集（Mock）"));
+        m_leftMockStartButton->setProperty(
+            "class", mockAcquisitionRunning ? QStringLiteral("running")
+                                             : QStringLiteral("success"));
+        m_leftMockStartButton->setEnabled(m_workflowStep == 6);
+        m_leftMockStartButton->style()->unpolish(m_leftMockStartButton);
+        m_leftMockStartButton->style()->polish(m_leftMockStartButton);
+    }
+    if (m_pauseButton) m_pauseButton->setEnabled(m_workflowStep == 6 || m_workflowStep == 9);
+    if (m_leftMockStopButton)
+        m_leftMockStopButton->setEnabled(m_workflowStep == 6 || m_workflowStep == 9);
     if (m_protocolChainLabel) {
         m_protocolChainLabel->setText(m_comparisonEnabled
                                           ? QStringLiteral("LOC → FSE A → FSE B 对照（用户已主动添加，Mock）")
                                           : QStringLiteral("LOC → FSE A（默认 Mock 协议链）"));
+    }
+    if (m_scanPlanChainLabel) {
+        m_scanPlanChainLabel->setText(
+            m_comparisonEnabled
+                ? QStringLiteral("协议链　LOC → FSE A → FSE B（用户主动添加的对照）")
+                : QStringLiteral("协议链　LOC → FSE A"));
     }
     if (m_workflowOutputSummary) {
         m_workflowOutputSummary->setText(QStringLiteral("当前步骤 %1 · 所有图像、数值和输出均为 Mock/设计示例").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
     }
 }
 
+QWidget* MainWindow::makeWorkflowRightPage(int step)
+{
+    auto* page = new QWidget;
+    page->setObjectName(QStringLiteral("RightPage%1").arg(step, 2, 10, QLatin1Char('0')));
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(2, 2, 2, 2);
+    layout->setSpacing(10);
+
+    static const QStringList titles = {
+        QStringLiteral("设备与安全状态"), QStringLiteral("推荐依据"),
+        QStringLiteral("模板边界"), QStringLiteral("预检摘要"),
+        QStringLiteral("方案摘要"), QStringLiteral("采集状态"),
+        QStringLiteral("图像质控与输出"), QStringLiteral("运行前状态"),
+        QStringLiteral("采集状态"), QStringLiteral("处理状态"),
+        QStringLiteral("图像质控与输出"), QStringLiteral("完成摘要"),
+        QStringLiteral("所选记录")
+    };
+    auto* title = new QLabel(titles.at(step - 1), page);
+    title->setObjectName(QStringLiteral("SectionTitle"));
+    layout->addWidget(title);
+
+    const auto addStatus = [page, layout, step](const QString& name, const QString& value,
+                                                const QString& state = QStringLiteral("neutral")) {
+        auto* card = makeGalleryCard(name, value, page);
+        card->setProperty("state", state);
+        if (step >= 6 && step <= 9) {
+            card->setProperty("rightStatus", true);
+            card->setMinimumHeight(84);
+        }
+        layout->addWidget(card);
+    };
+    const auto addWarningNote = [page, layout](const QString& text) {
+        auto* note = new QLabel(text, page);
+        note->setProperty("class", "warningNote");
+        note->setWordWrap(true);
+        layout->addWidget(note);
+    };
+
+    switch (step) {
+    case 1:
+        addStatus(QStringLiteral("设备连接"), QStringLiteral("未连接"), QStringLiteral("pending"));
+        addStatus(QStringLiteral("接收状态"), QStringLiteral("未知"), QStringLiteral("pending"));
+        addStatus(QStringLiteral("温度"), QStringLiteral("未知"), QStringLiteral("pending"));
+        addStatus(QStringLiteral("异常"), QStringLiteral("无异常"), QStringLiteral("success"));
+        addStatus(QStringLiteral("安全提示"),
+                  QStringLiteral("当前仅可浏览和配置，真实采集尚未放行。"),
+                  QStringLiteral("warning"));
+        break;
+    case 2:
+        addStatus(QStringLiteral("科研目标"), QStringLiteral("观察内部结构与形态"));
+        addStatus(QStringLiteral("检测对象"), QStringLiteral("根茎样品 · Mock"));
+        addStatus(QStringLiteral("当前建议"), QStringLiteral("默认单 FSE 主采集"));
+        addStatus(QStringLiteral("候选协议"), QStringLiteral("FSE A / FSE B；默认仅一套"));
+        break;
+    case 3:
+        addStatus(QStringLiteral("参数状态"), QStringLiteral("系统模板 · 只读"));
+        addStatus(QStringLiteral("设备能力"), QStringLiteral("支持 2D / 3D（设计示例）"));
+        addStatus(QStringLiteral("首轮范围"), QStringLiteral("2D FSE"));
+        addStatus(QStringLiteral("真实 Run"), QStringLiteral("HOLD"), QStringLiteral("warning"));
+        break;
+    case 4:
+        addStatus(QStringLiteral("样品信息"), QStringLiteral("已填写"), QStringLiteral("success"));
+        addStatus(QStringLiteral("装样"), QStringLiteral("已确认"), QStringLiteral("success"));
+        addStatus(QStringLiteral("存储"), QStringLiteral("可用 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("设备适配"), QStringLiteral("待实机确认"), QStringLiteral("warning"));
+        addWarningNote(QStringLiteral("真实采集前必须完成设备连接与参数映射；当前仅为 Mock 预检。"));
+        break;
+    case 5:
+        addStatus(QStringLiteral("预计步骤"), QStringLiteral("定位 + 1 组 FSE"));
+        addStatus(QStringLiteral("第二组采集"), QStringLiteral("未加入"));
+        addStatus(QStringLiteral("参数来源"), QStringLiteral("开发预设 · Mock"));
+        addStatus(QStringLiteral("设备适配"), QStringLiteral("待实机确认"), QStringLiteral("warning"));
+        addStatus(QStringLiteral("运行快照"), QStringLiteral("尚未冻结"));
+        break;
+    case 6:
+        addStatus(QStringLiteral("序列"), QStringLiteral("定位 LOC · Mock"));
+        addStatus(QStringLiteral("进度"), QStringLiteral("68%"));
+        addStatus(QStringLiteral("数据保存"), QStringLiteral("进行中 · Mock"));
+        addStatus(QStringLiteral("异常"), QStringLiteral("无"), QStringLiteral("success"));
+        addStatus(QStringLiteral("下一步"), QStringLiteral("调整定位与切片"));
+        addWarningNote(QStringLiteral("界面状态演示；真实设备 Run 仍未执行。"));
+        break;
+    case 7:
+        addStatus(QStringLiteral("标准结果"), QStringLiteral("待生成"));
+        addStatus(QStringLiteral("SNR"), QStringLiteral("待计算"));
+        addStatus(QStringLiteral("均匀性"), QStringLiteral("待计算"));
+        addStatus(QStringLiteral("畸变 / 尺寸"), QStringLiteral("待复核"));
+        addStatus(QStringLiteral("重复稳定"), QStringLiteral("需重复扫描"));
+        addStatus(QStringLiteral("结果包"), QStringLiteral("待生成"));
+        {
+            auto* note = new QLabel(
+                QStringLiteral("完成 Mock 采集与重建后显示质控摘要，由科研用户最终确认。"), page);
+            note->setProperty("class", "evidenceLabel");
+            note->setWordWrap(true);
+            layout->addWidget(note);
+        }
+        break;
+    case 8:
+        addStatus(QStringLiteral("准备与预检"), QStringLiteral("完成 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("定位 LOC"), QStringLiteral("完成 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("参数快照"), QStringLiteral("待冻结"));
+        addStatus(QStringLiteral("存储"), QStringLiteral("可用 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("设备适配"), QStringLiteral("待确认"), QStringLiteral("warning"));
+        addWarningNote(QStringLiteral("确认只生成当前 Mock 流程与参数快照，不会触发真实设备。"));
+        break;
+    case 9:
+        addStatus(QStringLiteral("序列"), QStringLiteral("FSE 结构成像 · Mock"));
+        addStatus(QStringLiteral("协议"), QStringLiteral("FSE A"));
+        addStatus(QStringLiteral("层面进度"), QStringLiteral("7 / 11"));
+        addStatus(QStringLiteral("数据接收"), QStringLiteral("Mock"));
+        addStatus(QStringLiteral("异常"), QStringLiteral("无"), QStringLiteral("success"));
+        addStatus(QStringLiteral("下一步"), QStringLiteral("RAW 保存与重建"));
+        addWarningNote(QStringLiteral("真实 Run：HOLD；当前仅显示 Mock 采集进度。"));
+        break;
+    case 10:
+        addStatus(QStringLiteral("原生输出"), QStringLiteral("已保存 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("来源记录"), QStringLiteral("已绑定 · Mock"), QStringLiteral("success"));
+        addStatus(QStringLiteral("RAW 解析"), QStringLiteral("72%"));
+        addStatus(QStringLiteral("标准重建"), QStringLiteral("进行中"));
+        addStatus(QStringLiteral("图像 QC"), QStringLiteral("等待"));
+        addStatus(QStringLiteral("异常"), QStringLiteral("无"), QStringLiteral("success"));
+        break;
+    case 11: {
+        auto* grid = new QGridLayout;
+        grid->setSpacing(10);
+        const QStringList names = {QStringLiteral("SNR"), QStringLiteral("均匀性"),
+                                   QStringLiteral("畸变 / 尺寸"), QStringLiteral("重复稳定")};
+        const QStringList values = {QStringLiteral("33.2 dB\n（Mock 值）"),
+                                    QStringLiteral("64.1%\n（Mock 值）"),
+                                    QStringLiteral("待科研用户复核"),
+                                    QStringLiteral("不可评估（需重复）")};
+        for (int i = 0; i < names.size(); ++i) {
+            grid->addWidget(makeGalleryCard(names.at(i), values.at(i), page), i / 2, i % 2);
+        }
+        layout->addLayout(grid);
+        addStatus(QStringLiteral("科研样品边界"),
+                  QStringLiteral("软件提示指标，科研用户最终确认；Mock 数值不作为设备固化阈值。"));
+        break;
+    }
+    case 12:
+        addStatus(QStringLiteral("采集"), QStringLiteral("Mock 已完成"), QStringLiteral("success"));
+        addStatus(QStringLiteral("重建"), QStringLiteral("已完成"), QStringLiteral("success"));
+        addStatus(QStringLiteral("QC"), QStringLiteral("科研用户已确认"), QStringLiteral("success"));
+        addStatus(QStringLiteral("结果包"), QStringLiteral("待保存"));
+        addStatus(QStringLiteral("外部分析"), QStringLiteral("可移交"));
+        addStatus(QStringLiteral("留存策略"),
+                  QStringLiteral("内部完整留存，首页只展示关键状态和结果包信息。"));
+        break;
+    case 13:
+        m_historySelectionSummary = new QLabel(
+            QStringLiteral("运行 ID　RUN-MOCK-001\n"
+                           "样品 ID　SAMPLE-001\n"
+                           "结果包　　完整\n"
+                           "QC　　　　科研用户已确认\n"
+                           "来源记录　完整 · Mock"),
+            page);
+        m_historySelectionSummary->setObjectName(QStringLiteral("HistorySelectionSummary"));
+        m_historySelectionSummary->setProperty("class", "workflowSummary");
+        m_historySelectionSummary->setWordWrap(true);
+        layout->addWidget(m_historySelectionSummary);
+        layout->addWidget(new ReferenceImageView(QStringLiteral(":/mock-phantom.png"),
+                                                 QStringLiteral("HistoryPreviewImage"), page),
+                          1);
+        break;
+    default:
+        break;
+    }
+    layout->addStretch();
+    return page;
+}
+
 QWidget* MainWindow::buildRightPane()
+{
+    auto* outer = new QWidget;
+    outer->setObjectName(QStringLiteral("RightColumn"));
+    outer->setMinimumWidth(290);
+    outer->setMaximumWidth(335);
+    auto* outerLayout = new QVBoxLayout(outer);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->setSpacing(10);
+    outerLayout->addSpacing(28);
+
+    auto* runHold = new QLabel(QStringLiteral("Run:　HOLD"), outer);
+    runHold->setObjectName(QStringLiteral("RunHoldLabel"));
+    runHold->setProperty("class", "runHold");
+    runHold->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    runHold->setFixedHeight(48);
+    outerLayout->addWidget(runHold);
+
+    auto* frame = makePanel(QStringLiteral("Panel"));
+    auto* layout = new QVBoxLayout(frame);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(10);
+
+    m_workflowRightPages = new QStackedWidget(frame);
+    m_workflowRightPages->setObjectName(QStringLiteral("WorkflowRightStack"));
+    for (int step = 1; step <= 13; ++step)
+        m_workflowRightPages->addWidget(makeWorkflowRightPage(step));
+    layout->addWidget(m_workflowRightPages, 1);
+    outerLayout->addWidget(frame, 1);
+    return outer;
+}
+
+QWidget* MainWindow::buildLegacyRightPane()
 {
     auto* frame = makePanel("Panel");
     auto* layout = new QVBoxLayout(frame);
@@ -1469,38 +2980,47 @@ void MainWindow::appendLog(const QString& line)
 
 void MainWindow::updateBadges(const QString& connection, const QString& transfer, const QString& abnormal)
 {
-    m_connectionBadge->setText(connection);
-    m_transferBadge->setText(transfer);
-    m_abnormalBadge->setText(abnormal);
-    m_footerConnectionValue->setText(connection);
-    m_footerAbnormalValue->setText(abnormal);
-
-    m_connectionBadge->setProperty("class", badgeClassForState(connection));
-    m_transferBadge->setProperty("class", badgeClassForState(transfer));
-    m_abnormalBadge->setProperty("class", badgeClassForState(abnormal));
+    if (m_connectionBadge) {
+        m_connectionBadge->setText(connection);
+        m_connectionBadge->setProperty("class", badgeClassForState(connection));
+    }
+    if (m_transferBadge) {
+        m_transferBadge->setText(transfer);
+        m_transferBadge->setProperty("class", badgeClassForState(transfer));
+    }
+    if (m_abnormalBadge) {
+        m_abnormalBadge->setText(abnormal);
+        m_abnormalBadge->setProperty("class", badgeClassForState(abnormal));
+    }
+    if (m_footerConnectionValue) m_footerConnectionValue->setText(connection);
+    if (m_footerAbnormalValue) m_footerAbnormalValue->setText(abnormal);
 }
 
 void MainWindow::updateScan(const QString& scanState, const QString& scanProgress)
 {
-    m_scanStateBadge->setText(scanState);
-    m_scanProgressBadge->setText(scanProgress);
-    m_footerScanValue->setText(scanState + QStringLiteral(" / ") + scanProgress);
-    m_scanStateBadge->setProperty("class", badgeClassForState(scanState));
-    m_scanProgressBadge->setProperty("class", badgeClassForState(scanState));
+    if (m_scanStateBadge) {
+        m_scanStateBadge->setText(scanState);
+        m_scanStateBadge->setProperty("class", badgeClassForState(scanState));
+    }
+    if (m_scanProgressBadge) {
+        m_scanProgressBadge->setText(scanProgress);
+        m_scanProgressBadge->setProperty("class", badgeClassForState(scanState));
+    }
+    if (m_footerScanValue) m_footerScanValue->setText(scanState + QStringLiteral(" / ") + scanProgress);
 }
 
 void MainWindow::updateMetrics(const QString& snr, const QString& uniformity, const QString& peak, const QString& area)
 {
-    m_snrValue->setText(snr);
-    m_uniformityValue->setText(uniformity);
-    m_peakValue->setText(peak);
-    m_areaValue->setText(area);
+    if (m_snrValue) m_snrValue->setText(snr);
+    if (m_uniformityValue) m_uniformityValue->setText(uniformity);
+    if (m_peakValue) m_peakValue->setText(peak);
+    if (m_areaValue) m_areaValue->setText(area);
 }
 
 void MainWindow::updateTemperature(const QString& temperature)
 {
-    m_temperatureBadge->setText(temperature);
-    m_footerTemperatureValue->setText(temperature);
+    if (m_temperatureBadge) m_temperatureBadge->setText(temperature);
+    if (m_footerTemperatureValue) m_footerTemperatureValue->setText(temperature);
 }
 
 void MainWindow::updateSdkStatus(const QString& modeLabel, const QString& pathLabel, const QString& errorLabel)

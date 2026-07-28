@@ -24,6 +24,7 @@ public:
     MriSdkResult loadSdkAndConnect(const QString& dllPath, const MriSdkConfig& config);
     MriSdkSessionState deviceSessionState() const;
     void configureEggController(const EggControllerLaunchConfig& config);
+    void setMockWorkflowStep(int step);
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -57,8 +58,11 @@ private:
     QWidget* buildLeftPane();
     QWidget* buildCenterPane();
     QWidget* buildRightPane();
+    QWidget* buildLegacyRightPane();
     QWidget* buildFooter();
     QWidget* makeWorkflowPage(int step);
+    QWidget* makeLegacyWorkflowPage(int step);
+    QWidget* makeWorkflowRightPage(int step);
     QWidget* makeMetricCard(const QString& name, QLabel*& valueLabel);
     QWidget* makeOperationNode(const QString& step, const QString& title, QLabel*& detailLabel);
     QWidget* makeProtocolTimelineViewport();
@@ -143,11 +147,15 @@ private:
     QPushButton* m_startButton = nullptr;
     QPushButton* m_pauseButton = nullptr;
     QPushButton* m_abortButton = nullptr;
+    QPushButton* m_leftMockStartButton = nullptr;
+    QPushButton* m_leftMockStopButton = nullptr;
     QStackedWidget* m_workflowPages = nullptr;
+    QStackedWidget* m_workflowRightPages = nullptr;
     QLabel* m_workflowStatusLabel = nullptr;
     QLabel* m_workflowCurrentStepLabel = nullptr;
     QLabel* m_workflowBodyLabel = nullptr;
     QLabel* m_protocolChainLabel = nullptr;
+    QLabel* m_scanPlanChainLabel = nullptr;
     QLabel* m_workflowOutputSummary = nullptr;
     QPushButton* m_workflowBackButton = nullptr;
     QPushButton* m_workflowNextButton = nullptr;
@@ -157,6 +165,7 @@ private:
     QPushButton* m_openHistoryButton = nullptr;
     QPushButton* m_backToResultsButton = nullptr;
     QWidget* m_localizationPlanner = nullptr;
+    QLabel* m_historySelectionSummary = nullptr;
     EggControllerProcess* m_eggController = nullptr;
     DeviceBridge* m_bridge = nullptr;
     EggControllerLaunchConfig m_eggControllerConfig;

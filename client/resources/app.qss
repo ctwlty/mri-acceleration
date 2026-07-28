@@ -258,3 +258,291 @@ QTabBar::tab:selected {
 QTabBar::tab:hover {
   background: #f8fafc;
 }
+
+QWidget {
+  font-family: "Microsoft YaHei UI", "Segoe UI";
+}
+
+QMainWindow {
+  background: #f7f9fd;
+}
+
+QFrame#Panel {
+  border: 1px solid #dce5f1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+QWidget#CenterColumn {
+  background: transparent;
+}
+
+QLabel[class="workflowStatus"] {
+  border: 1px solid #dbe5f3;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0d55d8;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+}
+
+QStackedWidget#WorkflowPageStack {
+  border: 1px solid #dce5f1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+QLabel[class="workflowHero"] {
+  color: #18345b;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+QLabel[class="workflowLead"] {
+  color: #657b98;
+  font-size: 14px;
+  padding: 6px 20px;
+}
+
+QLabel[class="workflowSectionTitle"] {
+  color: #0c3f91;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+QFrame#WorkflowCard {
+  border: 1px solid #dce5f1;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+QFrame#WorkflowCard[class="selectedTemplate"] {
+  border: 2px solid #2c6df6;
+  background: #fbfdff;
+}
+
+QFrame#WorkflowCard[state="warning"] {
+  border-color: #f3aa4e;
+  background: #fff8ec;
+}
+
+QFrame#WorkflowCard[state="success"] {
+  border-color: #cfe8dc;
+  background: #fbfffd;
+}
+
+QFrame#WorkflowCard[rightStatus="true"] {
+  border: none;
+  border-bottom: 1px solid #dce5f1;
+  border-radius: 0;
+  background: transparent;
+}
+
+QLabel[class="workflowCardTitle"] {
+  color: #0b4099;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+QLabel[class="workflowCardDetail"] {
+  color: #36567f;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+QLabel[class="templateChoiceTitle"] {
+  color: #0b4099;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+QLabel[class="templateChoiceDetail"] {
+  color: #36567f;
+  font-size: 14px;
+}
+
+QLabel[class="templateChoiceFlow"] {
+  color: #174b9b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+QLabel[class="templateMetadata"] {
+  color: #536d91;
+  font-size: 13px;
+}
+
+QLabel[class="capabilityName"],
+QLabel[class="precheckRowName"] {
+  color: #244b82;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+QLabel[class="capabilityValue"],
+QLabel[class="precheckRowValue"] {
+  color: #36567f;
+  font-size: 13px;
+}
+
+QLabel[class="precheckPassName"],
+QLabel[class="precheckPassState"] {
+  color: #1b9b55;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+QLabel[class="precheckWarningName"],
+QLabel[class="precheckWarningState"] {
+  color: #d97706;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+QLabel[class="galleryBadgeSuccess"] {
+  border: 2px solid #ffffff;
+  border-radius: 15px;
+  background: #19a862;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+QLabel[class="galleryBadgeProgress"] {
+  border: 2px solid #2f73ff;
+  border-radius: 20px;
+  background: #123b86;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+QLabel[class="galleryBadgeWaiting"] {
+  border: 2px solid #ffffff;
+  border-radius: 15px;
+  background: #596371;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+QLabel[class="workflowProtocol"] {
+  border: 1px solid #b7cffc;
+  border-radius: 5px;
+  background: #f5f9ff;
+  color: #0a54d5;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+}
+
+QLabel[class="evidenceLabel"] {
+  border: 1px solid #cde1ff;
+  border-radius: 4px;
+  background: #f6faff;
+  color: #315f9c;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+QLabel[class="warningNote"] {
+  border: 1px solid #f4a443;
+  border-radius: 5px;
+  background: #fff8ed;
+  color: #d96b00;
+  font-size: 12px;
+  padding: 10px;
+}
+
+QLabel[class="warningText"] {
+  color: #d96b00;
+  font-weight: 600;
+}
+
+QFrame[selected="true"] {
+  border: 2px solid #2f73ff;
+  background: #f7faff;
+}
+
+QLabel[class="runHold"] {
+  color: #164ca3;
+  font-size: 14px;
+  font-weight: 600;
+  padding-right: 6px;
+}
+
+QPushButton {
+  min-height: 24px;
+  border-radius: 5px;
+  padding: 7px 14px;
+}
+
+QPushButton:disabled {
+  background: #edf0f4;
+  border-color: #e2e6ec;
+  color: #a8b1bd;
+}
+
+QPushButton[class="running"]:disabled {
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #ffffff;
+}
+
+QProgressBar {
+  min-height: 18px;
+  border: 1px solid #d4dfed;
+  border-radius: 5px;
+  background: #e9eef6;
+  color: #173c70;
+  text-align: center;
+}
+
+QProgressBar::chunk {
+  border-radius: 4px;
+  background: #2995ff;
+}
+
+QTableWidget {
+  border: 1px solid #dce5f1;
+  border-radius: 5px;
+  background: #ffffff;
+  alternate-background-color: #f7faff;
+  color: #284d7c;
+  gridline-color: #e4ebf4;
+  selection-background-color: #e7f0ff;
+  selection-color: #123f86;
+  font-size: 13px;
+}
+
+QHeaderView::section {
+  border: none;
+  border-bottom: 1px solid #dce5f1;
+  background: #f5f8fc;
+  color: #31557f;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px;
+}
+
+QLineEdit[class="tableEditor"] {
+  min-height: 24px;
+  border: 1px solid #8fb5ff;
+  border-radius: 4px;
+  background: #fbfdff;
+  color: #184b95;
+  padding: 3px 7px;
+  font-size: 13px;
+}
+
+QCheckBox {
+  color: #234c84;
+  font-size: 13px;
+  spacing: 8px;
+}
+
+QStackedWidget#WorkflowPageStack QPushButton {
+  min-height: 28px;
+  font-size: 13px;
+}

@@ -1,6 +1,14 @@
 <RCC>
   <qresource prefix="/">
     <file>app.qss</file>
+        <file>mock-localization.png</file>
+        <file>mock-loc-axial.png</file>
+        <file>mock-loc-coronal.png</file>
+        <file>mock-loc-sagittal.png</file>
+        <file>mock-loc-acquisition.png</file>
+        <file>mock-fse-acquisition.png</file>
+        <file>mock-phantom.png</file>
+    <file>mock-reconstruction.png</file>
   </qresource>
 </RCC>
 

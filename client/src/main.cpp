@@ -39,6 +39,10 @@ int main(int argc, char* argv[])
     const QCommandLineOption outputOption(
         QStringLiteral("output"), QStringLiteral("Directory for raw scan output."), QStringLiteral("path"),
         QStringLiteral("D:/mri_data/par0423-3"));
+    const QCommandLineOption mockStepOption(
+        QStringLiteral("mock-step"),
+        QStringLiteral("Open a Mock-only workflow state for design QA (1-13)."),
+        QStringLiteral("number"));
     const QCommandLineOption automationPythonOption(
         QStringLiteral("automation-python"),
         QStringLiteral("Python executable from the verified eggcontrollerV2 environment."),
@@ -52,6 +56,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Path to the thin eggcontrollerV2 proxy script."),
         QStringLiteral("path"));
     parser.addOptions({autoConnectOption, sdkOption, initOption, parameterOption, outputOption,
+                       mockStepOption,
                        automationPythonOption, automationRootOption, automationProxyOption});
     parser.process(app);
 
@@ -69,6 +74,15 @@ int main(int argc, char* argv[])
     }
 
     MainWindow window;
+    if (parser.isSet(mockStepOption)) {
+        bool ok = false;
+        const int mockStep = parser.value(mockStepOption).toInt(&ok);
+        if (!ok || mockStep < 1 || mockStep > 13) {
+            qCritical("--mock-step must be an integer from 1 through 13");
+            return 2;
+        }
+        window.setMockWorkflowStep(mockStep);
+    }
     if (automationRequested) {
         const QString pythonPath = QFileInfo(parser.value(automationPythonOption)).absoluteFilePath();
         const QString eggRoot = QDir(parser.value(automationRootOption)).absolutePath();
