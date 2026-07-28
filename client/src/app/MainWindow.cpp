@@ -1490,8 +1490,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             QStringLiteral("实际分辨率　0.39×0.39×3.5 mm\n"
                            "层数　　　　11 层\n"
                            "覆盖范围　　51 mm\n"
-                           "预计采集　　3分20秒\n"
-                           "SNR 趋势　　中\n\n"
+                           "预计采集　　未计算（无批准公式）\n"
+                           "SNR 趋势　　未评估\n\n"
                            "由 L2 参数实时计算，不可编辑（Mock）"),
             calculationCard);
         calculation->setObjectName(QStringLiteral("ProtocolAutoResultValue"));
@@ -1874,8 +1874,9 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         layout->addLayout(targetRow);
         auto* summary = new QLabel(
             QStringLiteral("分辨率 0.39×0.39×3.5 mm　|　11 层　|　覆盖 51 mm　|　"
-                           "预计 3分20秒　|　SNR 中"),
+                           "预计未计算　|　SNR 未评估"),
             page);
+        summary->setObjectName(QStringLiteral("LocalizationPlanningSummary"));
         summary->setProperty("class", "evidenceLabel");
         layout->addWidget(summary);
         auto* planningActions = new QHBoxLayout;
@@ -3797,7 +3798,7 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
         addStatus(QStringLiteral("设备连接"), QStringLiteral("未连接"), QStringLiteral("pending"));
         addStatus(QStringLiteral("接收状态"), QStringLiteral("未知"), QStringLiteral("pending"));
         addStatus(QStringLiteral("温度"), QStringLiteral("未知"), QStringLiteral("pending"));
-        addStatus(QStringLiteral("异常"), QStringLiteral("无异常"), QStringLiteral("success"));
+        addStatus(QStringLiteral("设备告警"), QStringLiteral("未核验"), QStringLiteral("pending"));
         addStatus(QStringLiteral("安全提示"),
                   QStringLiteral("当前仅可浏览和配置，真实采集尚未放行。"),
                   QStringLiteral("warning"));

@@ -6,6 +6,7 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QComboBox>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
@@ -97,6 +98,7 @@ private slots:
     void operationalRightStatusUsesReadableRows();
     void enabledWorkflowActionsExposeVisibleFeedback();
     void realActionsExplainWhyTheyAreUnavailable();
+    void mockPresentationAssetsDoNotContainEmbeddedDynamicStatus();
     void workflowUsesWaterPhantomTransverseSemantics();
     void visibleWorkflowControlsHaveNamesAndObservableBehavior();
     void selectedTemplateOffersVisibleContinuationFromAnyWorkflowPage();
@@ -139,6 +141,57 @@ void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
 
     QVERIFY2(result.ok, qPrintable(result.message));
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Ready);
+}
+
+void MainWindowTest::mockPresentationAssetsDoNotContainEmbeddedDynamicStatus()
+{
+    const auto sha256 = [](const QString& resourcePath) {
+        QFile file(resourcePath);
+        if (!file.open(QIODevice::ReadOnly))
+            return QByteArray();
+        return QCryptographicHash::hash(
+                   file.readAll(), QCryptographicHash::Sha256)
+            .toHex()
+            .toUpper();
+    };
+
+    QCOMPARE(
+        sha256(QStringLiteral(":/mock-fse-acquisition.png")),
+        QByteArrayLiteral(
+            "D7F61D2C0F2D6F32D08E3CB28A3F7733E6081893CC860E7559E8C077CACE0F82"));
+    QCOMPARE(
+        sha256(QStringLiteral(":/mock-reconstruction.png")),
+        QByteArrayLiteral(
+            "7D7B774311AA99E35772A15DFF3755C1892318AFB5E99A8F1F6737A8CADDBE5F"));
+
+    MainWindow window;
+    window.show();
+
+    window.setMockWorkflowStep(1);
+    auto* entryStatus =
+        window.findChild<QWidget*>(QStringLiteral("RightPage01"));
+    QVERIFY(entryStatus);
+    QString entryText;
+    for (const QLabel* label : entryStatus->findChildren<QLabel*>())
+        entryText += label->text() + QLatin1Char('\n');
+    QVERIFY(entryText.contains(QStringLiteral("设备告警")));
+    QVERIFY(entryText.contains(QStringLiteral("未核验")));
+    QVERIFY(!entryText.contains(QStringLiteral("无异常")));
+
+    window.setMockWorkflowStep(5);
+    auto* calculation =
+        window.findChild<QLabel*>(QStringLiteral("ProtocolAutoResultValue"));
+    QVERIFY(calculation);
+    QVERIFY(calculation->text().contains(QStringLiteral("未计算")));
+    QVERIFY(!calculation->text().contains(QStringLiteral("3分20秒")));
+
+    window.setMockWorkflowStep(7);
+    auto* planning =
+        window.findChild<QLabel*>(QStringLiteral("LocalizationPlanningSummary"));
+    QVERIFY(planning);
+    QVERIFY(planning->text().contains(QStringLiteral("预计未计算")));
+    QVERIFY(planning->text().contains(QStringLiteral("SNR 未评估")));
+    QVERIFY(!planning->text().contains(QStringLiteral("3分20秒")));
 }
 
 #if 0 // Superseded by the Mock-only workflow contract.
