@@ -13,6 +13,7 @@ class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
 class QPushButton;
+class QStackedWidget;
 class QCloseEvent;
 
 class MainWindow : public QMainWindow {
@@ -57,6 +58,7 @@ private:
     QWidget* buildCenterPane();
     QWidget* buildRightPane();
     QWidget* buildFooter();
+    QWidget* makeWorkflowPage(int step);
     QWidget* makeMetricCard(const QString& name, QLabel*& valueLabel);
     QWidget* makeOperationNode(const QString& step, const QString& title, QLabel*& detailLabel);
     QWidget* makeProtocolTimelineViewport();
@@ -74,6 +76,8 @@ private:
     void populateTemplatesForSelection();
     void setOperationChain(const SceneTemplate& scene);
     void showEggControllerArtifacts(const EggControllerArtifacts& artifacts);
+    void setWorkflowStep(int step);
+    void refreshWorkflow();
     bool isEggControllerMode() const;
 
     QComboBox* m_primarySceneCombo = nullptr;
@@ -139,10 +143,26 @@ private:
     QPushButton* m_startButton = nullptr;
     QPushButton* m_pauseButton = nullptr;
     QPushButton* m_abortButton = nullptr;
+    QStackedWidget* m_workflowPages = nullptr;
+    QLabel* m_workflowStatusLabel = nullptr;
+    QLabel* m_workflowCurrentStepLabel = nullptr;
+    QLabel* m_workflowBodyLabel = nullptr;
+    QLabel* m_protocolChainLabel = nullptr;
+    QLabel* m_workflowOutputSummary = nullptr;
+    QPushButton* m_workflowBackButton = nullptr;
+    QPushButton* m_workflowNextButton = nullptr;
+    QPushButton* m_realRunButton = nullptr;
+    QPushButton* m_addComparisonButton = nullptr;
+    QPushButton* m_mockAcquireButton = nullptr;
+    QPushButton* m_openHistoryButton = nullptr;
+    QPushButton* m_backToResultsButton = nullptr;
+    QWidget* m_localizationPlanner = nullptr;
     EggControllerProcess* m_eggController = nullptr;
     DeviceBridge* m_bridge = nullptr;
     EggControllerLaunchConfig m_eggControllerConfig;
     QString m_selectedDllPath;
     bool m_precheckRequested = false;
+    int m_workflowStep = 1;
+    bool m_comparisonEnabled = false;
     QList<SceneTemplate> m_catalog;
 };

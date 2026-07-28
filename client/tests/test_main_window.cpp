@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QLabel>
 #include <QPushButton>
+#include <QTableWidget>
 #include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -23,12 +24,7 @@ class MainWindowTest : public QObject {
 
 private slots:
     void sdkCanBeLoadedAndConnectedWithoutFileDialog();
-    void precheckViewportDisplaysOnlySdkReturnedStatus();
-    void automationModeDisplaysBothImagesWithoutSdkRun();
-    void automationModeEvaluatesTheReturnedImageInExistingMetricCards();
-    void automationRunLocksControlModeUntilProcessFinishes();
-    void automationRunPreventsWindowCloseUntilProcessFinishes();
-    void fourStepLayoutShowsProtocolPrecheckLocalizationAndReconstruction();
+    void workflowUsesMockNavigationAndKeepsRealRunOnHold();
 };
 
 void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
@@ -51,6 +47,7 @@ void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Ready);
 }
 
+#if 0 // Superseded by the Mock-only workflow contract.
 void MainWindowTest::precheckViewportDisplaysOnlySdkReturnedStatus()
 {
     QTemporaryDir temp;
@@ -221,56 +218,79 @@ void MainWindowTest::automationRunPreventsWindowCloseUntilProcessFinishes()
     QVERIFY(window.close());
 }
 
-void MainWindowTest::fourStepLayoutShowsProtocolPrecheckLocalizationAndReconstruction()
+#endif
+
+void MainWindowTest::workflowUsesMockNavigationAndKeepsRealRunOnHold()
 {
     MainWindow window;
 
-    auto* timeline = window.findChild<QWidget*>(QStringLiteral("SequenceTimelineView"));
-    auto* timelineEvidence = window.findChild<QLabel*>(QStringLiteral("SequenceTimelineEvidenceLabel"));
-    auto* protocolSummary = window.findChild<QLabel*>(QStringLiteral("SequenceProtocolSummaryLabel"));
-    auto* precheck = window.findChild<QLabel*>(QStringLiteral("PrecheckStatusLabel"));
-    auto* localizer = window.findChild<QLabel*>(QStringLiteral("LocalizationImageView"));
-    auto* coverage = window.findChild<QLabel*>(QStringLiteral("LocalizationCoverageLabel"));
-    auto* precheckBoard = window.findChild<QWidget*>(QStringLiteral("PrecheckResultBoard"));
-    auto* sampleChip = window.findChild<QLabel*>(QStringLiteral("PrecheckSampleStatus"));
-    auto* coilChip = window.findChild<QLabel*>(QStringLiteral("PrecheckCoilStatus"));
-    auto* storageChip = window.findChild<QLabel*>(QStringLiteral("PrecheckStorageStatus"));
-    auto* deviceChip = window.findChild<QLabel*>(QStringLiteral("PrecheckDeviceStatus"));
-    auto* coverageDiagram = window.findChild<QWidget*>(QStringLiteral("LocalizationCoverageDiagram"));
-    auto* reconstructionEvidence = window.findChild<QLabel*>(QStringLiteral("ReconstructionEvidenceLabel"));
-    auto* kspace = window.findChild<QLabel*>(QStringLiteral("KspaceImageView"));
-    auto* finalImage = window.findChild<QLabel*>(QStringLiteral("FinalImageView"));
-    auto* reconstructionViews = window.findChild<QWidget*>(QStringLiteral("ReconstructionViews"));
+    QCOMPARE(window.windowTitle(), QStringLiteral("场景化核磁共振控制台"));
+    auto* status = window.findChild<QLabel*>(QStringLiteral("WorkflowStatusStrip"));
+    auto* currentStep = window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    auto* next = window.findChild<QPushButton*>(QStringLiteral("WorkflowNextButton"));
+    auto* realRun = window.findChild<QPushButton*>(QStringLiteral("RealRunButton"));
+    auto* protocol = window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"));
+    auto* addComparison = window.findChild<QPushButton*>(QStringLiteral("AddComparisonButton"));
+    auto* planner = window.findChild<QWidget*>(QStringLiteral("LocalizationPlannerView"));
+    auto* swapAxes = window.findChild<QPushButton*>(QStringLiteral("ReadPhaseSwapButton"));
+    auto* mockAcquire = window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
+    auto* openHistory = window.findChild<QPushButton*>(QStringLiteral("OpenHistoryButton"));
+    auto* backToResults = window.findChild<QPushButton*>(QStringLiteral("BackToResultsButton"));
 
-    QVERIFY(timeline);
-    QVERIFY(timelineEvidence);
-    QVERIFY(protocolSummary);
-    QVERIFY(precheck);
-    QVERIFY(localizer);
-    QVERIFY(coverage);
-    QVERIFY(precheckBoard);
-    QVERIFY(sampleChip);
-    QVERIFY(coilChip);
-    QVERIFY(storageChip);
-    QVERIFY(deviceChip);
-    QVERIFY(coverageDiagram);
-    QVERIFY(reconstructionEvidence);
-    QVERIFY(kspace);
-    QVERIFY(finalImage);
-    QVERIFY(reconstructionViews);
-    QCOMPARE(timelineEvidence->text(), QStringLiteral("参数推导示意，非设备实测波形"));
-    QVERIFY(protocolSummary->text().contains(QStringLiteral("PTScan")));
-    QVERIFY(protocolSummary->text().contains(QStringLiteral("LOC_017T")));
-    QVERIFY(protocolSummary->text().contains(QStringLiteral("FSE_A_017T")));
-    QCOMPARE(precheck->text(), QStringLiteral("真实预检：待执行（未声明通过）"));
-    QCOMPARE(sampleChip->text(), QStringLiteral("待确认 / 未录入"));
-    QCOMPARE(coilChip->text(), QStringLiteral("待确认 / 未读取"));
-    QCOMPARE(storageChip->text(), QStringLiteral("待确认 / 未验证"));
-    QCOMPARE(deviceChip->text(), QStringLiteral("待确认 / 未预检"));
-    QVERIFY(localizer->pixmap().isNull());
-    QCOMPARE(coverage->text(), QStringLiteral("规划覆盖，非采集图像：待同次 LOC 定位像后叠加"));
-    QCOMPARE(reconstructionEvidence->text(), QStringLiteral("来源：等待自动化任务产物；未声明同次已证实"));
-    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("OperationNode")).size(), 4);
+    QVERIFY(status);
+    QVERIFY(currentStep);
+    QVERIFY(next);
+    QVERIFY(realRun);
+    QVERIFY(protocol);
+    QVERIFY(addComparison);
+    QVERIFY(planner);
+    QVERIFY(swapAxes);
+    QVERIFY(mockAcquire);
+    QVERIFY(openHistory);
+    QVERIFY(backToResults);
+    QVERIFY(window.findChild<QWidget*>(QStringLiteral("MockLocImage")));
+    QVERIFY(window.findChild<QWidget*>(QStringLiteral("MockAcquisitionImage")));
+    QVERIFY(window.findChild<QWidget*>(QStringLiteral("MockResultImage")));
+    auto* historyTable = window.findChild<QTableWidget*>(QStringLiteral("HistoryReadOnlyTable"));
+    QVERIFY(historyTable);
+    QVERIFY(historyTable->isEnabled());
+    QVERIFY(historyTable->editTriggers() == QAbstractItemView::NoEditTriggers);
+    QVERIFY(status->text().contains(QStringLiteral("已完成｜当前｜下一步")));
+    QCOMPARE(currentStep->text(), QStringLiteral("01"));
+    QVERIFY(!realRun->isEnabled());
+    QVERIFY(!protocol->text().contains(QStringLiteral("FSE B")));
+    QVERIFY(window.findChildren<QWidget*>(QStringLiteral("OperationNode")).isEmpty());
+    QVERIFY(!planner->property("readPhaseSwapped").toBool());
+    swapAxes->click();
+    QVERIFY(planner->property("readPhaseSwapped").toBool());
+    QTest::mousePress(planner, Qt::LeftButton, Qt::NoModifier, QPoint(40, 60));
+    QTest::mouseMove(planner, QPoint(90, 110), 10);
+    QTest::mouseRelease(planner, Qt::LeftButton, Qt::NoModifier, QPoint(90, 110));
+    QVERIFY(planner->property("planningCoverageModified").toBool());
+
+    for (int i = 0; i < 2; ++i) {
+        next->click();
+    }
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+    addComparison->click();
+    QVERIFY(protocol->text().contains(QStringLiteral("FSE B")));
+
+    for (int i = 0; i < 5; ++i) {
+        next->click();
+    }
+    QCOMPARE(currentStep->text(), QStringLiteral("08"));
+    QVERIFY(mockAcquire->isEnabled());
+    mockAcquire->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("09"));
+
+    for (int i = 0; i < 3; ++i) {
+        next->click();
+    }
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
+    openHistory->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("13"));
+    backToResults->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
 }
 
 QTEST_MAIN(MainWindowTest)

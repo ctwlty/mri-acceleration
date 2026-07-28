@@ -12,20 +12,25 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPlainTextEdit>
 #include <QPainter>
+#include <QMouseEvent>
 #include <QPixmap>
+#include <QProgressBar>
 #include <QPushButton>
+#include <QStackedWidget>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSize>
 #include <QSplitter>
 #include <QStyle>
 #include <QStringList>
+#include <QTableWidget>
 #include <QTabWidget>
 #include <QTime>
 #include <QVBoxLayout>
@@ -136,17 +141,170 @@ MainWindow::MainWindow(QWidget* parent)
 
     populatePrimaryScenes();
     handleSceneChanged();
+    refreshWorkflow();
 }
+
+class LocalizationPlannerView final : public QWidget {
+public:
+    explicit LocalizationPlannerView(QWidget* parent = nullptr) : QWidget(parent)
+    {
+        setObjectName(QStringLiteral("LocalizationPlannerView"));
+        setMinimumHeight(260);
+        setMouseTracking(true);
+        setProperty("readPhaseSwapped", false);
+        setProperty("planningCoverageModified", false);
+    }
+
+    void swapReadPhase()
+    {
+        m_axesSwapped = !m_axesSwapped;
+        setProperty("readPhaseSwapped", m_axesSwapped);
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.fillRect(rect(), QColor(QStringLiteral("#111923")));
+        painter.setRenderHint(QPainter::Antialiasing);
+        const int margin = 18;
+        const int gap = 12;
+        const int tileWidth = qMax(90, (width() - 2 * margin - 2 * gap) / 3);
+        const int tileHeight = qMax(150, height() - 46);
+        const QStringList views = {QStringLiteral("轴位"), QStringLiteral("冠状"), QStringLiteral("矢状")};
+        for (int index = 0; index < views.size(); ++index) {
+            const QRect tile(margin + index * (tileWidth + gap), 26, tileWidth, tileHeight);
+            painter.setPen(QPen(QColor(QStringLiteral("#50657e")), 1));
+            painter.setBrush(QColor(QStringLiteral("#1c2a3a")));
+            painter.drawRoundedRect(tile, 6, 6);
+            painter.setPen(QColor(QStringLiteral("#b8d0e8")));
+            painter.drawText(tile.left() + 8, tile.top() + 18, views.at(index));
+            const QRectF coverage(tile.left() + tile.width() * m_boxX,
+                                  tile.top() + tile.height() * m_boxY,
+                                  tile.width() * m_boxWidth,
+                                  tile.height() * m_boxHeight);
+            painter.setPen(QPen(QColor(QStringLiteral("#4ed2c2")), 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(coverage);
+            const QPointF center(coverage.left() + coverage.width() * m_centerX,
+                                 coverage.top() + coverage.height() * m_centerY);
+            painter.setPen(QPen(QColor(QStringLiteral("#f3bb55")), 2));
+            painter.drawLine(QPointF(center.x() - 9, center.y()), QPointF(center.x() + 9, center.y()));
+            painter.drawLine(QPointF(center.x(), center.y() - 9), QPointF(center.x(), center.y() + 9));
+            painter.setPen(QPen(QColor(QStringLiteral("#d998e6")), 2));
+            const qreal sliceY = coverage.top() + coverage.height() * m_slice;
+            painter.drawLine(coverage.left(), sliceY, coverage.right(), sliceY);
+            painter.setPen(QColor(QStringLiteral("#9fb6cd")));
+            painter.setFont(QFont(QStringLiteral("Segoe UI"), 8));
+            painter.drawText(tile.left() + 8, tile.bottom() - 8,
+                             index == 0
+                                 ? QStringLiteral("%1 / %2").arg(m_axesSwapped ? QStringLiteral("Phase") : QStringLiteral("Read"), m_axesSwapped ? QStringLiteral("Read") : QStringLiteral("Phase"))
+                                 : QStringLiteral("Mock LOC · 规划示例"));
+        }
+        painter.setPen(QColor(QStringLiteral("#d7e4ef")));
+        painter.drawText(18, 16, QStringLiteral("三标准方位 · 拖动中心十字、覆盖框或切片线（Mock 规划）"));
+    }
+
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        m_dragMode = 1;
+        if (event->position().y() > height() * 0.62) {
+            m_dragMode = 3;
+        } else if (event->position().x() > width() * 0.72) {
+            m_dragMode = 2;
+        }
+        mouseMoveEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override
+    {
+        if (m_dragMode == 0 || !(event->buttons() & Qt::LeftButton)) {
+            return;
+        }
+        const qreal x = qBound<qreal>(0.08, event->position().x() / qMax(1, width()), 0.92);
+        const qreal y = qBound<qreal>(0.10, event->position().y() / qMax(1, height()), 0.90);
+        if (m_dragMode == 1) {
+            m_centerX = x;
+            m_centerY = y;
+        } else if (m_dragMode == 2) {
+            m_boxWidth = qBound<qreal>(0.30, x, 0.78);
+            m_boxHeight = qBound<qreal>(0.30, y, 0.78);
+        } else {
+            m_slice = y;
+        }
+        setProperty("planningCoverageModified", true);
+        update();
+    }
+
+    void mouseReleaseEvent(QMouseEvent*) override { m_dragMode = 0; }
+
+private:
+    bool m_axesSwapped = false;
+    int m_dragMode = 0;
+    qreal m_boxX = 0.16;
+    qreal m_boxY = 0.20;
+    qreal m_boxWidth = 0.66;
+    qreal m_boxHeight = 0.56;
+    qreal m_centerX = 0.50;
+    qreal m_centerY = 0.50;
+    qreal m_slice = 0.50;
+};
+
+class MockImagingCanvas final : public QWidget {
+public:
+    explicit MockImagingCanvas(const QString& objectName, const QString& caption, QWidget* parent = nullptr)
+        : QWidget(parent), m_caption(caption)
+    {
+        setObjectName(objectName);
+        setMinimumHeight(250);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.fillRect(rect(), QColor(QStringLiteral("#111923")));
+
+        const QRectF viewport = rect().adjusted(22, 34, -22, -28);
+        painter.setPen(QPen(QColor(QStringLiteral("#38546b")), 1));
+        painter.setBrush(QColor(QStringLiteral("#162536")));
+        painter.drawRoundedRect(viewport, 8, 8);
+        const QPointF center = viewport.center();
+        const qreal radius = qMin(viewport.width(), viewport.height()) * 0.33;
+        QRadialGradient gradient(center, radius);
+        gradient.setColorAt(0.0, QColor(QStringLiteral("#d2e9ef")));
+        gradient.setColorAt(0.45, QColor(QStringLiteral("#6ca7bb")));
+        gradient.setColorAt(1.0, QColor(QStringLiteral("#17324a")));
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(gradient);
+        painter.drawEllipse(center, radius, radius * 0.78);
+        painter.setPen(QPen(QColor(QStringLiteral("#f1c65a")), 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(center + QPointF(radius * 0.16, -radius * 0.08), radius * 0.34, radius * 0.26);
+        painter.setPen(QPen(QColor(QStringLiteral("#50d0c0")), 1));
+        painter.drawLine(QPointF(viewport.left() + 14, center.y()), QPointF(viewport.right() - 14, center.y()));
+        painter.drawLine(QPointF(center.x(), viewport.top() + 14), QPointF(center.x(), viewport.bottom() - 14));
+        painter.setPen(QColor(QStringLiteral("#d8e6ef")));
+        painter.setFont(QFont(QStringLiteral("Segoe UI"), 10, QFont::DemiBold));
+        painter.drawText(QRectF(18, 8, width() - 36, 22), Qt::AlignLeft | Qt::AlignVCenter,
+                         QStringLiteral("Mock / 设计示例 · %1").arg(m_caption));
+        painter.setFont(QFont(QStringLiteral("Segoe UI"), 8));
+        painter.setPen(QColor(QStringLiteral("#9db2c4")));
+        painter.drawText(QRectF(18, height() - 22, width() - 36, 16), Qt::AlignLeft | Qt::AlignVCenter,
+                         QStringLiteral("非设备采集图像；不关联 RAW、SDK 或真实扫描"));
+    }
+
+private:
+    QString m_caption;
+};
 
 void MainWindow::configureEggController(const EggControllerLaunchConfig& config)
 {
     m_eggControllerConfig = config;
-    if (m_controlModeCombo) {
-        const int index = m_controlModeCombo->findData(QStringLiteral("eggcontroller"));
-        m_controlModeCombo->setCurrentIndex(index);
-    }
     if (m_automationStatusLabel) {
-        m_automationStatusLabel->setText(QStringLiteral("Ready"));
+        m_automationStatusLabel->setText(QStringLiteral("已配置；真实入口保持 HOLD"));
     }
     updateControlMode();
 }
@@ -262,9 +420,9 @@ QWidget* MainWindow::buildLeftPane()
     modeLabel->setObjectName("MutedLabel");
     m_controlModeCombo = new QComboBox(modePanel);
     m_controlModeCombo->setObjectName("ControlModeCombo");
-    m_controlModeCombo->addItem(QStringLiteral("SDK 直连"), QStringLiteral("sdk"));
-    m_controlModeCombo->addItem(QStringLiteral("自动化基线"), QStringLiteral("eggcontroller"));
-    m_automationStatusLabel = new QLabel(QStringLiteral("未配置"), modePanel);
+    m_controlModeCombo->addItem(QStringLiteral("Mock 工作流（安全）"), QStringLiteral("mock"));
+    m_controlModeCombo->setEnabled(false);
+    m_automationStatusLabel = new QLabel(QStringLiteral("真实设备：HOLD"), modePanel);
     m_automationStatusLabel->setObjectName("AutomationStatusLabel");
     m_automationStatusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     modeLayout->addWidget(modeLabel, 0, 0);
@@ -276,18 +434,18 @@ QWidget* MainWindow::buildLeftPane()
     buttons->setHorizontalSpacing(10);
     buttons->setVerticalSpacing(10);
 
-    m_loadSdkButton = new QPushButton(QStringLiteral("加载 SDK"), frame);
+    m_loadSdkButton = new QPushButton(QStringLiteral("真实 SDK（HOLD）"), frame);
     m_loadSdkButton->setProperty("class", "secondary");
     m_loadSdkButton->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
-    m_connectButton = new QPushButton(QStringLiteral("一键建链"), frame);
+    m_connectButton = new QPushButton(QStringLiteral("真实设备连接（HOLD）"), frame);
     m_connectButton->setProperty("class", "primary");
     m_connectButton->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-    auto* precheckBtn = new QPushButton(QStringLiteral("校准向导"), frame);
+    auto* precheckBtn = new QPushButton(QStringLiteral("真实预检（HOLD）"), frame);
     precheckBtn->setProperty("class", "secondary");
-    auto* dryRunBtn = new QPushButton(QStringLiteral("DRY_RUN"), frame);
+    auto* dryRunBtn = new QPushButton(QStringLiteral("参数快照（Mock）"), frame);
     dryRunBtn->setProperty("class", "secondary");
-    m_startButton = new QPushButton(QStringLiteral("开始采集"), frame);
-    m_startButton->setObjectName("StartButton");
+    m_startButton = new QPushButton(QStringLiteral("真实 Run（HOLD）"), frame);
+    m_startButton->setObjectName("RealRunButton");
     m_startButton->setProperty("class", "success");
     m_startButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     m_pauseButton = new QPushButton(QStringLiteral("暂停（不支持）"), frame);
@@ -295,7 +453,7 @@ QWidget* MainWindow::buildLeftPane()
     m_pauseButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     m_pauseButton->setToolTip(QStringLiteral("当前 SDK 未提供暂停/继续接口"));
     m_pauseButton->setEnabled(false);
-    m_abortButton = new QPushButton(QStringLiteral("急停"), frame);
+    m_abortButton = new QPushButton(QStringLiteral("真实 Abort（HOLD）"), frame);
     m_abortButton->setProperty("class", "danger");
     m_abortButton->setIcon(style()->standardIcon(QStyle::SP_BrowserStop));
 
@@ -307,6 +465,12 @@ QWidget* MainWindow::buildLeftPane()
     buttons->addWidget(m_pauseButton, 2, 1);
     buttons->addWidget(m_abortButton, 3, 0, 1, 2);
     layout->addLayout(buttons);
+
+    m_loadSdkButton->setEnabled(false);
+    m_connectButton->setEnabled(false);
+    precheckBtn->setEnabled(false);
+    m_startButton->setEnabled(false);
+    m_abortButton->setEnabled(false);
 
     layout->addStretch();
 
@@ -331,62 +495,296 @@ QWidget* MainWindow::buildCenterPane()
     auto* frame = makePanel("Panel");
     auto* layout = new QVBoxLayout(frame);
     layout->setContentsMargins(16, 16, 16, 16);
-    layout->setSpacing(12);
+    layout->setSpacing(10);
 
-    auto* title = new QLabel(QStringLiteral("操作链"), frame);
-    title->setObjectName("SectionTitle");
-    layout->addWidget(title);
+    auto* statusRow = new QHBoxLayout;
+    statusRow->setContentsMargins(0, 0, 0, 0);
+    m_workflowStatusLabel = new QLabel(frame);
+    m_workflowStatusLabel->setObjectName(QStringLiteral("WorkflowStatusStrip"));
+    m_workflowStatusLabel->setProperty("class", "workflowStatus");
+    m_workflowStatusLabel->setWordWrap(true);
+    m_workflowCurrentStepLabel = new QLabel(frame);
+    m_workflowCurrentStepLabel->setObjectName(QStringLiteral("WorkflowCurrentStep"));
+    m_workflowCurrentStepLabel->setProperty("class", "workflowStepChip");
+    m_workflowCurrentStepLabel->setAlignment(Qt::AlignCenter);
+    m_workflowCurrentStepLabel->setFixedWidth(38);
+    statusRow->addWidget(m_workflowStatusLabel, 1);
+    statusRow->addWidget(m_workflowCurrentStepLabel);
+    layout->addLayout(statusRow);
 
-    auto* chainHost = new QWidget(frame);
-    auto* chainRow = new QHBoxLayout(chainHost);
-    chainRow->setContentsMargins(0, 0, 0, 0);
-    chainRow->setSpacing(8);
-    const QString nodeTitles[] = {
-        QStringLiteral("获取图像/协议"),
-        QStringLiteral("准备与预检"),
-        QStringLiteral("定位与采集"),
-        QStringLiteral("处理与重建")
-    };
-    for (int i = 0; i < 4; ++i) {
-        chainRow->addWidget(makeOperationNode(QStringLiteral("%1").arg(i + 1, 2, 10, QLatin1Char('0')), nodeTitles[i], m_operationDetails[i]));
-        if (i < 3) {
-            auto* arrow = new QLabel(QStringLiteral(">"), chainHost);
-            arrow->setProperty("class", "operationArrow");
-            arrow->setAlignment(Qt::AlignCenter);
-            arrow->setFixedWidth(16);
-            chainRow->addWidget(arrow);
-        }
+    m_workflowPages = new QStackedWidget(frame);
+    m_workflowPages->setObjectName(QStringLiteral("WorkflowPageStack"));
+    for (int step = 1; step <= 13; ++step) {
+        m_workflowPages->addWidget(makeWorkflowPage(step));
     }
-    chainRow->addStretch();
+    layout->addWidget(m_workflowPages, 1);
 
-    auto* chainScroll = new QScrollArea(frame);
-    chainScroll->setObjectName("OperationChainScroll");
-    chainScroll->setWidgetResizable(true);
-    chainScroll->setFrameShape(QFrame::NoFrame);
-    chainScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    chainScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    chainScroll->setFixedHeight(112);
-    chainScroll->setWidget(chainHost);
-    layout->addWidget(chainScroll);
+    auto* navRow = new QHBoxLayout;
+    m_workflowBackButton = new QPushButton(QStringLiteral("上一步"), frame);
+    m_workflowBackButton->setObjectName(QStringLiteral("WorkflowBackButton"));
+    m_workflowBackButton->setProperty("class", "secondary");
+    m_workflowNextButton = new QPushButton(QStringLiteral("下一步"), frame);
+    m_workflowNextButton->setObjectName(QStringLiteral("WorkflowNextButton"));
+    m_workflowNextButton->setProperty("class", "primary");
+    navRow->addWidget(m_workflowBackButton);
+    navRow->addStretch();
+    navRow->addWidget(m_workflowNextButton);
+    layout->addLayout(navRow);
 
-    auto* viewportGrid = new QGridLayout;
-    viewportGrid->setSpacing(8);
-    viewportGrid->addWidget(makeProtocolTimelineViewport(), 0, 0);
-    viewportGrid->addWidget(makePrecheckViewport(), 0, 1);
-    viewportGrid->addWidget(makeLocalizationViewport(), 1, 0);
-    viewportGrid->addWidget(makeReconstructionViewport(), 1, 1);
-    viewportGrid->setRowStretch(0, 1);
-    viewportGrid->setRowStretch(1, 1);
-    viewportGrid->setColumnStretch(0, 1);
-    viewportGrid->setColumnStretch(1, 1);
-    layout->addLayout(viewportGrid, 1);
-
-    m_chainSummary = new QLabel(QStringLiteral("一级场景 + 检测对象 -> 推荐任务模板 -> 展开实验链 -> 图像质控 -> 结果交接"), frame);
-    m_chainSummary->setWordWrap(true);
-    m_chainSummary->setObjectName("AppSubtitle");
-    layout->addWidget(m_chainSummary);
+    connect(m_workflowBackButton, &QPushButton::clicked, this, [this] {
+        setWorkflowStep(m_workflowStep == 13 ? 12 : qMax(1, m_workflowStep - 1));
+    });
+    connect(m_workflowNextButton, &QPushButton::clicked, this, [this] {
+        if (m_workflowStep < 12) setWorkflowStep(m_workflowStep + 1);
+    });
+    refreshWorkflow();
 
     return frame;
+}
+
+QWidget* MainWindow::makeWorkflowPage(int step)
+{
+    auto* page = new QWidget;
+    page->setObjectName(QStringLiteral("WorkflowPage%1").arg(step, 2, 10, QLatin1Char('0')));
+    auto* layout = new QVBoxLayout(page);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(12);
+
+    auto* label = new QLabel(page);
+    label->setObjectName(QStringLiteral("WorkflowBodyLabel%1").arg(step, 2, 10, QLatin1Char('0')));
+    label->setWordWrap(true);
+    label->setProperty("class", "workflowBody");
+    layout->addWidget(label);
+
+    const auto addCard = [page, layout](const QString& title, const QString& detail) {
+        auto* card = makePanel("WorkflowCard");
+        auto* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(16, 14, 16, 14);
+        auto* cardTitle = new QLabel(title, card);
+        cardTitle->setProperty("class", "workflowCardTitle");
+        auto* cardDetail = new QLabel(detail, card);
+        cardDetail->setWordWrap(true);
+        cardDetail->setObjectName("AppSubtitle");
+        cardLayout->addWidget(cardTitle);
+        cardLayout->addWidget(cardDetail);
+        layout->addWidget(card);
+        return card;
+    };
+    const auto addMockImage = [page, layout](const QString& objectName, const QString& caption) {
+        auto* image = new MockImagingCanvas(objectName, caption, page);
+        layout->addWidget(image, 1);
+        return image;
+    };
+
+    switch (step) {
+    case 1:
+        label->setText(QStringLiteral("入口检查 · 当前为安全演示环境"));
+        addCard(QStringLiteral("SDK / 设备 / 存储"),
+                QStringLiteral("SDK 未加载｜设备未连接｜输出位置待确认。真实入口固定 HOLD；本流程仅提供 Mock 设计示例。"));
+        addCard(QStringLiteral("下一步"), QStringLiteral("选择场景、对象与推荐模板。"));
+        break;
+    case 2:
+        label->setText(QStringLiteral("场景、对象与模板推荐"));
+        addCard(QStringLiteral("当前推荐"), QStringLiteral("默认内部结构成像：标准模体 / 组织样品 / 根茎样品。可在左栏筛选；所有推荐均为设计示例。"));
+        break;
+    case 3: {
+        label->setText(QStringLiteral("模板确认 · 默认协议链"));
+        m_protocolChainLabel = new QLabel(QStringLiteral("LOC → FSE A（默认 Mock 协议链）"), page);
+        m_protocolChainLabel->setObjectName(QStringLiteral("ProtocolChainLabel"));
+        m_protocolChainLabel->setProperty("class", "workflowProtocol");
+        m_protocolChainLabel->setWordWrap(true);
+        layout->addWidget(m_protocolChainLabel);
+        m_addComparisonButton = new QPushButton(QStringLiteral("添加 FSE B 对照"), page);
+        m_addComparisonButton->setObjectName(QStringLiteral("AddComparisonButton"));
+        m_addComparisonButton->setProperty("class", "secondary");
+        layout->addWidget(m_addComparisonButton, 0, Qt::AlignLeft);
+        connect(m_addComparisonButton, &QPushButton::clicked, this, [this] {
+            m_comparisonEnabled = true;
+            refreshWorkflow();
+        });
+        addCard(QStringLiteral("确认内容"), QStringLiteral("只确认 Mock 模板与预期输出；不会写入 SDK 参数。"));
+        break;
+    }
+    case 4:
+        label->setText(QStringLiteral("样品登记与预检"));
+        addCard(QStringLiteral("样品"), QStringLiteral("待登记：编号、批次、研究者。来源：用户输入，当前未录入。"));
+        addCard(QStringLiteral("线圈 / 摆位 / 存储 / 安全"), QStringLiteral("均为待确认；不以界面颜色声明真实就绪。"));
+        break;
+    case 5: {
+        auto* showL3 = new QPushButton(QStringLiteral("展开 L3 折叠参数"), page);
+        showL3->setObjectName(QStringLiteral("ShowL3Button"));
+        showL3->setProperty("class", "secondary");
+        auto* l3Detail = new QLabel(QStringLiteral("L3：回波链、层厚与带宽为 Mock 参数示例；L4 硬件字段保持隐藏。"), page);
+        l3Detail->setObjectName(QStringLiteral("L3DetailsLabel"));
+        l3Detail->setWordWrap(true);
+        l3Detail->setVisible(false);
+        connect(showL3, &QPushButton::clicked, this, [showL3, l3Detail] {
+            const bool show = !l3Detail->isVisible();
+            l3Detail->setVisible(show);
+            showL3->setText(show ? QStringLiteral("收起 L3 参数") : QStringLiteral("展开 L3 折叠参数"));
+        });
+        label->setText(QStringLiteral("协议链与扫描参数"));
+        addCard(QStringLiteral("L2 · LOC"), QStringLiteral("TR 800 ms｜TE 12.9 ms｜FOV 50×50 mm｜矩阵 64×64（Mock 参数示例）"));
+        addCard(QStringLiteral("L2 · FSE A"), QStringLiteral("TR 3000 ms｜TE 12.9 ms｜FOV 50×50 mm｜矩阵 128×128（Mock 参数示例）"));
+        layout->addWidget(showL3, 0, Qt::AlignLeft);
+        layout->addWidget(l3Detail);
+        break;
+    }
+    case 6:
+        label->setText(QStringLiteral("LOC 定位 · Mock 进度"));
+        addMockImage(QStringLiteral("MockLocImage"), QStringLiteral("LOC 定位"));
+        addCard(QStringLiteral("Mock LOC 图"), QStringLiteral("设计示例，非同次采集图像。进度：100% Mock 完成；下一步进入定位规划。"));
+        break;
+    case 7: {
+        label->setText(QStringLiteral("定位规划 · 三标准方位"));
+        m_localizationPlanner = new LocalizationPlannerView(page);
+        layout->addWidget(m_localizationPlanner, 1);
+        auto* controls = new QHBoxLayout;
+        auto* swap = new QPushButton(QStringLiteral("交换 Read / Phase"), page);
+        swap->setObjectName(QStringLiteral("ReadPhaseSwapButton"));
+        swap->setProperty("class", "secondary");
+        auto* more = new QPushButton(QStringLiteral("更多方位"), page);
+        more->setProperty("class", "secondary");
+        controls->addWidget(swap);
+        controls->addWidget(more);
+        controls->addStretch();
+        layout->addLayout(controls);
+        connect(swap, &QPushButton::clicked, this, [this] {
+            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->swapReadPhase();
+        });
+        connect(more, &QPushButton::clicked, this, [more] {
+            more->setText(QStringLiteral("自定义斜切：仅 Mock 规划"));
+        });
+        break;
+    }
+    case 8: {
+        label->setText(QStringLiteral("运行前确认与参数快照"));
+        addCard(QStringLiteral("真实 Run"), QStringLiteral("永久 HOLD：本页面不加载 SDK、不连接设备、不调用 Run 或 Abort。"));
+        m_realRunButton = new QPushButton(QStringLiteral("真实 Run（HOLD）"), page);
+        m_realRunButton->setObjectName(QStringLiteral("WorkflowRealRunButton"));
+        m_realRunButton->setProperty("class", "danger");
+        m_realRunButton->setEnabled(false);
+        m_mockAcquireButton = new QPushButton(QStringLiteral("进入 FSE A Mock 采集"), page);
+        m_mockAcquireButton->setObjectName(QStringLiteral("MockAcquireButton"));
+        m_mockAcquireButton->setProperty("class", "primary");
+        layout->addWidget(m_realRunButton);
+        layout->addWidget(m_mockAcquireButton);
+        connect(m_mockAcquireButton, &QPushButton::clicked, this, [this] { setWorkflowStep(9); });
+        break;
+    }
+    case 9: {
+        label->setText(QStringLiteral("FSE A Mock 采集"));
+        addMockImage(QStringLiteral("MockAcquisitionImage"), QStringLiteral("FSE A 采集进度"));
+        auto* progress = new QProgressBar(page);
+        progress->setObjectName(QStringLiteral("MockAcquisitionProgress"));
+        progress->setRange(0, 100);
+        progress->setValue(100);
+        progress->setFormat(QStringLiteral("Mock 采集 100% · 未触发设备"));
+        layout->addWidget(progress);
+        addCard(QStringLiteral("Mock 采集进度"), QStringLiteral("FSE A · 100% · 仅为设计示例；未触发设备、SDK 或扫描。"));
+        break;
+    }
+    case 10: {
+        label->setText(QStringLiteral("原生输出与标准重建 · Mock"));
+        addCard(QStringLiteral("来源绑定"), QStringLiteral("Mock 输出包 / 协议快照 / 任务说明。未声明为已验证 k-space。"));
+        auto* parsing = new QProgressBar(page);
+        parsing->setObjectName(QStringLiteral("MockParsingProgress"));
+        parsing->setValue(100);
+        parsing->setFormat(QStringLiteral("解析 100% · Mock"));
+        auto* reconstruction = new QProgressBar(page);
+        reconstruction->setObjectName(QStringLiteral("MockReconstructionProgress"));
+        reconstruction->setValue(100);
+        reconstruction->setFormat(QStringLiteral("标准重建 100% · Mock"));
+        layout->addWidget(parsing);
+        layout->addWidget(reconstruction);
+        break;
+    }
+    case 11:
+        label->setText(QStringLiteral("最终 Mock 图与 QC"));
+        addMockImage(QStringLiteral("MockResultImage"), QStringLiteral("最终重建结果"));
+        addCard(QStringLiteral("最终图"), QStringLiteral("Mock 设计示例，不代表真实设备成像或同次 RAW。"));
+        addCard(QStringLiteral("QC"), QStringLiteral("SNR、均匀性和覆盖均为 Mock 示例；科研样品结论待研究者确认。"));
+        break;
+    case 12: {
+        label->setText(QStringLiteral("结果包"));
+        addCard(QStringLiteral("包含内容"), QStringLiteral("原始数据引用、标准结果、QC、协议与参数快照、来源记录、任务说明（全部标为 Mock/设计示例）。"));
+        m_openHistoryButton = new QPushButton(QStringLiteral("查看只读历史记录"), page);
+        m_openHistoryButton->setObjectName(QStringLiteral("OpenHistoryButton"));
+        m_openHistoryButton->setProperty("class", "secondary");
+        layout->addWidget(m_openHistoryButton, 0, Qt::AlignLeft);
+        connect(m_openHistoryButton, &QPushButton::clicked, this, [this] { setWorkflowStep(13); });
+        break;
+    }
+    case 13: {
+        auto* filter = new QLineEdit(page);
+        filter->setObjectName(QStringLiteral("HistoryFilter"));
+        filter->setPlaceholderText(QStringLiteral("筛选历史（只读 Mock 记录）"));
+        auto* table = new QTableWidget(2, 4, page);
+        table->setObjectName(QStringLiteral("HistoryReadOnlyTable"));
+        table->setHorizontalHeaderLabels({QStringLiteral("时间"), QStringLiteral("模板"), QStringLiteral("结果"), QStringLiteral("来源")});
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        table->setSelectionBehavior(QAbstractItemView::SelectRows);
+        table->setItem(0, 0, new QTableWidgetItem(QStringLiteral("Mock-01")));
+        table->setItem(0, 1, new QTableWidgetItem(QStringLiteral("LOC → FSE A")));
+        table->setItem(0, 2, new QTableWidgetItem(QStringLiteral("设计示例")));
+        table->setItem(0, 3, new QTableWidgetItem(QStringLiteral("Mock 来源记录")));
+        table->setItem(1, 0, new QTableWidgetItem(QStringLiteral("Mock-02")));
+        table->setItem(1, 1, new QTableWidgetItem(QStringLiteral("研究样品")));
+        table->setItem(1, 2, new QTableWidgetItem(QStringLiteral("待研究者确认")));
+        table->setItem(1, 3, new QTableWidgetItem(QStringLiteral("Mock 来源记录")));
+        table->horizontalHeader()->setStretchLastSection(true);
+        layout->addWidget(filter);
+        layout->addWidget(table, 1);
+        label->setText(QStringLiteral("历史记录 · 只读"));
+        addCard(QStringLiteral("筛选 / 表格 / 打开结果"), QStringLiteral("历史记录仅用于浏览来源记录与结果包；不调用设备、不写入数据。"));
+        m_backToResultsButton = new QPushButton(QStringLiteral("返回结果包"), page);
+        m_backToResultsButton->setObjectName(QStringLiteral("BackToResultsButton"));
+        m_backToResultsButton->setProperty("class", "secondary");
+        layout->addWidget(m_backToResultsButton, 0, Qt::AlignLeft);
+        connect(m_backToResultsButton, &QPushButton::clicked, this, [this] { setWorkflowStep(12); });
+        break;
+    }
+    default:
+        break;
+    }
+    layout->addStretch();
+    return page;
+}
+
+void MainWindow::setWorkflowStep(int step)
+{
+    m_workflowStep = qBound(1, step, 13);
+    if (m_workflowPages) m_workflowPages->setCurrentIndex(m_workflowStep - 1);
+    refreshWorkflow();
+}
+
+void MainWindow::refreshWorkflow()
+{
+    static const QStringList titles = {
+        QStringLiteral("入口"), QStringLiteral("场景对象"), QStringLiteral("模板确认"),
+        QStringLiteral("登记预检"), QStringLiteral("协议参数"), QStringLiteral("LOC"),
+        QStringLiteral("定位规划"), QStringLiteral("运行前确认"), QStringLiteral("FSE A Mock"),
+        QStringLiteral("输出重建"), QStringLiteral("QC"), QStringLiteral("结果包"), QStringLiteral("历史记录")
+    };
+    if (m_workflowCurrentStepLabel) {
+        m_workflowCurrentStepLabel->setText(QStringLiteral("%1").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
+    }
+    if (m_workflowStatusLabel) {
+        const QString completed = m_workflowStep == 1 ? QStringLiteral("—") : QStringLiteral("01–%1").arg(m_workflowStep - 1, 2, 10, QLatin1Char('0'));
+        const QString next = m_workflowStep == 13 ? QStringLiteral("返回结果包") : (m_workflowStep == 12 ? QStringLiteral("结果包完成 / 可进入历史") : titles.at(m_workflowStep));
+        m_workflowStatusLabel->setText(QStringLiteral("已完成｜当前｜下一步   %1 ｜ %2｜ %3（Mock/设计示例）")
+                                           .arg(completed, titles.at(m_workflowStep - 1), next));
+    }
+    if (m_workflowBackButton) m_workflowBackButton->setEnabled(m_workflowStep > 1);
+    if (m_workflowNextButton) m_workflowNextButton->setEnabled(m_workflowStep < 12 && m_workflowStep != 8);
+    if (m_protocolChainLabel) {
+        m_protocolChainLabel->setText(m_comparisonEnabled
+                                          ? QStringLiteral("LOC → FSE A → FSE B 对照（用户已主动添加，Mock）")
+                                          : QStringLiteral("LOC → FSE A（默认 Mock 协议链）"));
+    }
+    if (m_workflowOutputSummary) {
+        m_workflowOutputSummary->setText(QStringLiteral("当前步骤 %1 · 所有图像、数值和输出均为 Mock/设计示例").arg(m_workflowStep, 2, 10, QLatin1Char('0')));
+    }
 }
 
 QWidget* MainWindow::buildRightPane()
@@ -396,82 +794,40 @@ QWidget* MainWindow::buildRightPane()
     layout->setContentsMargins(16, 16, 16, 16);
     layout->setSpacing(12);
 
-    auto* title = new QLabel(QStringLiteral("质控与诊断"), frame);
+    auto* title = new QLabel(QStringLiteral("当前状态 / QC / 输出"), frame);
     title->setObjectName("SectionTitle");
     layout->addWidget(title);
 
+    m_workflowOutputSummary = new QLabel(frame);
+    m_workflowOutputSummary->setObjectName(QStringLiteral("WorkflowOutputSummary"));
+    m_workflowOutputSummary->setWordWrap(true);
+    m_workflowOutputSummary->setProperty("class", "workflowSummary");
+    layout->addWidget(m_workflowOutputSummary);
+
     auto* metricGrid = new QGridLayout;
     metricGrid->setSpacing(10);
-    metricGrid->addWidget(makeMetricCard(QStringLiteral("SNR"), m_snrValue), 0, 0);
-    metricGrid->addWidget(makeMetricCard(QStringLiteral("均匀性"), m_uniformityValue), 0, 1);
-    metricGrid->addWidget(makeMetricCard(QStringLiteral("畸变/尺寸"), m_peakValue), 1, 0);
-    metricGrid->addWidget(makeMetricCard(QStringLiteral("重复稳定"), m_areaValue), 1, 1);
+    metricGrid->addWidget(makeMetricCard(QStringLiteral("Mock SNR"), m_snrValue), 0, 0);
+    metricGrid->addWidget(makeMetricCard(QStringLiteral("Mock 均匀性"), m_uniformityValue), 0, 1);
+    metricGrid->addWidget(makeMetricCard(QStringLiteral("覆盖"), m_peakValue), 1, 0);
+    metricGrid->addWidget(makeMetricCard(QStringLiteral("研究者确认"), m_areaValue), 1, 1);
     m_snrValue->setObjectName(QStringLiteral("QualitySnrValue"));
     m_uniformityValue->setObjectName(QStringLiteral("QualityUniformityValue"));
     m_peakValue->setObjectName(QStringLiteral("QualitySizeValue"));
     m_areaValue->setObjectName(QStringLiteral("QualityStabilityValue"));
     layout->addLayout(metricGrid);
 
-    auto* tabs = new QTabWidget(frame);
-    tabs->setObjectName("RightPaneTabs");
-
-    auto* presetTab = new QWidget(tabs);
-    auto* presetLayout = new QVBoxLayout(presetTab);
-    presetLayout->setContentsMargins(12, 12, 12, 12);
-    presetLayout->setSpacing(10);
-    auto* presetForm = new QGridLayout;
-    presetForm->setHorizontalSpacing(10);
-    presetForm->setVerticalSpacing(8);
-    addInfoRow(presetForm, presetTab, 0, QStringLiteral("版本"), m_presetVersionValue);
-    addInfoRow(presetForm, presetTab, 1, QStringLiteral("参数状态"), m_parameterStatusValue);
-    addInfoRow(presetForm, presetTab, 2, QStringLiteral("Run"), m_runGateValue);
-    addInfoRow(presetForm, presetTab, 3, QStringLiteral("SDK 映射"), m_sdkMappingValue);
-    addInfoRow(presetForm, presetTab, 4, QStringLiteral("物理检查"), m_physicsCheckValue);
-    addInfoRow(presetForm, presetTab, 5, QStringLiteral("交接包"), m_handoffValue);
-    presetForm->setColumnStretch(1, 1);
-    presetLayout->addLayout(presetForm);
-
-    auto* parameterTitle = new QLabel(QStringLiteral("协议参数明细（显示，不直接写入 SDK）"), presetTab);
-    parameterTitle->setObjectName("MutedLabel");
-    presetLayout->addWidget(parameterTitle);
-
-    m_parameterDetailsView = new QPlainTextEdit(presetTab);
-    m_parameterDetailsView->setReadOnly(true);
-    m_parameterDetailsView->setMinimumHeight(220);
-    m_parameterDetailsView->setPlainText(QStringLiteral("选择任务模板后显示 TR、TE、FOV、矩阵、层厚、NEX 等参数。当前仅作开发预设展示，待序列字段映射后才能写入 SDK。"));
-    presetLayout->addWidget(m_parameterDetailsView, 1);
-    tabs->addTab(presetTab, QStringLiteral("参数预设"));
-
-    auto* diagnosticTab = new QWidget(tabs);
-    auto* diagnosticLayout = new QVBoxLayout(diagnosticTab);
-    diagnosticLayout->setContentsMargins(12, 12, 12, 12);
-    diagnosticLayout->setSpacing(10);
-    auto* diagnosticTitle = new QLabel(QStringLiteral("SDK 诊断 / 字段白名单"), diagnosticTab);
-    diagnosticTitle->setObjectName("MutedLabel");
-    diagnosticLayout->addWidget(diagnosticTitle);
-
-    m_sdkDiagnosticView = new QPlainTextEdit(diagnosticTab);
-    m_sdkDiagnosticView->setReadOnly(true);
-    m_sdkDiagnosticView->setPlainText(QStringLiteral("尚未生成 DRY_RUN。\n点击左侧 DRY_RUN 可生成 SDK 字段白名单和参数文件预览。\n真实 Run 继续保持 HOLD。"));
-    diagnosticLayout->addWidget(m_sdkDiagnosticView, 1);
-    tabs->addTab(diagnosticTab, QStringLiteral("SDK 诊断"));
-
-    auto* logTab = new QWidget(tabs);
-    auto* logLayout = new QVBoxLayout(logTab);
-    logLayout->setContentsMargins(12, 12, 12, 12);
-    logLayout->setSpacing(10);
-    auto* logTitle = new QLabel(QStringLiteral("日志"), logTab);
-    logTitle->setObjectName("MutedLabel");
-    logLayout->addWidget(logTitle);
-
-    m_logView = new QPlainTextEdit(logTab);
-    m_logView->setReadOnly(true);
-    m_logView->setPlainText(
-        QStringLiteral("任务模板已加载\n设备入口：手动加载 mridll.dll\n实机基线：PTScan.par\n场景参数暂不写入 SDK\n扫描结果以新增 RAW 文件验收"));
-    logLayout->addWidget(m_logView, 1);
-    tabs->addTab(logTab, QStringLiteral("日志"));
-
-    layout->addWidget(tabs, 1);
+    auto* statusCard = makePanel("WorkflowCard");
+    auto* statusLayout = new QVBoxLayout(statusCard);
+    statusLayout->setContentsMargins(14, 14, 14, 14);
+    auto* stateTitle = new QLabel(QStringLiteral("设备与输出状态"), statusCard);
+    stateTitle->setProperty("class", "workflowCardTitle");
+    auto* state = new QLabel(QStringLiteral("真实设备：HOLD\nSDK：未加载\n输出：Mock 设计示例\n来源绑定：仅在结果包中只读显示"), statusCard);
+    state->setWordWrap(true);
+    state->setObjectName("AppSubtitle");
+    statusLayout->addWidget(stateTitle);
+    statusLayout->addWidget(state);
+    layout->addWidget(statusCard);
+    layout->addStretch();
 
     return frame;
 }
@@ -1034,6 +1390,8 @@ MriSdkSessionState MainWindow::deviceSessionState() const
 
 void MainWindow::handleConnect()
 {
+    appendLog(QStringLiteral("真实设备连接保持 HOLD；当前界面仅允许 Mock 工作流。"));
+    return;
     if (m_selectedDllPath.isEmpty()) {
         appendLog(QStringLiteral("请先选择 mridll.dll"));
         return;
@@ -1053,6 +1411,8 @@ void MainWindow::handleConnect()
 
 void MainWindow::handleLoadSdk()
 {
+    appendLog(QStringLiteral("真实 SDK 加载保持 HOLD；当前界面不打开文件选择器。"));
+    return;
     const QString dllPath = QFileDialog::getOpenFileName(
         this,
         QStringLiteral("选择 mridll.dll"),
@@ -1069,57 +1429,35 @@ void MainWindow::handleLoadSdk()
 
 void MainWindow::handlePrecheck()
 {
+    appendLog(QStringLiteral("真实预检保持 HOLD；第 04 步仅显示 Mock 待确认状态。"));
+    return;
     m_precheckRequested = true;
     m_bridge->precheck();
 }
 
 void MainWindow::handleDryRun()
 {
-    m_bridge->dryRunScene(currentScene());
+    appendLog(QStringLiteral("Mock 参数快照已保留；未写入 SDK。"));
 }
 
 void MainWindow::handleStart()
 {
-    if (isEggControllerMode()) {
-        if (m_bridge->sessionState() != MriSdkSessionState::Unloaded &&
-            m_bridge->sessionState() != MriSdkSessionState::Closed) {
-            appendLog(QStringLiteral("自动化基线拒绝启动：Qt 直接 SDK 会话仍在占用"));
-            return;
-        }
-        if (m_kspaceImageView) {
-            m_kspaceImageView->clear();
-            m_kspaceImageView->setText(QStringLiteral("等待 K-space 图"));
-        }
-        if (m_finalImageView) {
-            m_finalImageView->clear();
-            m_finalImageView->setText(QStringLiteral("等待最终图"));
-        }
-        if (m_automationStatusLabel) {
-            m_automationStatusLabel->setText(QStringLiteral("Starting"));
-        }
-        if (!m_eggController->start(m_eggControllerConfig)) {
-            m_automationStatusLabel->setText(QStringLiteral("Failed"));
-            appendLog(QStringLiteral("自动化基线启动失败：Python、代理或工作目录无效"));
-        }
-        updateControlMode();
-        return;
-    }
-    static_cast<void>(m_bridge->startScan());
+    appendLog(QStringLiteral("真实 Run 永久 HOLD；请使用第 08 步 Mock 采集。"));
 }
 
 void MainWindow::handlePause()
 {
-    m_bridge->pauseScan();
+    appendLog(QStringLiteral("Mock 工作流不调用真实暂停。"));
 }
 
 void MainWindow::handleResume()
 {
-    m_bridge->resumeScan();
+    appendLog(QStringLiteral("Mock 工作流不调用真实继续。"));
 }
 
 void MainWindow::handleAbort()
 {
-    m_bridge->abortScan();
+    appendLog(QStringLiteral("真实 Abort 永久 HOLD；当前无设备操作。"));
 }
 
 void MainWindow::appendLog(const QString& line)
@@ -1188,16 +1526,12 @@ void MainWindow::updateSdkDiagnostic(const QString& status, const QString& fileP
 
 void MainWindow::updateSessionState(MriSdkSessionState state)
 {
-    if (isEggControllerMode()) {
-        updateControlMode();
-        return;
-    }
-    const DeviceActionAvailability actions = actionsForState(state);
-    if (m_loadSdkButton) m_loadSdkButton->setEnabled(actions.canLoadSdk);
-    if (m_connectButton) m_connectButton->setEnabled(actions.canConnect);
-    if (m_startButton) m_startButton->setEnabled(actions.canRun);
+    Q_UNUSED(state);
+    if (m_loadSdkButton) m_loadSdkButton->setEnabled(false);
+    if (m_connectButton) m_connectButton->setEnabled(false);
+    if (m_startButton) m_startButton->setEnabled(false);
     if (m_pauseButton) m_pauseButton->setEnabled(false);
-    if (m_abortButton) m_abortButton->setEnabled(actions.canAbort);
+    if (m_abortButton) m_abortButton->setEnabled(false);
 }
 
 void MainWindow::updatePrecheckStatus(const MriSdkStatus& status)
@@ -1218,20 +1552,10 @@ void MainWindow::updatePrecheckStatus(const MriSdkStatus& status)
 
 void MainWindow::updateControlMode()
 {
-    if (!isEggControllerMode()) {
-        if (m_controlModeCombo) m_controlModeCombo->setEnabled(!m_eggController->isRunning());
-        updateSessionState(m_bridge->sessionState());
-        return;
-    }
-
-    const bool directSessionFree = m_bridge->sessionState() == MriSdkSessionState::Unloaded ||
-                                   m_bridge->sessionState() == MriSdkSessionState::Closed;
-    const bool configured = QFileInfo(m_eggControllerConfig.program).isFile() &&
-                            QFileInfo(m_eggControllerConfig.workingDirectory).isDir();
-    if (m_controlModeCombo) m_controlModeCombo->setEnabled(!m_eggController->isRunning());
+    if (m_controlModeCombo) m_controlModeCombo->setEnabled(false);
     if (m_loadSdkButton) m_loadSdkButton->setEnabled(false);
     if (m_connectButton) m_connectButton->setEnabled(false);
-    if (m_startButton) m_startButton->setEnabled(configured && directSessionFree && !m_eggController->isRunning());
+    if (m_startButton) m_startButton->setEnabled(false);
     if (m_pauseButton) m_pauseButton->setEnabled(false);
     if (m_abortButton) m_abortButton->setEnabled(false);
 }
