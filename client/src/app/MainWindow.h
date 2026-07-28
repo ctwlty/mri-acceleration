@@ -177,6 +177,10 @@ private:
     bool m_precheckRequested = false;
     int m_workflowStep = 1;
     int m_mockAcquisitionRemainingMs = 3200;
+    bool m_preparationConfirmed = false;
+    bool m_protocolUseOnceConfirmed = false;
+    bool m_mockRunActive = false;
+    bool m_mockExecutionCompleted = false;
     bool m_comparisonEnabled = false;
     QList<SceneTemplate> m_catalog;
 };
