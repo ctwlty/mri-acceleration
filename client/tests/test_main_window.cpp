@@ -1422,46 +1422,120 @@ void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
 {
     QTemporaryDir resultRoot;
     QVERIFY(resultRoot.isValid());
+    QString resultRootPath =
+        qEnvironmentVariable("MOCK_CLOSURE_EVIDENCE_ROOT").trimmed();
+    if (resultRootPath.isEmpty()) {
+        resultRootPath = resultRoot.path();
+    } else {
+        QVERIFY(QDir().mkpath(resultRootPath));
+        QCOMPARE(
+            QDir(resultRootPath).entryList(
+                QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot).size(),
+            0);
+    }
     ScopedEnvironment rootOverride(
         QByteArrayLiteral("SCENARIO_NMR_MOCK_RESULT_ROOT"),
-        QFile::encodeName(resultRoot.path()));
+        QFile::encodeName(resultRootPath));
+
+    QFile styleFile(QStringLiteral(":/app.qss"));
+    QVERIFY(styleFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    qApp->setStyleSheet(QString::fromUtf8(styleFile.readAll()));
 
     MainWindow window;
+    window.resize(1586, 992);
     window.show();
+    QTest::qWait(100);
     auto* currentStep =
         window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
     QVERIFY(currentStep);
 
-    window.setMockWorkflowStep(4);
-    window.findChild<QPushButton*>(
-        QStringLiteral("SavePreparationButton"))->click();
-    window.findChild<QPushButton*>(
-        QStringLiteral("ProtocolUseOnceButton"))->click();
-    window.findChild<QPushButton*>(
-        QStringLiteral("ContinueProtocolButton"))->click();
-    window.findChild<QPushButton*>(
-        QStringLiteral("OpenLocalizationPlanningButton"))->click();
-    window.findChild<QPushButton*>(
-        QStringLiteral("ConfirmLocalizationButton"))->click();
+    const QString screenshotDirectory =
+        qEnvironmentVariable("MOCK_CLOSURE_SCREENSHOT_DIR").trimmed();
+    if (!screenshotDirectory.isEmpty())
+        QVERIFY(QDir().mkpath(screenshotDirectory));
+    const auto capture = [&window, &screenshotDirectory](
+                             const QString& name) {
+        if (screenshotDirectory.isEmpty())
+            return true;
+        QCoreApplication::processEvents();
+        return window.grab().save(
+            QDir(screenshotDirectory).filePath(name + QStringLiteral(".png")),
+            "PNG");
+    };
+
+    QCOMPARE(currentStep->text(), QStringLiteral("01"));
+    QVERIFY(capture(QStringLiteral("01-entry")));
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("02"));
+    QVERIFY(capture(QStringLiteral("02-task-selection")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ShowRecommendedTemplateButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("03"));
+    QVERIFY(capture(QStringLiteral("03-template-confirmation")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(QStringLiteral("AcceptTemplateButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("04"));
+    QVERIFY(capture(QStringLiteral("04-preparation")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("SavePreparationButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("05"));
+    QVERIFY(capture(QStringLiteral("05-protocol")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton")),
+        Qt::LeftButton);
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ContinueProtocolButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("06"));
+    QVERIFY(capture(QStringLiteral("06-loc")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("OpenLocalizationPlanningButton")),
+        Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("07"));
+    QVERIFY(capture(QStringLiteral("07-localization")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ConfirmLocalizationButton")),
+        Qt::LeftButton);
     QCOMPARE(currentStep->text(), QStringLiteral("08"));
 
     for (int index = 1; index <= 3; ++index) {
-        window.findChild<QCheckBox*>(
-            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
+        QTest::mouseClick(
+            window.findChild<QCheckBox*>(
+                QStringLiteral("RunConfirmationCheck%1").arg(index)),
+            Qt::LeftButton);
     }
     auto* acquire =
         window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
     QVERIFY(acquire);
     QVERIFY(acquire->isEnabled());
-    acquire->click();
+    QVERIFY(capture(QStringLiteral("08-run-confirmation-ready")));
+    QTest::mouseClick(acquire, Qt::LeftButton);
     QCOMPARE(currentStep->text(), QStringLiteral("09"));
+    QVERIFY(capture(QStringLiteral("09-mock-acquiring")));
     QTRY_COMPARE_WITH_TIMEOUT(currentStep->text(), QStringLiteral("10"), 4000);
+    QVERIFY(capture(QStringLiteral("10-mock-processing")));
 
     auto* complete =
         window.findChild<QPushButton*>(QStringLiteral("CompleteMockProcessingButton"));
     QVERIFY(complete);
     QVERIFY(complete->isEnabled());
-    complete->click();
+    QTest::mouseClick(complete, Qt::LeftButton);
     QCOMPARE(currentStep->text(), QStringLiteral("11"));
     auto* resultImage =
         window.findChild<QWidget*>(QStringLiteral("MockResultImage"));
@@ -1478,7 +1552,8 @@ void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
     QVERIFY(snr->text().contains(QStringLiteral("MOCK")));
     QVERIFY(uniformity->text().contains(QStringLiteral("MOCK")));
     QVERIFY(confirm->isEnabled());
-    confirm->click();
+    QVERIFY(capture(QStringLiteral("11-mock-result-qc")));
+    QTest::mouseClick(confirm, Qt::LeftButton);
     QCOMPARE(currentStep->text(), QStringLiteral("12"));
 
     auto* save =
@@ -1494,13 +1569,14 @@ void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
     QVERIFY(history);
     QVERIFY(saveState);
     QVERIFY(save->isEnabled());
-    save->click();
+    QTest::mouseClick(save, Qt::LeftButton);
     QVERIFY(saveState->text().contains(QStringLiteral("MOCK")));
     QVERIFY(copy->isEnabled());
     QVERIFY(history->isEnabled());
+    QVERIFY(capture(QStringLiteral("12-result-package")));
 
     const QFileInfoList packages =
-        QDir(resultRoot.path()).entryInfoList(
+        QDir(resultRootPath).entryInfoList(
             QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
     QCOMPARE(packages.size(), 1);
     const QString packagePath = packages.first().absoluteFilePath();
@@ -1519,10 +1595,10 @@ void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
             QDir::Files | QDir::NoDotAndDotDot, QDir::Name).size(),
         7);
 
-    copy->click();
+    QTest::mouseClick(copy, Qt::LeftButton);
     QCOMPARE(QApplication::clipboard()->text(),
              QDir::toNativeSeparators(packagePath));
-    history->click();
+    QTest::mouseClick(history, Qt::LeftButton);
     QCOMPARE(currentStep->text(), QStringLiteral("13"));
     auto* table =
         window.findChild<QTableWidget*>(QStringLiteral("HistoryReadOnlyTable"));
@@ -1535,6 +1611,14 @@ void MainWindowTest::mockVerticalSliceCreatesBoundPackageAndActualHistory()
              manifest.value(QStringLiteral("runId")).toString());
     QVERIFY(table->isEnabled());
     QVERIFY(preview->isVisibleTo(&window));
+    QVERIFY(capture(QStringLiteral("13-history")));
+    auto* backToResults =
+        window.findChild<QPushButton*>(QStringLiteral("BackToResultsButton"));
+    QVERIFY(backToResults);
+    QVERIFY(backToResults->isEnabled());
+    QTest::mouseClick(backToResults, Qt::LeftButton);
+    QCOMPARE(currentStep->text(), QStringLiteral("12"));
+    QVERIFY(capture(QStringLiteral("12-returned-from-history")));
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
 }
 
