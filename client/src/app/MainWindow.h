@@ -94,6 +94,9 @@ private:
     void resetMockWorkflow();
     void setWorkflowStep(int step);
     void refreshWorkflow();
+    void refreshProtocolCalculationUi();
+    void syncLocalizationPlanningFromProtocol();
+    void refreshLocalizationPlanningUi();
     bool isEggControllerMode() const;
 
     QComboBox* m_primarySceneCombo = nullptr;

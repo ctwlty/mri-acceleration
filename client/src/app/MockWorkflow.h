@@ -49,6 +49,7 @@ struct MockParameterDraft {
     QString templateName;
     QStringList protocolChain;
     QString orientation;
+    QString imagingTarget;
     double fovReadMm = 0.0;
     double fovPhaseMm = 0.0;
     int matrixRead = 0;

@@ -10,6 +10,14 @@
 
 ## 证据
 
+- 切片规划专项 RED：`C:\tmp\localization-red.txt`、`C:\tmp\localization-entry-red.txt`、`C:\tmp\localization-focus-red-real.txt`、`C:\tmp\localization-snapshot-red.txt`；分别复现 06/07 静态图误导、缺少层厚控件、缩略图不可点击、进入页摘要未刷新、焦点遮黑画布、08 快照仍写死 3.5 mm / 11 层。
+- 切片规划专项 GREEN：`C:\tmp\localization-green.txt`、`C:\tmp\localization-entry-green.txt`、`C:\tmp\localization-focus-green.txt`、`C:\tmp\localization-snapshot-green.txt`；层厚、层间距、层数、层组位置、方位缩略图、中心/覆盖/切片拖动、键盘定位、复位、可见反馈及 08 快照传递均通过。
+- 切片规划复审 RED：`C:\tmp\localization-p1-red.txt`、`C:\tmp\localization-slider-sync-red.txt`、`C:\tmp\localization-thumbnail-geometry-red.txt`、`C:\tmp\localization-coverage-validation-red.txt`；复现 05→07 参数不同步、层组几何未绑定、滑块与画布不同步、缩略标签被压扁、覆盖框缩放后中心不变量缺失、成像目标未进入快照。
+- 切片规划复审 GREEN：`C:\tmp\localization-p1-green-final.txt`、`C:\tmp\localization-slider-and-truth-green.txt`、`C:\tmp\localization-thumbnail-geometry-green.txt`、`C:\tmp\localization-coverage-validation-green.txt`；往返参数、层组整体几何、64 层绘制、滑块同步、缩略图状态、框内中心不变量、08 完整可见快照及参数 JSON 绑定均通过。
+- 最终复审 RED→GREEN：`C:\tmp\localization-final-review-red.txt` 先复现 08 漏 FSE B / TR / TE / dataSource 与层组显示值未钳制；`C:\tmp\localization-final-review-green.txt` 为 4/4 通过，`C:\tmp\localization-full-preflight-final.txt` 为 12/12 通过。
+- 切片规划最终全新 Debug：`C:\tmp\agent-mri-localization-final3-debug\ctest.txt`，12/12 通过。
+- 切片规划最终全新 Release：`C:\tmp\agent-mri-localization-final3-release\ctest.txt`，12/12 通过；EXE SHA-256 `23B551846C231D685449622880EF01F3CD13496652EA912A04ABAADBB31A6E8A`。
+- 切片规划最终可见证据：`C:\tmp\agent-mri-localization-final3-evidence`，截图测试 3/3 通过；包含 06 静态参考、07 默认规划、参数调整、方位切换、中心拖动/复位及 08 完整快照。
 - RED：`C:\tmp\agent-mri-v01-tdd\interaction-red.txt`，2 通过、8 失败；复现全局下一步绕过门禁、04/05 无有效反馈、07 无门禁反馈、09–13 假成功和结果动作缺口。
 - 补充 RED：`C:\tmp\agent-mri-v01-tdd\interaction-p1-red.txt`，2 通过、5 失败；复现重复添加对照、禁用原因缺失、运行中可切换任务、11 返回目标错误和装饰表格可选择。
 - 视觉真实性 RED：`C:\tmp\agent-mri-v01-tdd\visual-truth-red.txt`，2 通过、1 失败；复现 06 使用带假进度的采集资产。
@@ -51,7 +59,7 @@
 | 04 | `PreparationBackButton`、`SavePreparationButton` | 返回 03；确认后显示“仅内存、未写文件/SDK”并进入 05 | 修复假保存 | TESTED |
 | 05 | `ProtocolL2Current0..4`、`ShowL3Button`、`ProtocolUseOnceButton`、`ProtocolSaveVersionButton`、`ContinueProtocolButton` | 五字段即时校验/计算；编辑会撤销本次确认；持久化明确禁用；通过后进入 06 | 修复无校验和假保存；表格本体不可选择 | TESTED |
 | 06 | `OpenLocalizationPlanningButton` | 进入 07；页面和右栏均标注 Mock 规划参考，无假进度 | 修复 68% 假进度 | TESTED |
-| 07 | 三方位、Read/Phase、自动/重置/更多、自定义目标、科研参数、`ConfirmLocalizationButton` | 每次操作均有文字/图上反馈；非横断位禁用确认；科研参数回 05 展开 L3；横断确认进入 08 | 修复死按钮和横断位门禁 | TESTED |
+| 07 | `LocalizationPlannerView`、三方位及缩略图、`SliceThicknessSpinBox`、`SliceGapSpinBox`、`SliceCountSpinBox`、`SlicePositionSlider`、`CenterPlanningButton`、Read/Phase、自动/重置/更多、成像目标、科研参数、`ConfirmLocalizationButton` | 图上可拖动中心、覆盖框、缩放手柄和活动切片线；层厚/层距/层数/层组位置即时重绘并同步摘要；缩略图、复位和全部按钮有文字反馈；非横断位禁用确认；横断确认进入 08 且快照保留当前参数 | 修复假交互、死按钮、错误命中和写死快照 | TESTED |
 | 08 | `RunConfirmationCheck1..3`、`RunConfirmationBackButton`、`MockAcquireButton`、`WorkflowRealRunButton` | 必须同时具备 04 准备、05 协议、07 横断位定位证据及三项运行确认；直接跳页不能开始；返回会清运行确认；真实入口始终 LIVE: BLOCKED | 修复上游证据绕过；真实副作用不可达 | TESTED |
 | 09 | 共享暂停/停止；页内无开始按钮 | 只有从 08 合法启动才生成唯一 run/snapshot 并显示 MOCK 进度；暂停/继续更新模型；取消保留身份与审计但清空成功工件；QA 跳页为空态 | 修复“页码即运行”的假状态 | TESTED |
 | 10 | `CompleteMockProcessingButton`、`RetryMockProcessingButton` | 仅 `Processing` 状态启用；读取项目合法 Mock PNG、绑定当前 run/snapshot 和 SHA-256；失败才允许同身份重试 | 由确定性模型接管，无 RAW/72% 假进度 | TESTED |
@@ -78,9 +86,23 @@
 | `12-returned-from-history.png` | 290,100 | `14426155DB37EE9A09E47DCB6D97AA78C6260636228E07A1D9204DF7C313172B` |
 | `13-history.png` | 135,053 | `3E76842A9357FCAAB6C10DE392465088E1C8AE2B3C50C0FC58F0B55E83A815A9` |
 
+## 切片规划最终截图
+
+目录：`C:\tmp\agent-mri-localization-final3-evidence`
+
+| 状态 | 字节 | SHA-256 |
+|---|---:|---|
+| `01-loc-static-reference.png` | 471,143 | `0C6B8D3DC9F2C8FF5D7A7B29FA7F1678020B66BCFF90BC3B6BDCEA904DC0CF6D` |
+| `02-planning-default.png` | 352,097 | `3F468A48B1F6B0BCEA5B4B90BF6208EB6B4D5CF3854D28C76735D18B41C99389` |
+| `03-slice-parameters-adjusted.png` | 351,956 | `9EA4C3FF9C461E18AA68F41523AA5E33C8A8A1993E39C08521274C6DBF0F6FC7` |
+| `04-coronal-thumbnail-selected.png` | 249,997 | `0634D626A09BDA018EEA5336F0650219AC94163EB33F0BFFA3B22EC75DFCA5F7` |
+| `05-center-dragged.png` | 352,797 | `C4C2A1EE98F828DFFAF28A0057355495F69B80AD8DFAC6AE858B95E20F0675D7` |
+| `06-center-reset.png` | 350,901 | `0CCD2B917DCFD6CBA8BC615B884F6A8E8DC5AEB18B23BE9A1805756896B471A2` |
+| `07-run-confirmation-snapshot.png` | 130,818 | `8CC647E634CCBD86518D4016083E82686AC6816E30A868FE54C4821757FA70CB` |
+
 ## 剩余边界
 
 - 本审计未加载 SDK、未连接设备、未调用 Run/Abort、未生成真实 RAW。
 - 08–13 已由确定性 Mock 状态模型接管：唯一 run/snapshot、结果根可写、暂停/继续/取消、合法 Mock 图像绑定、图像级 QC、七项结果包与实际历史均有自动化测试。
 - 历史对比在 v0.1 明确不支持，按钮保持禁用而不是伪造反馈。
-- 本轮已识别的 P0/P1/P2 全部关闭；03“采用模板并继续”、12“返回标准结果与 QC”、13 顶部和底部返回均有本次可见证据。
+- 本轮切片规划功能 P0/P1 已关闭；唯一剩余 P2 是冠状/矢状原始 Mock 参考仅 96×120 / 96×126，放大主画布时清晰度有限。该限制不影响参数、定位几何、门禁、快照或结果绑定，界面继续明确标为 Mock。

@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -17,6 +18,8 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QPixmap>
+#include <QSlider>
+#include <QSpinBox>
 #include <QTableWidget>
 #include <QStackedWidget>
 #include <QRegularExpression>
@@ -113,13 +116,20 @@ private slots:
     void preparationContinuationRecordsOnlyAnInMemoryMockDraft();
     void protocolL2ValidationGatesContinuationAndComputesSummary();
     void unsupportedProtocolVersionPersistenceIsDisabledWithReason();
+    void locReferenceClearlyRoutesToInteractivePlanning();
     void localizationActionsExposeFeedbackAndRespectAxialGate();
+    void localizationSliceControlsUpdateVisibleGeometryAndProtocolDraft();
+    void localizationThumbnailsAndPositioningExposeVisibleFeedback();
+    void localizationProtocolRoundTripAndRunSnapshotStayCoherent();
+    void localizationGeometryRespondsAndPreservesCoverageInvariants();
+    void localizationThumbnailsRemainReadableAndTrackCurrentOrientation();
     void researchParametersNavigatesToExpandedL3();
     void qaJumpAndUnexecutedPagesShowHonestEmptyStates();
     void resultAndHistoryActionsAreBlockedBeforeARealMockPackage();
     void mockVerticalSliceCreatesBoundPackageAndActualHistory();
     void mockSnapshotBindsVisibleProtocolAndPlanning();
     void cancelledMockRunKeepsEvidenceAndCreatesNoSuccessfulArtifacts();
+    void captureLocalizationPlanningEvidenceWhenRequested();
     void captureInteractionQaScreensWhenRequested();
 };
 
@@ -1276,6 +1286,30 @@ void MainWindowTest::unsupportedProtocolVersionPersistenceIsDisabledWithReason()
     QVERIFY(saveVersion->accessibleDescription().contains(QStringLiteral("未纳入")));
 }
 
+void MainWindowTest::locReferenceClearlyRoutesToInteractivePlanning()
+{
+    MainWindow window;
+    window.show();
+    window.setMockWorkflowStep(6);
+
+    auto* page =
+        window.findChild<QWidget*>(QStringLiteral("WorkflowPage06"));
+    QVERIFY(page);
+    auto* evidence =
+        page->findChild<QLabel*>(QStringLiteral("MockImageEvidenceLabel"));
+    auto* openPlanning =
+        window.findChild<QPushButton*>(
+            QStringLiteral("OpenLocalizationPlanningButton"));
+    QVERIFY(evidence);
+    QVERIFY(openPlanning);
+    QVERIFY2(
+        evidence->text().contains(QStringLiteral("此页不可拖动")),
+        "The static LOC reference must not look like an interactive planner.");
+    QVERIFY2(
+        openPlanning->text().contains(QStringLiteral("可交互")),
+        "The call to action must clearly route to interactive planning.");
+}
+
 void MainWindowTest::localizationActionsExposeFeedbackAndRespectAxialGate()
 {
     MainWindow window;
@@ -1317,6 +1351,499 @@ void MainWindowTest::localizationActionsExposeFeedbackAndRespectAxialGate()
     QTest::mouseClick(reset, Qt::LeftButton);
     QVERIFY(feedback->text().contains(QStringLiteral("横断")));
     QVERIFY(feedback->text().contains(QStringLiteral("推荐")));
+}
+
+void MainWindowTest::localizationSliceControlsUpdateVisibleGeometryAndProtocolDraft()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(7);
+
+    auto* thickness =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceThicknessSpinBox"));
+    auto* gap =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceGapSpinBox"));
+    auto* count =
+        window.findChild<QSpinBox*>(
+            QStringLiteral("SliceCountSpinBox"));
+    auto* slicePosition =
+        window.findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"));
+    auto* planner =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationPlannerView"));
+    auto* summary =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationPlanningSummary"));
+    auto* protocolThickness =
+        window.findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current2"));
+    auto* protocolGap =
+        window.findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current3"));
+
+    QVERIFY(thickness);
+    QVERIFY(gap);
+    QVERIFY(count);
+    QVERIFY(slicePosition);
+    QVERIFY(planner);
+    QVERIFY(summary);
+    QVERIFY(protocolThickness);
+    QVERIFY(protocolGap);
+    QVERIFY2(
+        summary->text().contains(QStringLiteral("层组位置 50%")),
+        "Entering planning must render the current interactive geometry.");
+
+    thickness->setValue(4.2);
+    gap->setValue(1.0);
+    count->setValue(9);
+    slicePosition->setValue(70);
+
+    QCOMPARE(planner->property("sliceThicknessMm").toDouble(), 4.2);
+    QCOMPARE(planner->property("sliceGapMm").toDouble(), 1.0);
+    QCOMPARE(planner->property("sliceCount").toInt(), 9);
+    QCOMPARE(planner->property("slicePosition").toDouble(), 0.7);
+    QVERIFY(summary->text().contains(QStringLiteral("4.2 mm")));
+    QVERIFY(summary->text().contains(QStringLiteral("9 层")));
+    QVERIFY(summary->text().contains(QStringLiteral("45.8 mm")));
+    QVERIFY(summary->text().contains(QStringLiteral("70%")));
+    QCOMPARE(protocolThickness->text(), QStringLiteral("4.2 mm"));
+    QCOMPARE(protocolGap->text(), QStringLiteral("1.0 mm"));
+
+    auto* confirm =
+        window.findChild<QPushButton*>(
+            QStringLiteral("ConfirmLocalizationButton"));
+    QVERIFY(confirm);
+    QVERIFY(confirm->isEnabled());
+    QTest::mouseClick(confirm, Qt::LeftButton);
+
+    auto* confirmationTable =
+        window.findChild<QTableWidget*>(
+            QStringLiteral("RunConfirmationTable"));
+    QVERIFY(confirmationTable);
+    QVERIFY(confirmationTable->item(3, 1));
+    const QString snapshot = confirmationTable->item(3, 1)->text();
+    QVERIFY(snapshot.contains(QStringLiteral("层厚 4.2 mm")));
+    QVERIFY(snapshot.contains(QStringLiteral("层间距 1.0 mm")));
+    QVERIFY(snapshot.contains(QStringLiteral("9 层")));
+}
+
+void MainWindowTest::localizationThumbnailsAndPositioningExposeVisibleFeedback()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(7);
+
+    auto* planner =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationPlannerView"));
+    auto* coronalThumbnail =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailCoronal"));
+    auto* axialThumbnail =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailAxial"));
+    auto* center =
+        window.findChild<QPushButton*>(
+            QStringLiteral("CenterPlanningButton"));
+    auto* slicePosition =
+        window.findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"));
+    auto* feedback =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationActionFeedback"));
+    auto* summary =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationPlanningSummary"));
+
+    QVERIFY(planner);
+    QVERIFY(coronalThumbnail);
+    QVERIFY(axialThumbnail);
+    QVERIFY(center);
+    QVERIFY(slicePosition);
+    QVERIFY(feedback);
+    QVERIFY(summary);
+
+    const auto peakLuminance = [](const QImage& image) {
+        int peak = 0;
+        for (int y = 0; y < image.height(); y += 8) {
+            for (int x = 0; x < image.width(); x += 8) {
+                peak = qMax(peak, qGray(image.pixel(x, y)));
+            }
+        }
+        return peak;
+    };
+    const int unfocusedPeak =
+        peakLuminance(planner->grab().toImage());
+    planner->setFocus(Qt::OtherFocusReason);
+    QCoreApplication::processEvents();
+    QVERIFY(planner->hasFocus());
+    const int focusedPeak =
+        peakLuminance(planner->grab().toImage());
+    QVERIFY2(
+        focusedPeak >= unfocusedPeak * 0.8,
+        qPrintable(
+            QStringLiteral(
+                "Keyboard focus must not darken the image "
+                "(before=%1 after=%2).")
+                .arg(unfocusedPeak)
+                .arg(focusedPeak)));
+
+    QCOMPARE(slicePosition->value(), 50);
+    QTest::keyClick(
+        planner, Qt::Key_Down, Qt::ControlModifier);
+    QCOMPARE(
+        planner->property("slicePosition").toDouble(), 0.51);
+    QCOMPARE(slicePosition->value(), 51);
+    QVERIFY(feedback->text().contains(QStringLiteral("层组位置")));
+
+    QTest::mouseClick(coronalThumbnail, Qt::LeftButton);
+    QCOMPARE(planner->property("selectedOrientation").toString(),
+             QStringLiteral("冠状"));
+    QVERIFY(feedback->text().contains(QStringLiteral("冠状")));
+
+    QTest::mouseClick(axialThumbnail, Qt::LeftButton);
+    QCOMPARE(planner->property("selectedOrientation").toString(),
+             QStringLiteral("横断"));
+
+    const QPoint dragStart(planner->width() / 2, planner->height() / 2);
+    const QPoint dragEnd(
+        planner->width() * 3 / 5, planner->height() * 2 / 5);
+    QTest::mousePress(planner, Qt::LeftButton, Qt::NoModifier, dragStart);
+    QTest::mouseMove(planner, dragEnd, 10);
+    QTest::mouseRelease(
+        planner, Qt::LeftButton, Qt::NoModifier, dragEnd);
+
+    QVERIFY(planner->property("planningCoverageModified").toBool());
+    QVERIFY(feedback->text().contains(QStringLiteral("中心")));
+    QVERIFY(summary->text().contains(QStringLiteral("中心")));
+    QVERIFY(planner->property("coverageCenterX").toDouble() != 0.5
+            || planner->property("coverageCenterY").toDouble() != 0.5);
+
+    QTest::mouseClick(center, Qt::LeftButton);
+    QCOMPARE(planner->property("coverageCenterX").toDouble(), 0.5);
+    QCOMPARE(planner->property("coverageCenterY").toDouble(), 0.5);
+    QVERIFY(feedback->text().contains(QStringLiteral("已居中")));
+}
+
+void MainWindowTest::localizationProtocolRoundTripAndRunSnapshotStayCoherent()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(3);
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("AddComparisonButton")),
+        Qt::LeftButton);
+    window.setMockWorkflowStep(5);
+
+    auto* protocolThickness =
+        window.findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current2"));
+    auto* protocolGap =
+        window.findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current3"));
+    auto* useOnce =
+        window.findChild<QPushButton*>(
+            QStringLiteral("ProtocolUseOnceButton"));
+    auto* continueProtocol =
+        window.findChild<QPushButton*>(
+            QStringLiteral("ContinueProtocolButton"));
+    QVERIFY(protocolThickness);
+    QVERIFY(protocolGap);
+    QVERIFY(useOnce);
+    QVERIFY(continueProtocol);
+
+    protocolThickness->setText(QStringLiteral("5.0 mm"));
+    protocolGap->setText(QStringLiteral("2.0 mm"));
+    QTest::mouseClick(useOnce, Qt::LeftButton);
+    QVERIFY(continueProtocol->isEnabled());
+    QTest::mouseClick(continueProtocol, Qt::LeftButton);
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("OpenLocalizationPlanningButton")),
+        Qt::LeftButton);
+
+    auto* thickness =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceThicknessSpinBox"));
+    auto* gap =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceGapSpinBox"));
+    auto* count =
+        window.findChild<QSpinBox*>(
+            QStringLiteral("SliceCountSpinBox"));
+    auto* position =
+        window.findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"));
+    auto* target =
+        window.findChild<QComboBox*>(
+            QStringLiteral("ImagingTargetCombo"));
+    auto* applyTarget =
+        window.findChild<QPushButton*>(
+            QStringLiteral("ModifyImagingTargetButton"));
+    auto* planner =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationPlannerView"));
+    QVERIFY(thickness);
+    QVERIFY(gap);
+    QVERIFY(count);
+    QVERIFY(position);
+    QVERIFY(target);
+    QVERIFY(applyTarget);
+    QVERIFY(planner);
+    QCOMPARE(thickness->value(), 5.0);
+    QCOMPARE(gap->value(), 2.0);
+
+    count->setValue(9);
+    position->setValue(70);
+    const int effectiveLayerPosition = position->value();
+    QVERIFY(effectiveLayerPosition < 70);
+    target->setCurrentIndex(1);
+    QTest::mouseClick(applyTarget, Qt::LeftButton);
+    planner->setFocus();
+    QTest::keyClick(planner, Qt::Key_Right);
+    QTest::keyClick(planner, Qt::Key_Down);
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ConfirmLocalizationButton")),
+        Qt::LeftButton);
+    auto* table =
+        window.findChild<QTableWidget*>(
+            QStringLiteral("RunConfirmationTable"));
+    QVERIFY(table);
+    QVERIFY(table->item(1, 1));
+    QVERIFY(table->item(2, 1));
+    QVERIFY(table->item(3, 1));
+    const QString taskSnapshot = table->item(1, 1)->text();
+    const QString executionSnapshot = table->item(2, 1)->text();
+    const QString visibleSnapshot = table->item(3, 1)->text();
+    QVERIFY(taskSnapshot.contains(QStringLiteral("FSE B")));
+    QVERIFY(taskSnapshot.contains(QStringLiteral("dataSource=MOCK")));
+    QVERIFY(executionSnapshot.contains(QStringLiteral("TR 3000")));
+    QVERIFY(executionSnapshot.contains(QStringLiteral("TE 12.9")));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("层厚 5.0 mm")));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("层间距 2.0 mm")));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("9 层")));
+    QVERIFY(
+        visibleSnapshot.contains(
+            QStringLiteral("层组位置 %1%")
+                .arg(effectiveLayerPosition)));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("中心 51% / 51%")));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("覆盖框")));
+    QVERIFY(visibleSnapshot.contains(QStringLiteral("成像目标 结构细节")));
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("RunConfirmationBackButton")),
+        Qt::LeftButton);
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ResearchParametersButton")),
+        Qt::LeftButton);
+    auto* calculation =
+        window.findChild<QLabel*>(
+            QStringLiteral("ProtocolAutoResultValue"));
+    QVERIFY(calculation);
+    QVERIFY(calculation->text().contains(QStringLiteral("9 层")));
+    QVERIFY(calculation->text().contains(QStringLiteral("61.0 mm")));
+}
+
+void MainWindowTest::localizationGeometryRespondsAndPreservesCoverageInvariants()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(7);
+
+    auto* thickness =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceThicknessSpinBox"));
+    auto* gap =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceGapSpinBox"));
+    auto* count =
+        window.findChild<QSpinBox*>(
+            QStringLiteral("SliceCountSpinBox"));
+    auto* position =
+        window.findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"));
+    auto* planner =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationPlannerView"));
+    QVERIFY(thickness);
+    QVERIFY(gap);
+    QVERIFY(count);
+    QVERIFY(position);
+    QVERIFY(planner);
+
+    const double initialStackRatio =
+        planner->property("sliceStackHeightRatio").toDouble();
+    QVERIFY(initialStackRatio > 0.0);
+    position->setValue(100);
+    const double initialEffectiveMaximum =
+        1.0 - initialStackRatio / 2.0;
+    QCOMPARE(
+        planner->property("sliceStackCenter").toDouble(),
+        initialEffectiveMaximum);
+    QCOMPARE(
+        position->value(),
+        qRound(initialEffectiveMaximum * 100.0));
+    position->setValue(50);
+    thickness->setValue(2.0);
+    gap->setValue(0.5);
+    count->setValue(5);
+    const double compactStackRatio =
+        planner->property("sliceStackHeightRatio").toDouble();
+    QVERIFY(compactStackRatio < initialStackRatio);
+    position->setValue(70);
+    QCOMPARE(
+        planner->property("sliceStackCenter").toDouble(), 0.7);
+
+    thickness->setValue(0.1);
+    gap->setValue(0.0);
+    count->setValue(64);
+    QCOMPARE(planner->property("renderedSliceCount").toInt(), 64);
+
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ResetPlanningButton")),
+        Qt::LeftButton);
+    QCoreApplication::processEvents();
+
+    const QPixmap reference(QStringLiteral(":/mock-localization-clean.png"));
+    QVERIFY(!reference.isNull());
+    const QSize available(
+        qMax(1, planner->width() - 12),
+        qMax(1, planner->height() - 12));
+    const QSize targetSize =
+        reference.size().scaled(available, Qt::KeepAspectRatio);
+    const QRectF target(
+        (planner->width() - targetSize.width()) / 2.0,
+        (planner->height() - targetSize.height()) / 2.0,
+        targetSize.width(), targetSize.height());
+    const auto coverageRect = [&] {
+        return QRectF(
+            target.left()
+                + target.width()
+                      * planner->property("coverageX").toDouble(),
+            target.top()
+                + target.height()
+                      * planner->property("coverageY").toDouble(),
+            target.width()
+                * planner->property("coverageWidth").toDouble(),
+            target.height()
+                * planner->property("coverageHeight").toDouble());
+    };
+    const auto centerPoint = [&] {
+        return QPoint(
+            qRound(
+                target.left()
+                + target.width()
+                      * planner->property("coverageCenterX")
+                            .toDouble()),
+            qRound(
+                target.top()
+                + target.height()
+                      * planner->property("coverageCenterY")
+                            .toDouble()));
+    };
+
+    QRectF coverage = coverageRect();
+    const QPoint nearBottomRight =
+        (coverage.bottomRight() - QPointF(24, 24)).toPoint();
+    QTest::mousePress(
+        planner, Qt::LeftButton, Qt::NoModifier, centerPoint());
+    QTest::mouseMove(planner, nearBottomRight, 20);
+    QTest::mouseRelease(
+        planner, Qt::LeftButton, Qt::NoModifier, nearBottomRight);
+
+    coverage = coverageRect();
+    const QPoint resizeStart = coverage.bottomRight().toPoint();
+    const QPoint resizeEnd =
+        QPoint(
+            qRound(coverage.left() + target.width() * 0.24),
+            qRound(coverage.top() + target.height() * 0.24));
+    QTest::mousePress(
+        planner, Qt::LeftButton, Qt::NoModifier, resizeStart);
+    QTest::mouseMove(planner, resizeEnd, 20);
+    QTest::mouseRelease(
+        planner, Qt::LeftButton, Qt::NoModifier, resizeEnd);
+
+    const double boxX = planner->property("coverageX").toDouble();
+    const double boxY = planner->property("coverageY").toDouble();
+    const double boxWidth =
+        planner->property("coverageWidth").toDouble();
+    const double boxHeight =
+        planner->property("coverageHeight").toDouble();
+    const double centerX =
+        planner->property("coverageCenterX").toDouble();
+    const double centerY =
+        planner->property("coverageCenterY").toDouble();
+    QVERIFY(centerX >= boxX && centerX <= boxX + boxWidth);
+    QVERIFY(centerY >= boxY && centerY <= boxY + boxHeight);
+}
+
+void MainWindowTest::localizationThumbnailsRemainReadableAndTrackCurrentOrientation()
+{
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    window.setMockWorkflowStep(7);
+    QCoreApplication::processEvents();
+
+    auto* axial =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailAxial"));
+    auto* coronal =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailCoronal"));
+    auto* sagittal =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailSagittal"));
+    auto* axialLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationThumbnailAxialLabel"));
+    auto* coronalLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationThumbnailCoronalLabel"));
+    auto* sagittalLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("LocalizationThumbnailSagittalLabel"));
+    auto* axialImage =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationThumbnailAxialImage"));
+    QVERIFY(axial);
+    QVERIFY(coronal);
+    QVERIFY(sagittal);
+    QVERIFY(axialLabel);
+    QVERIFY(coronalLabel);
+    QVERIFY(sagittalLabel);
+    QVERIFY(axialImage);
+    QVERIFY(axial->height() >= 100);
+    QVERIFY(coronal->height() >= 100);
+    QVERIFY(sagittal->height() >= 100);
+    QVERIFY(axialLabel->isVisibleTo(&window));
+    QVERIFY(coronalLabel->isVisibleTo(&window));
+    QVERIFY(sagittalLabel->isVisibleTo(&window));
+    QVERIFY(axialImage->height() >= 60);
+    QVERIFY(axialLabel->height() >= 18);
+    QVERIFY(axial->rect().contains(axialImage->geometry()));
+    QVERIFY(axial->rect().contains(axialLabel->geometry()));
+    QVERIFY(axialLabel->text().contains(QStringLiteral("当前")));
+    QVERIFY(!coronalLabel->text().contains(QStringLiteral("当前")));
+    QVERIFY(!sagittalLabel->text().contains(QStringLiteral("当前")));
+
+    QTest::mouseClick(coronal, Qt::LeftButton);
+    QVERIFY(!axialLabel->text().contains(QStringLiteral("当前")));
+    QVERIFY(coronalLabel->text().contains(QStringLiteral("当前")));
+    QVERIFY(!sagittalLabel->text().contains(QStringLiteral("当前")));
 }
 
 void MainWindowTest::researchParametersNavigatesToExpandedL3()
@@ -1713,6 +2240,13 @@ void MainWindowTest::mockSnapshotBindsVisibleProtocolAndPlanning()
         QStringLiteral("ReadPhaseSwapButton"))->click();
     window.findChild<QPushButton*>(
         QStringLiteral("AutoPlanningButton"))->click();
+    auto* imagingTarget =
+        window.findChild<QComboBox*>(
+            QStringLiteral("ImagingTargetCombo"));
+    QVERIFY(imagingTarget);
+    imagingTarget->setCurrentIndex(1);
+    window.findChild<QPushButton*>(
+        QStringLiteral("ModifyImagingTargetButton"))->click();
     window.findChild<QPushButton*>(
         QStringLiteral("ConfirmLocalizationButton"))->click();
 
@@ -1755,6 +2289,8 @@ void MainWindowTest::mockSnapshotBindsVisibleProtocolAndPlanning()
     QVERIFY(snapshot.value(QStringLiteral("planningCoverageModified")).toBool());
     QVERIFY(snapshot.value(QStringLiteral("coverageWidth")).toDouble() > 0.0);
     QVERIFY(snapshot.value(QStringLiteral("coverageHeight")).toDouble() > 0.0);
+    QCOMPARE(snapshot.value(QStringLiteral("imagingTarget")).toString(),
+             QStringLiteral("结构细节"));
     QCOMPARE(snapshot.value(QStringLiteral("orientation")).toString(),
              QStringLiteral("横断"));
 }
@@ -1805,6 +2341,104 @@ void MainWindowTest::cancelledMockRunKeepsEvidenceAndCreatesNoSuccessfulArtifact
         QDir(resultRoot.path()).entryList(
             QDir::Dirs | QDir::NoDotAndDotDot).size(),
         0);
+    QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
+}
+
+void MainWindowTest::captureLocalizationPlanningEvidenceWhenRequested()
+{
+    const QString outputDirectory =
+        qEnvironmentVariable("LOCALIZATION_QA_CAPTURE_DIR").trimmed();
+    if (outputDirectory.isEmpty()) {
+        QSKIP("LOCALIZATION_QA_CAPTURE_DIR is not set");
+    }
+    QVERIFY(QDir().mkpath(outputDirectory));
+    QFile styleFile(QStringLiteral(":/app.qss"));
+    QVERIFY(styleFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    qApp->setStyleSheet(QString::fromUtf8(styleFile.readAll()));
+
+    MainWindow window;
+    window.resize(1586, 992);
+    window.show();
+    QTest::qWait(80);
+    const auto capture =
+        [&window, &outputDirectory](const QString& name) {
+        QCoreApplication::processEvents();
+        QTest::qWait(60);
+        const QString target =
+            QDir(outputDirectory).filePath(name + QStringLiteral(".png"));
+        return window.grab().save(target, "PNG");
+    };
+
+    window.setMockWorkflowStep(6);
+    QVERIFY(capture(QStringLiteral("01-loc-static-reference")));
+    auto* openPlanning =
+        window.findChild<QPushButton*>(
+            QStringLiteral("OpenLocalizationPlanningButton"));
+    QVERIFY(openPlanning);
+    QTest::mouseClick(openPlanning, Qt::LeftButton);
+    QVERIFY(capture(QStringLiteral("02-planning-default")));
+
+    auto* thickness =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceThicknessSpinBox"));
+    auto* gap =
+        window.findChild<QDoubleSpinBox*>(
+            QStringLiteral("SliceGapSpinBox"));
+    auto* count =
+        window.findChild<QSpinBox*>(
+            QStringLiteral("SliceCountSpinBox"));
+    auto* position =
+        window.findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"));
+    auto* planner =
+        window.findChild<QWidget*>(
+            QStringLiteral("LocalizationPlannerView"));
+    auto* coronal =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailCoronal"));
+    auto* axial =
+        window.findChild<QPushButton*>(
+            QStringLiteral("LocalizationThumbnailAxial"));
+    auto* center =
+        window.findChild<QPushButton*>(
+            QStringLiteral("CenterPlanningButton"));
+    QVERIFY(thickness);
+    QVERIFY(gap);
+    QVERIFY(count);
+    QVERIFY(position);
+    QVERIFY(planner);
+    QVERIFY(coronal);
+    QVERIFY(axial);
+    QVERIFY(center);
+
+    thickness->setValue(4.2);
+    gap->setValue(1.0);
+    count->setValue(9);
+    position->setValue(70);
+    QVERIFY(capture(QStringLiteral("03-slice-parameters-adjusted")));
+
+    QTest::mouseClick(coronal, Qt::LeftButton);
+    QVERIFY(capture(QStringLiteral("04-coronal-thumbnail-selected")));
+    QTest::mouseClick(axial, Qt::LeftButton);
+    const QPoint dragStart(
+        planner->width() / 2, planner->height() / 2);
+    const QPoint dragEnd(
+        planner->width() * 3 / 5, planner->height() * 2 / 5);
+    QTest::mousePress(
+        planner, Qt::LeftButton, Qt::NoModifier, dragStart);
+    QTest::mouseMove(planner, dragEnd, 10);
+    QTest::mouseRelease(
+        planner, Qt::LeftButton, Qt::NoModifier, dragEnd);
+    QVERIFY(capture(QStringLiteral("05-center-dragged")));
+
+    QTest::mouseClick(center, Qt::LeftButton);
+    QVERIFY(capture(QStringLiteral("06-center-reset")));
+    QTest::mouseClick(
+        window.findChild<QPushButton*>(
+            QStringLiteral("ConfirmLocalizationButton")),
+        Qt::LeftButton);
+    QVERIFY(capture(
+        QStringLiteral("07-run-confirmation-snapshot")));
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
 }
 

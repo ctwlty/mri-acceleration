@@ -42,6 +42,7 @@ MockPackageInput validInput(const QString& rootDirectory,
     input.snapshot.parameters.protocolChain =
         {QStringLiteral("LOC"), QStringLiteral("FSE A")};
     input.snapshot.parameters.orientation = QStringLiteral("横断");
+    input.snapshot.parameters.imagingTarget = QStringLiteral("均衡");
     input.snapshot.parameters.fovReadMm = 50.0;
     input.snapshot.parameters.fovPhaseMm = 50.0;
     input.snapshot.parameters.matrixRead = 128;

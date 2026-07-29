@@ -67,7 +67,9 @@ QFrame#SelectorFilterPanel {
 }
 
 QComboBox,
-QLineEdit {
+QLineEdit,
+QDoubleSpinBox,
+QSpinBox {
   min-height: 32px;
   border: 1px solid #cfd8e6;
   border-radius: 7px;
@@ -78,12 +80,16 @@ QLineEdit {
 }
 
 QComboBox:hover,
-QLineEdit:hover {
+QLineEdit:hover,
+QDoubleSpinBox:hover,
+QSpinBox:hover {
   border-color: #9fb1ca;
 }
 
 QComboBox:focus,
-QLineEdit:focus {
+QLineEdit:focus,
+QDoubleSpinBox:focus,
+QSpinBox:focus {
   border-color: #214f8f;
 }
 
@@ -463,6 +469,51 @@ QLabel[class="warningText"] {
 QFrame[selected="true"] {
   border: 2px solid #2f73ff;
   background: #f7faff;
+}
+
+QPushButton[role="orientationThumbnail"] {
+  border: 1px solid #dce5f1;
+  border-radius: 5px;
+  background: #ffffff;
+  padding: 4px;
+}
+
+QPushButton[role="orientationThumbnail"]:hover,
+QPushButton[role="orientationThumbnail"]:focus {
+  border-color: #7aa5f8;
+  background: #f7faff;
+}
+
+QPushButton[role="orientationThumbnail"][selected="true"] {
+  border: 2px solid #2f73ff;
+  background: #f7faff;
+}
+
+QLabel[class="orientationThumbnailLabel"] {
+  border: 0;
+  background: transparent;
+  color: #315f9c;
+  font-size: 11px;
+  padding: 1px 2px;
+}
+
+QSlider::groove:horizontal {
+  height: 6px;
+  border-radius: 3px;
+  background: #dce7f5;
+}
+
+QSlider::sub-page:horizontal {
+  border-radius: 3px;
+  background: #2d6cf6;
+}
+
+QSlider::handle:horizontal {
+  width: 16px;
+  margin: -5px 0;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  background: #2d6cf6;
 }
 
 QLabel[class="runHold"] {

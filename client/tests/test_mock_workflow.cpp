@@ -13,6 +13,7 @@ MockParameterDraft validDraft()
     draft.templateName = QStringLiteral("水模横断位成像模板");
     draft.protocolChain = {QStringLiteral("LOC"), QStringLiteral("FSE A")};
     draft.orientation = QStringLiteral("横断");
+    draft.imagingTarget = QStringLiteral("均衡");
     draft.fovReadMm = 50.0;
     draft.fovPhaseMm = 50.0;
     draft.matrixRead = 128;
@@ -97,6 +98,7 @@ private slots:
     void givenHistoricalRaw_whenStartRequested_thenItIsBlockedWithoutIdentity();
     void givenLiveSource_whenStartRequested_thenAllLiveGatesAreReportedWithoutIdentity();
     void givenUpstreamEvidenceMissing_whenPrepared_thenRunIdentityIsNotCreated();
+    void givenCenterOutsideCoverage_whenPrepared_thenDraftIsRejected();
     void givenPreparedMock_whenStarted_thenIdentityIsUniqueAndSnapshotIsFrozen();
     void givenRunningMock_whenPausedResumedAndCancelled_thenEvidenceRemainsButResultsAreEmpty();
     void givenCompletedExecution_whenReconstructionAndQcSucceed_thenPackagingCanComplete();
@@ -158,6 +160,27 @@ void MockWorkflowTest::
     QVERIFY(result.error.contains(QStringLiteral("定位")));
     QVERIFY(workflow.runId().isEmpty());
     QVERIFY(workflow.snapshotId().isEmpty());
+    QVERIFY(workflow.state() == MockWorkflowState::Empty);
+}
+
+void MockWorkflowTest::
+    givenCenterOutsideCoverage_whenPrepared_thenDraftIsRejected()
+{
+    MockParameterDraft draft = validDraft();
+    draft.coverageX = 0.10;
+    draft.coverageY = 0.10;
+    draft.coverageWidth = 0.20;
+    draft.coverageHeight = 0.20;
+    draft.coverageCenterX = 0.80;
+    draft.coverageCenterY = 0.80;
+    MockWorkflow workflow;
+
+    const MockActionResult result =
+        workflow.prepare(draft, writablePreparation());
+
+    QVERIFY(!result.ok);
+    QVERIFY(result.error.contains(QStringLiteral("覆盖框")));
+    QVERIFY(result.error.contains(QStringLiteral("中心")));
     QVERIFY(workflow.state() == MockWorkflowState::Empty);
 }
 

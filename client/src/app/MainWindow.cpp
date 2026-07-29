@@ -15,10 +15,12 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QDesktopServices>
+#include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QHeaderView>
 #include <QImage>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -31,6 +33,8 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QRegularExpression>
+#include <QSlider>
+#include <QSpinBox>
 #include <QStackedWidget>
 #include <QScrollArea>
 #include <QSignalBlocker>
@@ -90,6 +94,17 @@ bool parseDecimalMillimetres(const QString& text, double& value)
     }
     value = match.captured(1).toDouble();
     return true;
+}
+
+QString formatMillimetres(double value)
+{
+    QString number = QString::number(value, 'f', 2);
+    while (number.endsWith(QLatin1Char('0'))
+           && number.contains(QLatin1Char('.'))
+           && !number.endsWith(QStringLiteral(".0"))) {
+        number.chop(1);
+    }
+    return QStringLiteral("%1 mm").arg(number);
 }
 
 class ProtocolFieldValidator final : public QValidator {
@@ -309,25 +324,24 @@ public:
         setObjectName(QStringLiteral("LocalizationPlannerView"));
         setMinimumHeight(260);
         setMouseTracking(true);
-        setProperty("readPhaseSwapped", false);
-        setProperty("planningCoverageModified", false);
-        setProperty("selectedOrientation", QStringLiteral("横断"));
+        setFocusPolicy(Qt::StrongFocus);
+        setAccessibleName(QStringLiteral("Mock LOC 切片规划画布"));
+        setAccessibleDescription(
+            QStringLiteral("可拖动中心、覆盖框、右下角尺寸手柄和当前切片线；"
+                           "方向键移动中心，Ctrl+上下移动层组"));
+        syncProperties();
     }
 
     void swapReadPhase()
     {
         m_axesSwapped = !m_axesSwapped;
-        setProperty("readPhaseSwapped", m_axesSwapped);
-        notifyChanged();
-        update();
+        notifyChanged(QStringLiteral("Read/Phase"));
     }
 
     void setOrientation(const QString& orientation)
     {
         m_orientation = orientation;
-        setProperty("selectedOrientation", orientation);
-        notifyChanged();
-        update();
+        notifyChanged(QStringLiteral("方位"));
     }
 
     void autoPlan()
@@ -339,9 +353,7 @@ public:
         m_centerX = 0.50;
         m_centerY = 0.50;
         m_slice = 0.50;
-        setProperty("planningCoverageModified", true);
-        notifyChanged();
-        update();
+        notifyChanged(QStringLiteral("自动调整"));
     }
 
     void resetPlanning()
@@ -355,11 +367,34 @@ public:
         m_slice = 0.50;
         m_orientation = QStringLiteral("横断");
         m_axesSwapped = false;
-        setProperty("selectedOrientation", m_orientation);
-        setProperty("readPhaseSwapped", false);
-        setProperty("planningCoverageModified", false);
-        notifyChanged();
-        update();
+        m_sliceThicknessMm = 3.5;
+        m_sliceGapMm = 1.25;
+        m_sliceCount = 11;
+        notifyChanged(QStringLiteral("恢复推荐"), false);
+    }
+
+    void centerPlanning()
+    {
+        m_centerX = 0.50;
+        m_centerY = 0.50;
+        m_slice = 0.50;
+        notifyChanged(QStringLiteral("中心已居中"));
+    }
+
+    void setSliceParameters(double thicknessMm, double gapMm, int count,
+                            bool markModified = true)
+    {
+        m_sliceThicknessMm = qBound(0.1, thicknessMm, 20.0);
+        m_sliceGapMm = qBound(0.0, gapMm, 20.0);
+        m_sliceCount = qBound(1, count, 64);
+        m_slice = clampSliceStackCenter(m_slice);
+        notifyChanged(QStringLiteral("层厚/层间距/层数"), markModified);
+    }
+
+    void setSlicePosition(qreal position, bool markModified = true)
+    {
+        m_slice = clampSliceStackCenter(position);
+        notifyChanged(QStringLiteral("层组位置"), markModified);
     }
 
     void setChangeHandler(std::function<void()> handler)
@@ -387,128 +422,387 @@ protected:
     {
         QPainter painter(this);
         painter.fillRect(rect(), QColor(QStringLiteral("#05070a")));
-        const QPixmap reference(QStringLiteral(":/mock-localization.png"));
-        if (!reference.isNull()) {
-            const QSize target = reference.size().scaled(size() - QSize(12, 12), Qt::KeepAspectRatio);
-            const QRect targetRect((width() - target.width()) / 2, (height() - target.height()) / 2,
-                                   target.width(), target.height());
-            painter.setRenderHint(QPainter::SmoothPixmapTransform);
-            painter.drawPixmap(targetRect, reference);
-            {
-                const QRectF coverage(targetRect.left() + targetRect.width() * m_boxX,
-                                      targetRect.top() + targetRect.height() * m_boxY,
-                                      targetRect.width() * m_boxWidth,
-                                      targetRect.height() * m_boxHeight);
-                painter.setPen(QPen(QColor(QStringLiteral("#00cfd1")), 2));
-                painter.setBrush(Qt::NoBrush);
-                painter.drawRect(coverage);
-                const QPointF center(coverage.left() + coverage.width() * m_centerX,
-                                     coverage.top() + coverage.height() * m_centerY);
-                painter.drawLine(QPointF(coverage.left(), center.y()), QPointF(coverage.right(), center.y()));
-                painter.drawLine(QPointF(center.x(), coverage.top()), QPointF(center.x(), coverage.bottom()));
-                painter.setPen(QPen(QColor(QStringLiteral("#168cff")), 1, Qt::DashLine));
-                for (int line = 1; line < 8; ++line) {
-                    const qreal y = coverage.top() + coverage.height() * line / 8.0;
-                    painter.drawLine(QPointF(coverage.left(), y), QPointF(coverage.right(), y));
-                }
-            }
-            if (m_orientation != QStringLiteral("横断") || m_axesSwapped) {
-                const QString axes = m_axesSwapped
-                    ? QStringLiteral("Phase / Read")
-                    : QStringLiteral("Read / Phase");
-                const QString caption = QStringLiteral("Mock 当前方位：%1　%2")
-                                            .arg(m_orientation, axes);
-                painter.setPen(QColor(QStringLiteral("#eaf3ff")));
-                painter.setBrush(QColor(5, 18, 35, 205));
-                const QRect badge(targetRect.left() + 14, targetRect.top() + 14, 230, 30);
-                painter.drawRoundedRect(badge, 4, 4);
-                painter.drawText(badge.adjusted(10, 0, -8, 0), Qt::AlignVCenter | Qt::AlignLeft, caption);
-            }
-            return;
-        }
-        painter.fillRect(rect(), QColor(QStringLiteral("#111923")));
         painter.setRenderHint(QPainter::Antialiasing);
-        const int margin = 18;
-        const int gap = 12;
-        const int tileWidth = qMax(90, (width() - 2 * margin - 2 * gap) / 3);
-        const int tileHeight = qMax(150, height() - 46);
-        const QStringList views = {QStringLiteral("轴位"), QStringLiteral("冠状"), QStringLiteral("矢状")};
-        for (int index = 0; index < views.size(); ++index) {
-            const QRect tile(margin + index * (tileWidth + gap), 26, tileWidth, tileHeight);
-            painter.setPen(QPen(QColor(QStringLiteral("#50657e")), 1));
-            painter.setBrush(QColor(QStringLiteral("#1c2a3a")));
-            painter.drawRoundedRect(tile, 6, 6);
-            painter.setPen(QColor(QStringLiteral("#b8d0e8")));
-            painter.drawText(tile.left() + 8, tile.top() + 18, views.at(index));
-            const QRectF coverage(tile.left() + tile.width() * m_boxX,
-                                  tile.top() + tile.height() * m_boxY,
-                                  tile.width() * m_boxWidth,
-                                  tile.height() * m_boxHeight);
-            painter.setPen(QPen(QColor(QStringLiteral("#4ed2c2")), 2));
+        const QPixmap reference(backgroundResource());
+        if (!reference.isNull()) {
+            const QRectF targetRect = imageRect();
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.drawPixmap(targetRect.toRect(), reference);
+
+            const QRectF coverage = coverageRect(targetRect);
+            painter.setPen(QPen(QColor(QStringLiteral("#00d7d9")), 2));
             painter.setBrush(Qt::NoBrush);
             painter.drawRect(coverage);
-            const QPointF center(coverage.left() + coverage.width() * m_centerX,
-                                 coverage.top() + coverage.height() * m_centerY);
-            painter.setPen(QPen(QColor(QStringLiteral("#f3bb55")), 2));
-            painter.drawLine(QPointF(center.x() - 9, center.y()), QPointF(center.x() + 9, center.y()));
-            painter.drawLine(QPointF(center.x(), center.y() - 9), QPointF(center.x(), center.y() + 9));
-            painter.setPen(QPen(QColor(QStringLiteral("#d998e6")), 2));
-            const qreal sliceY = coverage.top() + coverage.height() * m_slice;
-            painter.drawLine(coverage.left(), sliceY, coverage.right(), sliceY);
-            painter.setPen(QColor(QStringLiteral("#9fb6cd")));
-            painter.setFont(QFont(QStringLiteral("Segoe UI"), 8));
-            painter.drawText(tile.left() + 8, tile.bottom() - 8,
-                             index == 0
-                                 ? QStringLiteral("%1 / %2").arg(m_axesSwapped ? QStringLiteral("Phase") : QStringLiteral("Read"), m_axesSwapped ? QStringLiteral("Read") : QStringLiteral("Phase"))
-                                 : QStringLiteral("Mock LOC · 规划示例"));
+
+            const QRectF stack = sliceStackRect(coverage);
+            const double totalCoverageMm = sliceCoverageMm();
+            const double pitchMm =
+                m_sliceThicknessMm + m_sliceGapMm;
+            for (int slice = 0; slice < m_sliceCount; ++slice) {
+                const double centerMm =
+                    m_sliceThicknessMm / 2.0 + slice * pitchMm;
+                const qreal centerY =
+                    stack.top()
+                    + stack.height() * centerMm
+                          / qMax(0.1, totalCoverageMm);
+                const qreal bandHeight =
+                    qMax<qreal>(
+                        1.0,
+                        stack.height() * m_sliceThicknessMm
+                            / qMax(0.1, totalCoverageMm));
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(
+                    QColor(37, 141, 255, slice % 2 == 0 ? 42 : 28));
+                painter.drawRect(
+                    QRectF(
+                        coverage.left(), centerY - bandHeight / 2.0,
+                        coverage.width(), bandHeight));
+                painter.setPen(
+                    QPen(QColor(QStringLiteral("#258dff")), 1,
+                         Qt::DashLine));
+                painter.drawLine(
+                    QPointF(coverage.left(), centerY),
+                    QPointF(coverage.right(), centerY));
+            }
+
+            const qreal sliceY = stack.center().y();
+            painter.setPen(QPen(QColor(QStringLiteral("#ffffff")), 2));
+            painter.drawLine(QPointF(coverage.left(), sliceY),
+                             QPointF(coverage.right(), sliceY));
+            painter.setBrush(QColor(QStringLiteral("#2d6cf6")));
+            painter.drawEllipse(QPointF(coverage.left(), sliceY), 6, 6);
+            painter.drawEllipse(QPointF(coverage.right(), sliceY), 6, 6);
+
+            const QPointF center(
+                targetRect.left() + targetRect.width() * m_centerX,
+                targetRect.top() + targetRect.height() * m_centerY);
+            painter.setPen(QPen(QColor(QStringLiteral("#00d7d9")), 2));
+            painter.drawLine(QPointF(coverage.left(), center.y()),
+                             QPointF(coverage.right(), center.y()));
+            painter.drawLine(QPointF(center.x(), coverage.top()),
+                             QPointF(center.x(), coverage.bottom()));
+            painter.setBrush(QColor(5, 7, 10, 210));
+            painter.drawEllipse(center, 8, 8);
+
+            painter.setBrush(QColor(QStringLiteral("#00d7d9")));
+            painter.drawRect(
+                QRectF(coverage.bottomRight() - QPointF(5, 5),
+                       QSizeF(10, 10)));
+
+            const QString axes = m_axesSwapped
+                ? QStringLiteral("Phase / Read")
+                : QStringLiteral("Read / Phase");
+            const QString caption =
+                QStringLiteral("Mock 规划：%1 · %2 · %3 层")
+                    .arg(m_orientation, axes)
+                    .arg(m_sliceCount);
+            painter.setPen(QColor(QStringLiteral("#eaf3ff")));
+            painter.setBrush(QColor(5, 18, 35, 220));
+            const QRectF badge(
+                targetRect.left() + 14, targetRect.top() + 14,
+                qMin<qreal>(310, targetRect.width() - 28), 30);
+            painter.drawRoundedRect(badge, 4, 4);
+            painter.drawText(
+                badge.adjusted(10, 0, -8, 0),
+                Qt::AlignVCenter | Qt::AlignLeft, caption);
+        } else {
+            painter.setPen(QColor(QStringLiteral("#d7e4ef")));
+            painter.drawText(
+                rect(), Qt::AlignCenter,
+                QStringLiteral("Mock LOC 规划底图加载失败"));
         }
-        painter.setPen(QColor(QStringLiteral("#d7e4ef")));
-        painter.drawText(18, 16, QStringLiteral("三标准方位 · 拖动中心十字、覆盖框或切片线（Mock 规划）"));
+
+        if (hasFocus()) {
+            painter.setPen(QPen(QColor(QStringLiteral("#2d6cf6")), 2,
+                                Qt::DashLine));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(rect().adjusted(2, 2, -3, -3));
+        }
     }
 
     void mousePressEvent(QMouseEvent* event) override
     {
-        m_dragMode = 1;
-        if (event->position().y() > height() * 0.62) {
-            m_dragMode = 3;
-        } else if (event->position().x() > width() * 0.72) {
-            m_dragMode = 2;
+        if (event->button() != Qt::LeftButton) {
+            QWidget::mousePressEvent(event);
+            return;
         }
-        mouseMoveEvent(event);
+        setFocus(Qt::MouseFocusReason);
+        m_dragMode = hitTest(event->position());
+        if (m_dragMode == DragMode::None) {
+            QWidget::mousePressEvent(event);
+            return;
+        }
+        const QRectF target = imageRect();
+        m_pressPoint = normalizedImagePoint(event->position(), target);
+        m_startBoxX = m_boxX;
+        m_startBoxY = m_boxY;
+        m_startBoxWidth = m_boxWidth;
+        m_startBoxHeight = m_boxHeight;
+        m_startCenterX = m_centerX;
+        m_startCenterY = m_centerY;
+        event->accept();
     }
 
     void mouseMoveEvent(QMouseEvent* event) override
     {
-        if (m_dragMode == 0 || !(event->buttons() & Qt::LeftButton)) {
+        if (m_dragMode == DragMode::None
+            || !(event->buttons() & Qt::LeftButton)) {
+            switch (hitTest(event->position())) {
+            case DragMode::MoveCenter:
+            case DragMode::MoveCoverage:
+                setCursor(Qt::SizeAllCursor);
+                break;
+            case DragMode::ResizeCoverage:
+                setCursor(Qt::SizeFDiagCursor);
+                break;
+            case DragMode::MoveSlice:
+                setCursor(Qt::SizeVerCursor);
+                break;
+            case DragMode::None:
+                unsetCursor();
+                break;
+            }
             return;
         }
-        const qreal x = qBound<qreal>(0.08, event->position().x() / qMax(1, width()), 0.92);
-        const qreal y = qBound<qreal>(0.10, event->position().y() / qMax(1, height()), 0.90);
-        if (m_dragMode == 1) {
-            m_centerX = x;
-            m_centerY = y;
-        } else if (m_dragMode == 2) {
-            m_boxWidth = qBound<qreal>(0.30, x, 0.78);
-            m_boxHeight = qBound<qreal>(0.30, y, 0.78);
-        } else {
-            m_slice = y;
+        const QRectF target = imageRect();
+        const QPointF point =
+            normalizedImagePoint(event->position(), target);
+        QString change = QStringLiteral("定位规划");
+        if (m_dragMode == DragMode::MoveCenter) {
+            m_centerX = qBound(
+                m_boxX, point.x(), m_boxX + m_boxWidth);
+            m_centerY = qBound(
+                m_boxY, point.y(), m_boxY + m_boxHeight);
+            change = QStringLiteral("中心位置");
+        } else if (m_dragMode == DragMode::ResizeCoverage) {
+            m_boxWidth = qBound<qreal>(
+                0.20, point.x() - m_boxX, 0.92 - m_boxX);
+            m_boxHeight = qBound<qreal>(
+                0.20, point.y() - m_boxY, 0.92 - m_boxY);
+            m_centerX = qBound<qreal>(
+                m_boxX, m_centerX, m_boxX + m_boxWidth);
+            m_centerY = qBound<qreal>(
+                m_boxY, m_centerY, m_boxY + m_boxHeight);
+            change = QStringLiteral("覆盖范围");
+        } else if (m_dragMode == DragMode::MoveCoverage) {
+            const qreal deltaX = point.x() - m_pressPoint.x();
+            const qreal deltaY = point.y() - m_pressPoint.y();
+            m_boxX = qBound<qreal>(
+                0.02, m_startBoxX + deltaX,
+                0.98 - m_startBoxWidth);
+            m_boxY = qBound<qreal>(
+                0.02, m_startBoxY + deltaY,
+                0.98 - m_startBoxHeight);
+            m_centerX = qBound<qreal>(
+                m_boxX, m_startCenterX + deltaX,
+                m_boxX + m_boxWidth);
+            m_centerY = qBound<qreal>(
+                m_boxY, m_startCenterY + deltaY,
+                m_boxY + m_boxHeight);
+            change = QStringLiteral("覆盖位置");
+        } else if (m_dragMode == DragMode::MoveSlice) {
+            m_slice = clampSliceStackCenter(
+                (point.y() - m_boxY) / m_boxHeight);
+            change = QStringLiteral("层组位置");
         }
-        setProperty("planningCoverageModified", true);
-        notifyChanged();
-        update();
+        notifyChanged(change);
+        event->accept();
     }
 
-    void mouseReleaseEvent(QMouseEvent*) override { m_dragMode = 0; }
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        m_dragMode = DragMode::None;
+        if (event->button() == Qt::LeftButton)
+            event->accept();
+    }
+
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        const qreal step =
+            event->modifiers() & Qt::AltModifier ? 0.002 : 0.01;
+        bool handled = true;
+        if (event->modifiers() & Qt::ControlModifier) {
+            if (event->key() == Qt::Key_Up)
+                m_slice =
+                    clampSliceStackCenter(m_slice - step);
+            else if (event->key() == Qt::Key_Down)
+                m_slice =
+                    clampSliceStackCenter(m_slice + step);
+            else
+                handled = false;
+            if (handled)
+                notifyChanged(QStringLiteral("层组位置"));
+        } else {
+            if (event->key() == Qt::Key_Left)
+                m_centerX = qMax(m_boxX, m_centerX - step);
+            else if (event->key() == Qt::Key_Right)
+                m_centerX =
+                    qMin(m_boxX + m_boxWidth, m_centerX + step);
+            else if (event->key() == Qt::Key_Up)
+                m_centerY = qMax(m_boxY, m_centerY - step);
+            else if (event->key() == Qt::Key_Down)
+                m_centerY =
+                    qMin(m_boxY + m_boxHeight, m_centerY + step);
+            else
+                handled = false;
+            if (handled)
+                notifyChanged(QStringLiteral("中心位置"));
+        }
+        if (handled) {
+            event->accept();
+            return;
+        }
+        QWidget::keyPressEvent(event);
+    }
 
 private:
-    void notifyChanged()
+    enum class DragMode {
+        None,
+        MoveCenter,
+        MoveCoverage,
+        ResizeCoverage,
+        MoveSlice
+    };
+
+    QString backgroundResource() const
     {
-        if (m_changeHandler) m_changeHandler();
+        if (m_orientation == QStringLiteral("冠状"))
+            return QStringLiteral(":/mock-loc-coronal.png");
+        if (m_orientation == QStringLiteral("矢状"))
+            return QStringLiteral(":/mock-loc-sagittal.png");
+        return QStringLiteral(":/mock-localization-clean.png");
+    }
+
+    QRectF imageRect() const
+    {
+        const QPixmap reference(backgroundResource());
+        if (reference.isNull())
+            return QRectF();
+        const QSize available(
+            qMax(1, width() - 12), qMax(1, height() - 12));
+        const QSize target =
+            reference.size().scaled(available, Qt::KeepAspectRatio);
+        return QRectF(
+            (width() - target.width()) / 2.0,
+            (height() - target.height()) / 2.0,
+            target.width(), target.height());
+    }
+
+    QRectF coverageRect(const QRectF& target) const
+    {
+        return QRectF(
+            target.left() + target.width() * m_boxX,
+            target.top() + target.height() * m_boxY,
+            target.width() * m_boxWidth,
+            target.height() * m_boxHeight);
+    }
+
+    double sliceCoverageMm() const
+    {
+        return m_sliceThicknessMm * m_sliceCount
+            + m_sliceGapMm * qMax(0, m_sliceCount - 1);
+    }
+
+    qreal sliceStackHeightRatio() const
+    {
+        return qBound<qreal>(
+            0.08, sliceCoverageMm() / 80.0, 1.0);
+    }
+
+    qreal clampSliceStackCenter(qreal requested) const
+    {
+        const qreal halfSpan = sliceStackHeightRatio() / 2.0;
+        return qBound<qreal>(
+            halfSpan, requested, 1.0 - halfSpan);
+    }
+
+    QRectF sliceStackRect(const QRectF& coverage) const
+    {
+        const qreal stackHeight =
+            coverage.height() * sliceStackHeightRatio();
+        const qreal center =
+            coverage.top() + coverage.height() * m_slice;
+        return QRectF(
+            coverage.left(), center - stackHeight / 2.0,
+            coverage.width(), stackHeight);
+    }
+
+    QPointF normalizedImagePoint(
+        const QPointF& point, const QRectF& target) const
+    {
+        if (target.isEmpty())
+            return QPointF(0.5, 0.5);
+        return QPointF(
+            qBound<qreal>(
+                0.0, (point.x() - target.left()) / target.width(),
+                1.0),
+            qBound<qreal>(
+                0.0, (point.y() - target.top()) / target.height(),
+                1.0));
+    }
+
+    DragMode hitTest(const QPointF& point) const
+    {
+        const QRectF target = imageRect();
+        if (target.isEmpty() || !target.adjusted(-4, -4, 4, 4).contains(point))
+            return DragMode::None;
+        const QRectF coverage = coverageRect(target);
+        const QPointF center(
+            target.left() + target.width() * m_centerX,
+            target.top() + target.height() * m_centerY);
+        const qreal sliceY = sliceStackRect(coverage).center().y();
+        if (QLineF(point, center).length() <= 16.0)
+            return DragMode::MoveCenter;
+        if (qAbs(point.y() - sliceY) <= 9.0
+            && point.x() >= coverage.left() - 8.0
+            && point.x() <= coverage.right() + 8.0)
+            return DragMode::MoveSlice;
+        if (QLineF(point, coverage.bottomRight()).length() <= 18.0)
+            return DragMode::ResizeCoverage;
+        if (coverage.adjusted(-5, -5, 5, 5).contains(point))
+            return DragMode::MoveCoverage;
+        return DragMode::None;
+    }
+
+    void syncProperties()
+    {
+        setProperty("readPhaseSwapped", m_axesSwapped);
+        setProperty("selectedOrientation", m_orientation);
+        setProperty("planningCoverageModified", m_modified);
+        setProperty("coverageX", m_boxX);
+        setProperty("coverageY", m_boxY);
+        setProperty("coverageWidth", m_boxWidth);
+        setProperty("coverageHeight", m_boxHeight);
+        setProperty("coverageCenterX", m_centerX);
+        setProperty("coverageCenterY", m_centerY);
+        setProperty("slicePosition", m_slice);
+        setProperty("sliceThicknessMm", m_sliceThicknessMm);
+        setProperty("sliceGapMm", m_sliceGapMm);
+        setProperty("sliceCount", m_sliceCount);
+        setProperty("renderedSliceCount", m_sliceCount);
+        setProperty("sliceStackHeightRatio", sliceStackHeightRatio());
+        setProperty("sliceStackCenter", m_slice);
+        setProperty("backgroundResource", backgroundResource());
+    }
+
+    void notifyChanged(
+        const QString& change, bool markModified = true)
+    {
+        m_modified = markModified;
+        setProperty(
+            "lastPlanningChange",
+            !markModified && change != QStringLiteral("恢复推荐")
+                ? QString() : change);
+        syncProperties();
+        if (m_changeHandler)
+            m_changeHandler();
+        update();
     }
 
     bool m_axesSwapped = false;
     QString m_orientation = QStringLiteral("横断");
-    int m_dragMode = 0;
+    DragMode m_dragMode = DragMode::None;
+    bool m_modified = false;
     qreal m_boxX = 0.16;
     qreal m_boxY = 0.20;
     qreal m_boxWidth = 0.66;
@@ -516,6 +810,16 @@ private:
     qreal m_centerX = 0.50;
     qreal m_centerY = 0.50;
     qreal m_slice = 0.50;
+    double m_sliceThicknessMm = 3.5;
+    double m_sliceGapMm = 1.25;
+    int m_sliceCount = 11;
+    QPointF m_pressPoint;
+    qreal m_startBoxX = 0.0;
+    qreal m_startBoxY = 0.0;
+    qreal m_startBoxWidth = 0.0;
+    qreal m_startBoxHeight = 0.0;
+    qreal m_startCenterX = 0.0;
+    qreal m_startCenterY = 0.0;
     std::function<void()> m_changeHandler;
 };
 
@@ -1537,72 +1841,14 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         auto* continueButton = new QPushButton(QStringLiteral("确认方案并继续"), page);
         continueButton->setObjectName(QStringLiteral("ContinueProtocolButton"));
         continueButton->setProperty("class", "primary");
+        continueButton->setEnabled(false);
         saveVersion->setEnabled(false);
         const QString versionReason = QStringLiteral("模板持久化未纳入 v0.1");
         saveVersion->setToolTip(versionReason);
         saveVersion->setAccessibleDescription(versionReason);
 
         const auto updateProtocolState =
-            [this, currentEditors, table, calculation, useOnce, continueButton] {
-            static const QStringList errorTexts = {
-                QStringLiteral("错误：FOV 需为 10–100 mm 的宽×高"),
-                QStringLiteral("错误：矩阵需为 16–512 的整数宽×高"),
-                QStringLiteral("错误：层厚需为 0.1–20 mm"),
-                QStringLiteral("错误：层间距需为 0–20 mm"),
-                QStringLiteral("错误：NEX 需为 1–16 的整数")
-            };
-            bool allValid = true;
-            for (int row = 0; row < currentEditors.size(); ++row) {
-                const bool valid = currentEditors.at(row)->hasAcceptableInput();
-                allValid = allValid && valid;
-                table->item(row, 3)->setText(
-                    valid ? QStringLiteral("✓ 有效") : errorTexts.at(row));
-            }
-
-            if (!allValid) {
-                calculation->setText(
-                    QStringLiteral("无法计算：请修正 L2 参数错误。\n"
-                                   "当前未生成分辨率、覆盖或采集时间结论。"));
-            } else {
-                double fovX = 0.0;
-                double fovY = 0.0;
-                double matrixX = 0.0;
-                double matrixY = 0.0;
-                double thickness = 0.0;
-                double gap = 0.0;
-                parseDecimalPair(currentEditors.at(0)->text(), fovX, fovY, true);
-                parseDecimalPair(currentEditors.at(1)->text(), matrixX, matrixY, false);
-                parseDecimalMillimetres(currentEditors.at(2)->text(), thickness);
-                parseDecimalMillimetres(currentEditors.at(3)->text(), gap);
-                const int nex = currentEditors.at(4)->text().trimmed().toInt();
-                const double coverage = thickness * 11.0 + gap * 10.0;
-                calculation->setText(
-                    QStringLiteral("实际分辨率　%1×%2×%3 mm\n"
-                                   "层数　　　　11 层（Mock 预设）\n"
-                                   "覆盖范围　　%4 mm\n"
-                                   "NEX　　　　 %5\n"
-                                   "预计采集　　未计算（无批准公式）\n"
-                                   "SNR 趋势　　未评估\n\n"
-                                   "由当前 L2 输入计算；未写入 SDK。")
-                        .arg(fovX / matrixX, 0, 'f', 2)
-                        .arg(fovY / matrixY, 0, 'f', 2)
-                        .arg(thickness, 0, 'f', 1)
-                        .arg(coverage, 0, 'f', 1)
-                        .arg(nex));
-            }
-
-            useOnce->setEnabled(allValid);
-            useOnce->setToolTip(
-                allValid ? QStringLiteral("确认当前 L2 仅用于本次 Mock")
-                         : QStringLiteral("请先修正所有 L2 参数"));
-            continueButton->setEnabled(allValid && m_protocolUseOnceConfirmed);
-            continueButton->setToolTip(
-                !allValid ? QStringLiteral("请先修正所有 L2 参数")
-                : !m_protocolUseOnceConfirmed
-                    ? QStringLiteral("请先点击“仅本次使用”冻结用途")
-                    : QString());
-            refreshWorkflow();
-        };
+            [this] { refreshProtocolCalculationUi(); };
 
         connect(useOnce, &QPushButton::clicked, this, [this, updateProtocolState] {
             m_protocolUseOnceConfirmed = true;
@@ -1654,13 +1900,15 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         locRow->addWidget(locReference, 1);
         layout->addLayout(locRow, 1);
         auto* evidence = new QLabel(
-            QStringLiteral("Mock LOC 规划参考 · 尚未开始本次 Mock · "
+            QStringLiteral("Mock LOC 静态参考 · 此页不可拖动 · "
+                           "进入下一步后可调整层厚、中心、覆盖和切片位置 · "
                            "非设备采集图像，不关联真实 RAW"), page);
         evidence->setObjectName(QStringLiteral("MockImageEvidenceLabel"));
         evidence->setProperty("class", "evidenceLabel");
         evidence->setWordWrap(true);
         layout->addWidget(evidence);
-        auto* planning = new QPushButton(QStringLiteral("进入切片规划"), page);
+        auto* planning =
+            new QPushButton(QStringLiteral("进入可交互切片规划"), page);
         planning->setObjectName(QStringLiteral("OpenLocalizationPlanningButton"));
         planning->setProperty("class", "primary");
         connect(planning, &QPushButton::clicked, this, [this] { setWorkflowStep(7); });
@@ -1668,15 +1916,24 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         break;
     }
     case 7: {
+        auto* actionFeedback = new QLabel(
+            QStringLiteral("当前方位：横断 · Read / Phase · 推荐覆盖（Mock）"), page);
+        actionFeedback->setObjectName(QStringLiteral("LocalizationActionFeedback"));
+        actionFeedback->setProperty("class", "evidenceLabel");
+        actionFeedback->setWordWrap(true);
+
         auto* imagingPanel = new QWidget(page);
         imagingPanel->setObjectName(QStringLiteral("LocalizationImagingPanel"));
-        imagingPanel->setMinimumHeight(520);
-        imagingPanel->setMaximumHeight(570);
+        imagingPanel->setMinimumHeight(360);
+        imagingPanel->setMaximumHeight(430);
         auto* imagingRow = new QHBoxLayout(imagingPanel);
         imagingRow->setContentsMargins(0, 0, 0, 0);
         imagingRow->setSpacing(10);
         auto* thumbnailRail = new QVBoxLayout;
         thumbnailRail->setSpacing(8);
+        const QStringList orientations = {
+            QStringLiteral("横断"), QStringLiteral("冠状"),
+            QStringLiteral("矢状")};
         const QStringList thumbnailNames = {
             QStringLiteral("LocalizationThumbnailAxial"),
             QStringLiteral("LocalizationThumbnailCoronal"),
@@ -1687,164 +1944,166 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             QStringLiteral(":/mock-loc-coronal.png"),
             QStringLiteral(":/mock-loc-sagittal.png")
         };
-        const QStringList thumbnailLabels = {
-            QStringLiteral("横断 · 当前"),
-            QStringLiteral("冠状"),
-            QStringLiteral("矢状")
-        };
+        QList<QPushButton*> thumbnailButtons;
+        QList<QLabel*> thumbnailTextLabels;
         for (int index = 0; index < thumbnailNames.size(); ++index) {
-            auto* thumbnail = makePanel(QStringLiteral("WorkflowCard"));
+            auto* thumbnail = new QPushButton(page);
             thumbnail->setObjectName(thumbnailNames.at(index));
+            thumbnail->setProperty("role", "orientationThumbnail");
             thumbnail->setProperty("selected", index == 0);
-            thumbnail->setFixedWidth(104);
+            thumbnail->setFixedSize(104, 120);
+            thumbnail->setAccessibleName(
+                QStringLiteral("选择%1方位").arg(
+                    orientations.at(index)));
+            thumbnail->setAccessibleDescription(
+                QStringLiteral("切换 Mock LOC 规划到%1方位")
+                    .arg(orientations.at(index)));
             auto* thumbnailLayout = new QVBoxLayout(thumbnail);
             thumbnailLayout->setContentsMargins(5, 5, 5, 5);
             thumbnailLayout->setSpacing(3);
-            thumbnailLayout->addWidget(new ReferenceImageView(
+            auto* thumbnailImage = new ReferenceImageView(
                 thumbnailResources.at(index),
                 QStringLiteral("%1Image").arg(thumbnailNames.at(index)),
-                thumbnail, 70), 1);
-            auto* thumbnailLabel = new QLabel(thumbnailLabels.at(index), thumbnail);
+                thumbnail, 70);
+            thumbnailImage->setMaximumHeight(82);
+            thumbnailImage->setAttribute(
+                Qt::WA_TransparentForMouseEvents);
+            thumbnailLayout->addWidget(thumbnailImage, 1);
+            auto* thumbnailLabel = new QLabel(
+                index == 0
+                    ? QStringLiteral("%1 · 当前")
+                          .arg(orientations.at(index))
+                    : orientations.at(index),
+                thumbnail);
+            thumbnailLabel->setObjectName(
+                QStringLiteral("%1Label")
+                    .arg(thumbnailNames.at(index)));
             thumbnailLabel->setAlignment(Qt::AlignCenter);
-            thumbnailLabel->setProperty("class", "evidenceLabel");
+            thumbnailLabel->setFixedHeight(24);
+            thumbnailLabel->setProperty(
+                "class", "orientationThumbnailLabel");
+            thumbnailLabel->setAttribute(
+                Qt::WA_TransparentForMouseEvents);
             thumbnailLayout->addWidget(thumbnailLabel);
             thumbnailRail->addWidget(thumbnail, 1);
+            thumbnailButtons.append(thumbnail);
+            thumbnailTextLabels.append(thumbnailLabel);
         }
         imagingRow->addLayout(thumbnailRail);
         m_localizationPlanner = new LocalizationPlannerView(page);
-        static_cast<LocalizationPlannerView*>(m_localizationPlanner)
-            ->setChangeHandler([this] {
-                m_localizationConfirmed = false;
-            });
+        auto* planner =
+            static_cast<LocalizationPlannerView*>(
+                m_localizationPlanner);
+        planner->setProperty(
+            "appliedImagingTarget", QStringLiteral("均衡"));
         imagingRow->addWidget(m_localizationPlanner, 1);
         layout->addWidget(imagingPanel, 1);
-
-        auto* actionFeedback = new QLabel(
-            QStringLiteral("当前方位：横断 · Read / Phase · 推荐覆盖（Mock）"), page);
-        actionFeedback->setObjectName(QStringLiteral("LocalizationActionFeedback"));
-        actionFeedback->setProperty("class", "evidenceLabel");
-        actionFeedback->setWordWrap(true);
         layout->addWidget(actionFeedback);
 
         auto* controls = new QHBoxLayout;
-        const QStringList orientations = {QStringLiteral("横断"), QStringLiteral("冠状"),
-                                          QStringLiteral("矢状")};
         const QStringList orientationObjectNames = {
             QStringLiteral("OrientationAxialButton"),
             QStringLiteral("OrientationCoronalButton"),
             QStringLiteral("OrientationSagittalButton")
         };
+        QList<QPushButton*> orientationButtons;
         for (int index = 0; index < orientations.size(); ++index) {
             const QString orientation = orientations.at(index);
             auto* button = new QPushButton(orientation, page);
             button->setObjectName(orientationObjectNames.at(index));
             button->setProperty("class", orientation == QStringLiteral("横断") ? "primary" : "secondary");
-            connect(button, &QPushButton::clicked, this,
-                    [this, page, button, orientation, index, actionFeedback] {
-                static_cast<LocalizationPlannerView*>(m_localizationPlanner)->setOrientation(orientation);
-                const QStringList objectNames = {
-                    QStringLiteral("OrientationAxialButton"),
-                    QStringLiteral("OrientationCoronalButton"),
-                    QStringLiteral("OrientationSagittalButton")
-                };
-                for (const QString& objectName : objectNames) {
-                    if (auto* candidate = page->findChild<QPushButton*>(objectName)) {
-                        candidate->setProperty("class", candidate == button ? "primary" : "secondary");
-                        candidate->style()->unpolish(candidate);
-                        candidate->style()->polish(candidate);
-                    }
-                }
-                const QStringList thumbnailObjectNames = {
-                    QStringLiteral("LocalizationThumbnailAxial"),
-                    QStringLiteral("LocalizationThumbnailCoronal"),
-                    QStringLiteral("LocalizationThumbnailSagittal")
-                };
-                for (int thumbnailIndex = 0; thumbnailIndex < thumbnailObjectNames.size();
-                     ++thumbnailIndex) {
-                    if (auto* thumbnail = page->findChild<QWidget*>(
-                            thumbnailObjectNames.at(thumbnailIndex))) {
-                        thumbnail->setProperty("selected", thumbnailIndex == index);
-                        thumbnail->style()->unpolish(thumbnail);
-                        thumbnail->style()->polish(thumbnail);
-                    }
-                }
-                const bool axial = orientation == QStringLiteral("横断");
-                if (auto* confirm = page->findChild<QPushButton*>(
-                        QStringLiteral("ConfirmLocalizationButton"))) {
-                    confirm->setEnabled(axial);
-                    confirm->setToolTip(
-                        axial ? QString()
-                              : QStringLiteral("v0.1 主路径要求恢复横断位后再确认"));
-                }
-                actionFeedback->setText(
-                    axial
-                        ? QStringLiteral("当前方位：横断 · Read / Phase · 可继续（Mock）")
-                        : QStringLiteral("当前方位：%1 · v0.1 主路径要求横断位，暂不可继续")
-                              .arg(orientation));
-                refreshWorkflow();
-            });
+            button->setAccessibleName(
+                QStringLiteral("选择%1方位").arg(orientation));
+            orientationButtons.append(button);
             controls->addWidget(button);
         }
         auto* swap = new QPushButton(QStringLiteral("交换 Read / Phase"), page);
         swap->setObjectName(QStringLiteral("ReadPhaseSwapButton"));
         swap->setProperty("class", "secondary");
-        connect(swap, &QPushButton::clicked, this, [this, actionFeedback] {
-            auto* planner = static_cast<LocalizationPlannerView*>(m_localizationPlanner);
-            planner->swapReadPhase();
-            actionFeedback->setText(
-                planner->property("readPhaseSwapped").toBool()
-                    ? QStringLiteral("当前方位：横断 · Phase / Read（已交换，Mock）")
-                    : QStringLiteral("当前方位：横断 · Read / Phase（Mock）"));
-        });
         controls->addWidget(swap);
         auto* autoAdjust = new QPushButton(QStringLiteral("自动调整"), page);
         autoAdjust->setObjectName(QStringLiteral("AutoPlanningButton"));
         autoAdjust->setProperty("class", "secondary");
-        connect(autoAdjust, &QPushButton::clicked, this, [this, actionFeedback] {
-            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->autoPlan();
-            actionFeedback->setText(QStringLiteral("横断位覆盖已自动调整 · Mock 规划"));
-        });
         controls->addWidget(autoAdjust);
         auto* reset = new QPushButton(QStringLiteral("恢复推荐"), page);
         reset->setObjectName(QStringLiteral("ResetPlanningButton"));
         reset->setProperty("class", "secondary");
-        connect(reset, &QPushButton::clicked, this, [this, page, actionFeedback] {
-            static_cast<LocalizationPlannerView*>(m_localizationPlanner)->resetPlanning();
-            for (const QString& objectName : {
-                     QStringLiteral("OrientationAxialButton"),
-                     QStringLiteral("OrientationCoronalButton"),
-                     QStringLiteral("OrientationSagittalButton")}) {
-                if (auto* candidate = page->findChild<QPushButton*>(objectName)) {
-                    candidate->setProperty(
-                        "class", objectName == QStringLiteral("OrientationAxialButton")
-                                     ? "primary" : "secondary");
-                    candidate->style()->unpolish(candidate);
-                    candidate->style()->polish(candidate);
-                }
-            }
-            if (auto* confirm = page->findChild<QPushButton*>(
-                    QStringLiteral("ConfirmLocalizationButton"))) {
-                confirm->setEnabled(true);
-                confirm->setToolTip(QString());
-            }
-            actionFeedback->setText(
-                QStringLiteral("已恢复推荐：横断 · Read / Phase · 默认覆盖（Mock）"));
-            refreshWorkflow();
-        });
         controls->addWidget(reset);
-        auto* more = new QPushButton(QStringLiteral("更多方位"), page);
+        auto* more = new QPushButton(QStringLiteral("自定义斜切说明"), page);
         more->setObjectName(QStringLiteral("MoreOrientationButton"));
         more->setProperty("class", "secondary");
-        connect(more, &QPushButton::clicked, this, [more, actionFeedback] {
-            more->setText(QStringLiteral("自定义斜切（Mock）"));
-            more->setEnabled(false);
-            more->setToolTip(QStringLiteral("已显示：自定义斜切仅用于 Mock 规划"));
-            actionFeedback->setText(
-                QStringLiteral("自定义斜切仅为 Mock 规划提示；v0.1 主路径仍要求横断位"));
-        });
         controls->addWidget(more);
         controls->addStretch();
         layout->addLayout(controls);
+
+        auto* sliceCard = makePanel(QStringLiteral("WorkflowCard"));
+        sliceCard->setObjectName(QStringLiteral("SlicePlanningControls"));
+        sliceCard->setParent(page);
+        auto* sliceGrid = new QGridLayout(sliceCard);
+        sliceGrid->setContentsMargins(12, 8, 12, 8);
+        sliceGrid->setHorizontalSpacing(8);
+        sliceGrid->setVerticalSpacing(6);
+        auto* thickness = new QDoubleSpinBox(sliceCard);
+        thickness->setObjectName(QStringLiteral("SliceThicknessSpinBox"));
+        thickness->setRange(0.1, 20.0);
+        thickness->setDecimals(1);
+        thickness->setSingleStep(0.1);
+        thickness->setSuffix(QStringLiteral(" mm"));
+        thickness->setAccessibleName(QStringLiteral("层厚"));
+        auto* gap = new QDoubleSpinBox(sliceCard);
+        gap->setObjectName(QStringLiteral("SliceGapSpinBox"));
+        gap->setRange(0.0, 20.0);
+        gap->setDecimals(2);
+        gap->setSingleStep(0.25);
+        gap->setSuffix(QStringLiteral(" mm"));
+        gap->setAccessibleName(QStringLiteral("层间距"));
+        auto* count = new QSpinBox(sliceCard);
+        count->setObjectName(QStringLiteral("SliceCountSpinBox"));
+        count->setRange(1, 64);
+        count->setSuffix(QStringLiteral(" 层"));
+        count->setAccessibleName(QStringLiteral("切片层数"));
+        auto* slicePosition = new QSlider(Qt::Horizontal, sliceCard);
+        slicePosition->setObjectName(QStringLiteral("SlicePositionSlider"));
+        slicePosition->setRange(0, 100);
+        slicePosition->setValue(50);
+        slicePosition->setTickInterval(10);
+        slicePosition->setAccessibleName(QStringLiteral("层组位置"));
+        auto* centerPlanning =
+            new QPushButton(QStringLiteral("定位中心复位"), sliceCard);
+        centerPlanning->setObjectName(QStringLiteral("CenterPlanningButton"));
+        centerPlanning->setProperty("class", "secondary");
+        sliceGrid->addWidget(new QLabel(QStringLiteral("层厚"), sliceCard), 0, 0);
+        sliceGrid->addWidget(thickness, 0, 1);
+        sliceGrid->addWidget(new QLabel(QStringLiteral("层间距"), sliceCard), 0, 2);
+        sliceGrid->addWidget(gap, 0, 3);
+        sliceGrid->addWidget(new QLabel(QStringLiteral("层数"), sliceCard), 0, 4);
+        sliceGrid->addWidget(count, 0, 5);
+        sliceGrid->addWidget(new QLabel(QStringLiteral("层组位置"), sliceCard), 1, 0);
+        sliceGrid->addWidget(slicePosition, 1, 1, 1, 4);
+        sliceGrid->addWidget(centerPlanning, 1, 5);
+        sliceGrid->setColumnStretch(1, 1);
+        sliceGrid->setColumnStretch(3, 1);
+        sliceGrid->setColumnStretch(4, 1);
+        layout->addWidget(sliceCard);
+
+        double initialThickness = 3.5;
+        double initialGap = 1.25;
+        if (auto* protocolThickness = findChild<QLineEdit*>(
+                QStringLiteral("ProtocolL2Current2"))) {
+            parseDecimalMillimetres(
+                protocolThickness->text(), initialThickness);
+        }
+        if (auto* protocolGap = findChild<QLineEdit*>(
+                QStringLiteral("ProtocolL2Current3"))) {
+            parseDecimalMillimetres(protocolGap->text(), initialGap);
+        }
+        thickness->setValue(initialThickness);
+        gap->setValue(initialGap);
+        count->setValue(11);
+        planner->setSliceParameters(
+            initialThickness, initialGap, 11, false);
+        planner->setSlicePosition(0.5, false);
+
         auto* targetRow = new QHBoxLayout;
         auto* targetLabel = new QLabel(QStringLiteral("成像目标"), page);
         targetLabel->setProperty("class", "capabilityName");
@@ -1852,21 +2111,10 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         targetChoice->setObjectName(QStringLiteral("ImagingTargetCombo"));
         targetChoice->addItems({QStringLiteral("均衡"), QStringLiteral("结构细节"),
                                 QStringLiteral("覆盖优先")});
-        auto* modifyTarget = new QPushButton(QStringLiteral("修改"), page);
+        targetLabel->setBuddy(targetChoice);
+        auto* modifyTarget = new QPushButton(QStringLiteral("应用成像目标"), page);
         modifyTarget->setObjectName(QStringLiteral("ModifyImagingTargetButton"));
         modifyTarget->setProperty("class", "secondary");
-        connect(modifyTarget, &QPushButton::clicked, this,
-                [this, targetChoice, actionFeedback] {
-            m_localizationConfirmed = false;
-            if (m_automationStatusLabel) {
-                m_automationStatusLabel->setText(
-                    QStringLiteral("成像目标已应用：%1 · Mock 规划")
-                        .arg(targetChoice->currentText()));
-            }
-            actionFeedback->setText(
-                QStringLiteral("成像目标已应用：%1 · Mock 规划")
-                    .arg(targetChoice->currentText()));
-        });
         targetRow->addWidget(targetLabel);
         targetRow->addWidget(targetChoice);
         targetRow->addWidget(modifyTarget);
@@ -1880,36 +2128,242 @@ QWidget* MainWindow::makeWorkflowPage(int step)
         summary->setProperty("class", "evidenceLabel");
         layout->addWidget(summary);
         auto* planningActions = new QHBoxLayout;
-        auto* researchParameters = new QPushButton(QStringLiteral("科研参数 >"), page);
+        auto* researchParameters =
+            new QPushButton(QStringLiteral("返回扫描方案修改科研参数"), page);
         researchParameters->setObjectName(QStringLiteral("ResearchParametersButton"));
         researchParameters->setProperty("class", "secondary");
-        connect(researchParameters, &QPushButton::clicked, this, [this] {
+        auto* confirm = new QPushButton(QStringLiteral("确认定位"), page);
+        confirm->setObjectName(QStringLiteral("ConfirmLocalizationButton"));
+        confirm->setProperty("class", "primary");
+        planningActions->addStretch();
+        planningActions->addWidget(researchParameters);
+        planningActions->addWidget(confirm);
+        layout->addLayout(planningActions);
+
+        const auto selectOrientation =
+            [this, page, planner, orientationButtons,
+             thumbnailButtons, thumbnailTextLabels,
+             orientations](int selectedIndex) {
+            const QStringList orientationValues = {
+                QStringLiteral("横断"), QStringLiteral("冠状"),
+                QStringLiteral("矢状")};
+            planner->setOrientation(
+                orientationValues.at(selectedIndex));
+            for (int index = 0;
+                 index < orientationButtons.size(); ++index) {
+                orientationButtons.at(index)->setProperty(
+                    "class", index == selectedIndex
+                                 ? "primary" : "secondary");
+                orientationButtons.at(index)->style()->unpolish(
+                    orientationButtons.at(index));
+                orientationButtons.at(index)->style()->polish(
+                    orientationButtons.at(index));
+                thumbnailButtons.at(index)->setProperty(
+                    "selected", index == selectedIndex);
+                thumbnailButtons.at(index)->style()->unpolish(
+                    thumbnailButtons.at(index));
+                thumbnailButtons.at(index)->style()->polish(
+                    thumbnailButtons.at(index));
+                thumbnailTextLabels.at(index)->setText(
+                    index == selectedIndex
+                        ? QStringLiteral("%1 · 当前")
+                              .arg(orientations.at(index))
+                        : orientations.at(index));
+            }
+            m_localizationConfirmed = false;
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        };
+        for (int index = 0;
+             index < orientationButtons.size(); ++index) {
+            connect(
+                orientationButtons.at(index), &QPushButton::clicked,
+                this, [selectOrientation, index] {
+                    selectOrientation(index);
+                });
+            connect(
+                thumbnailButtons.at(index), &QPushButton::clicked,
+                this, [selectOrientation, index] {
+                    selectOrientation(index);
+                });
+        }
+        connect(swap, &QPushButton::clicked, this,
+                [this, planner] {
+            planner->swapReadPhase();
+            m_localizationConfirmed = false;
+            refreshLocalizationPlanningUi();
+        });
+        connect(autoAdjust, &QPushButton::clicked, this,
+                [this, planner] {
+            planner->autoPlan();
+            m_localizationConfirmed = false;
+            refreshLocalizationPlanningUi();
+        });
+        connect(reset, &QPushButton::clicked, this,
+                [this, planner, thickness, gap, count,
+                 slicePosition, targetChoice, modifyTarget,
+                 selectOrientation] {
+            {
+                const QSignalBlocker thicknessBlocker(thickness);
+                const QSignalBlocker gapBlocker(gap);
+                const QSignalBlocker countBlocker(count);
+                const QSignalBlocker positionBlocker(slicePosition);
+                thickness->setValue(3.5);
+                gap->setValue(1.25);
+                count->setValue(11);
+                slicePosition->setValue(50);
+            }
+            if (auto* protocolThickness = findChild<QLineEdit*>(
+                    QStringLiteral("ProtocolL2Current2"))) {
+                const QSignalBlocker blocker(protocolThickness);
+                protocolThickness->setText(formatMillimetres(3.5));
+            }
+            if (auto* protocolGap = findChild<QLineEdit*>(
+                    QStringLiteral("ProtocolL2Current3"))) {
+                const QSignalBlocker blocker(protocolGap);
+                protocolGap->setText(formatMillimetres(1.25));
+            }
+            {
+                const QSignalBlocker blocker(targetChoice);
+                targetChoice->setCurrentIndex(0);
+            }
+            planner->setProperty(
+                "appliedImagingTarget", QStringLiteral("均衡"));
+            modifyTarget->setEnabled(false);
+            modifyTarget->setToolTip(
+                QStringLiteral("当前成像目标已应用"));
+            selectOrientation(0);
+            planner->resetPlanning();
+            refreshProtocolCalculationUi();
+            refreshLocalizationPlanningUi();
+        });
+        connect(more, &QPushButton::clicked, this,
+                [this, actionFeedback] {
+            actionFeedback->setText(
+                QStringLiteral("自定义斜切仅提供 Mock 说明；"
+                               "本轮横断位主路径不执行斜切"));
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("自定义斜切说明已显示 · 未修改规划"));
+            }
+        });
+
+        const auto applySliceParameters =
+            [this, planner, thickness, gap, count] {
+            if (auto* protocolThickness = findChild<QLineEdit*>(
+                    QStringLiteral("ProtocolL2Current2"))) {
+                const QSignalBlocker blocker(protocolThickness);
+                protocolThickness->setText(
+                    formatMillimetres(thickness->value()));
+            }
+            if (auto* protocolGap = findChild<QLineEdit*>(
+                    QStringLiteral("ProtocolL2Current3"))) {
+                const QSignalBlocker blocker(protocolGap);
+                protocolGap->setText(
+                    formatMillimetres(gap->value()));
+            }
+            m_localizationConfirmed = false;
+            planner->setSliceParameters(
+                thickness->value(), gap->value(), count->value());
+            refreshProtocolCalculationUi();
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        };
+        connect(
+            thickness, qOverload<double>(
+                           &QDoubleSpinBox::valueChanged),
+            this, [applySliceParameters](double) {
+                applySliceParameters();
+            });
+        connect(
+            gap, qOverload<double>(&QDoubleSpinBox::valueChanged),
+            this, [applySliceParameters](double) {
+                applySliceParameters();
+            });
+        connect(
+            count, qOverload<int>(&QSpinBox::valueChanged),
+            this, [applySliceParameters](int) {
+                applySliceParameters();
+            });
+        connect(slicePosition, &QSlider::valueChanged, this,
+                [this, planner](int value) {
+            m_localizationConfirmed = false;
+            planner->setSlicePosition(value / 100.0);
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        });
+        connect(centerPlanning, &QPushButton::clicked, this,
+                [this, planner, slicePosition] {
+            {
+                const QSignalBlocker blocker(slicePosition);
+                slicePosition->setValue(50);
+            }
+            planner->centerPlanning();
+            m_localizationConfirmed = false;
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        });
+        connect(targetChoice, &QComboBox::currentIndexChanged, this,
+                [modifyTarget, actionFeedback](int) {
+            modifyTarget->setEnabled(true);
+            modifyTarget->setToolTip(
+                QStringLiteral("应用当前选择到 Mock 规划"));
+            actionFeedback->setText(
+                QStringLiteral("成像目标已选择但尚未应用"));
+        });
+        connect(modifyTarget, &QPushButton::clicked, this,
+                [this, planner, targetChoice, modifyTarget] {
+            m_localizationConfirmed = false;
+            modifyTarget->setEnabled(false);
+            modifyTarget->setToolTip(
+                QStringLiteral("当前成像目标已应用"));
+            planner->setProperty(
+                "appliedImagingTarget",
+                targetChoice->currentText());
+            if (m_automationStatusLabel) {
+                m_automationStatusLabel->setText(
+                    QStringLiteral("成像目标已应用：%1 · Mock 规划")
+                        .arg(targetChoice->currentText()));
+            }
+            if (m_localizationPlanner) {
+                m_localizationPlanner->setProperty(
+                    "lastPlanningChange",
+                    QStringLiteral("成像目标已应用"));
+            }
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        });
+        connect(researchParameters, &QPushButton::clicked, this,
+                [this] {
             if (m_automationStatusLabel) {
                 m_automationStatusLabel->setText(
                     QStringLiteral("科研参数 L3 已展开 · 未写入 SDK"));
             }
-            if (auto* l3 = findChild<QLabel*>(QStringLiteral("L3DetailsLabel"))) {
+            if (auto* l3 = findChild<QLabel*>(
+                    QStringLiteral("L3DetailsLabel"))) {
                 l3->setVisible(true);
             }
-            if (auto* showL3 = findChild<QPushButton*>(QStringLiteral("ShowL3Button"))) {
+            if (auto* showL3 = findChild<QPushButton*>(
+                    QStringLiteral("ShowL3Button"))) {
                 showL3->setText(
-                    QStringLiteral("专家参数（L3）｜仅影响当前 Mock 候选协议　收起"));
+                    QStringLiteral(
+                        "专家参数（L3）｜仅影响当前 Mock 候选协议　收起"));
             }
             m_protocolUseOnceConfirmed = false;
             m_localizationConfirmed = false;
             setWorkflowStep(5);
         });
-        auto* confirm = new QPushButton(QStringLiteral("确认定位"), page);
-        confirm->setObjectName(QStringLiteral("ConfirmLocalizationButton"));
-        confirm->setProperty("class", "primary");
-        connect(confirm, &QPushButton::clicked, this, [this] {
+        connect(confirm, &QPushButton::clicked, this,
+                [this] {
             m_localizationConfirmed = true;
             setWorkflowStep(8);
         });
-        planningActions->addStretch();
-        planningActions->addWidget(researchParameters);
-        planningActions->addWidget(confirm);
-        layout->addLayout(planningActions);
+        planner->setChangeHandler([this] {
+            m_localizationConfirmed = false;
+            refreshLocalizationPlanningUi();
+            refreshWorkflow();
+        });
+        refreshLocalizationPlanningUi();
         break;
     }
     case 8: {
@@ -1938,7 +2392,8 @@ QWidget* MainWindow::makeWorkflowPage(int step)
             value->setFlags(value->flags() & ~Qt::ItemIsEditable);
             confirmationTable->setItem(row, 0, name);
             confirmationTable->setItem(row, 1, value);
-            confirmationTable->setRowHeight(row, 72);
+            confirmationTable->setRowHeight(
+                row, row == 3 ? 90 : 66);
         }
         confirmationTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
         confirmationTable->setSelectionMode(QAbstractItemView::NoSelection);
@@ -2785,6 +3240,312 @@ void MainWindow::resetRunConfirmations()
     }
 }
 
+void MainWindow::refreshProtocolCalculationUi()
+{
+    auto* table = findChild<QTableWidget*>(
+        QStringLiteral("ProtocolLevel2Table"));
+    auto* calculation = findChild<QLabel*>(
+        QStringLiteral("ProtocolAutoResultValue"));
+    auto* useOnce = findChild<QPushButton*>(
+        QStringLiteral("ProtocolUseOnceButton"));
+    auto* continueButton = findChild<QPushButton*>(
+        QStringLiteral("ContinueProtocolButton"));
+    if (!table || !calculation || !useOnce || !continueButton)
+        return;
+
+    QList<QLineEdit*> editors;
+    for (int index = 0; index < 5; ++index) {
+        auto* editor = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current%1").arg(index));
+        if (!editor)
+            return;
+        editors.append(editor);
+    }
+
+    static const QStringList errorTexts = {
+        QStringLiteral("错误：FOV 需为 10–100 mm 的宽×高"),
+        QStringLiteral("错误：矩阵需为 16–512 的整数宽×高"),
+        QStringLiteral("错误：层厚需为 0.1–20 mm"),
+        QStringLiteral("错误：层间距需为 0–20 mm"),
+        QStringLiteral("错误：NEX 需为 1–16 的整数")
+    };
+    bool allValid = true;
+    for (int row = 0; row < editors.size(); ++row) {
+        const bool valid = editors.at(row)->hasAcceptableInput();
+        allValid = allValid && valid;
+        if (auto* state = table->item(row, 3)) {
+            state->setText(
+                valid ? QStringLiteral("✓ 有效")
+                      : errorTexts.at(row));
+        }
+    }
+
+    if (!allValid) {
+        calculation->setText(
+            QStringLiteral(
+                "无法计算：请修正 L2 参数错误。\n"
+                "当前未生成分辨率、覆盖或采集时间结论。"));
+    } else {
+        double fovX = 0.0;
+        double fovY = 0.0;
+        double matrixX = 0.0;
+        double matrixY = 0.0;
+        double thickness = 0.0;
+        double gap = 0.0;
+        parseDecimalPair(
+            editors.at(0)->text(), fovX, fovY, true);
+        parseDecimalPair(
+            editors.at(1)->text(), matrixX, matrixY, false);
+        parseDecimalMillimetres(
+            editors.at(2)->text(), thickness);
+        parseDecimalMillimetres(
+            editors.at(3)->text(), gap);
+        const int nex = editors.at(4)->text().trimmed().toInt();
+        int sliceCount = 11;
+        if (auto* count = findChild<QSpinBox*>(
+                QStringLiteral("SliceCountSpinBox"))) {
+            sliceCount = count->value();
+        }
+        const double coverage =
+            thickness * sliceCount
+            + gap * qMax(0, sliceCount - 1);
+        calculation->setText(
+            QStringLiteral(
+                "实际分辨率　%1×%2×%3 mm\n"
+                "层数　　　　%4 层（定位规划草稿）\n"
+                "覆盖范围　　%5 mm\n"
+                "NEX　　　　 %6\n"
+                "预计采集　　未计算（无批准公式）\n"
+                "SNR 趋势　　未评估\n\n"
+                "由当前 L2 与定位规划草稿计算；未写入 SDK。")
+                .arg(fovX / matrixX, 0, 'f', 2)
+                .arg(fovY / matrixY, 0, 'f', 2)
+                .arg(thickness, 0, 'f', 1)
+                .arg(sliceCount)
+                .arg(coverage, 0, 'f', 1)
+                .arg(nex));
+    }
+
+    useOnce->setEnabled(allValid);
+    useOnce->setToolTip(
+        allValid ? QStringLiteral("确认当前 L2 仅用于本次 Mock")
+                 : QStringLiteral("请先修正所有 L2 参数"));
+    continueButton->setEnabled(
+        allValid && m_protocolUseOnceConfirmed);
+    continueButton->setToolTip(
+        !allValid ? QStringLiteral("请先修正所有 L2 参数")
+        : !m_protocolUseOnceConfirmed
+            ? QStringLiteral("请先点击“仅本次使用”冻结用途")
+            : QString());
+    refreshWorkflow();
+}
+
+void MainWindow::syncLocalizationPlanningFromProtocol()
+{
+    if (!m_localizationPlanner)
+        return;
+
+    double thickness = 3.5;
+    double gap = 1.25;
+    if (auto* editor = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current2"))) {
+        parseDecimalMillimetres(editor->text(), thickness);
+    }
+    if (auto* editor = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current3"))) {
+        parseDecimalMillimetres(editor->text(), gap);
+    }
+    auto* thicknessSpin = findChild<QDoubleSpinBox*>(
+        QStringLiteral("SliceThicknessSpinBox"));
+    auto* gapSpin = findChild<QDoubleSpinBox*>(
+        QStringLiteral("SliceGapSpinBox"));
+    auto* countSpin = findChild<QSpinBox*>(
+        QStringLiteral("SliceCountSpinBox"));
+    if (!thicknessSpin || !gapSpin || !countSpin)
+        return;
+
+    {
+        const QSignalBlocker thicknessBlocker(thicknessSpin);
+        const QSignalBlocker gapBlocker(gapSpin);
+        thicknessSpin->setValue(thickness);
+        gapSpin->setValue(gap);
+    }
+    auto* planner = static_cast<LocalizationPlannerView*>(
+        m_localizationPlanner);
+    const bool parametersChanged =
+        !qFuzzyCompare(
+            planner->property("sliceThicknessMm").toDouble() + 1.0,
+            thickness + 1.0)
+        || !qFuzzyCompare(
+            planner->property("sliceGapMm").toDouble() + 1.0,
+            gap + 1.0);
+    const bool keepModified =
+        planner->property("planningCoverageModified").toBool()
+        || parametersChanged;
+    planner->setSliceParameters(
+        thickness, gap, countSpin->value(), keepModified);
+    refreshProtocolCalculationUi();
+}
+
+void MainWindow::refreshLocalizationPlanningUi()
+{
+    if (!m_localizationPlanner)
+        return;
+
+    auto* planner =
+        static_cast<LocalizationPlannerView*>(
+            m_localizationPlanner);
+    const QString orientation =
+        planner->property("selectedOrientation").toString();
+    const bool swapped =
+        planner->property("readPhaseSwapped").toBool();
+    const bool modified =
+        planner->property("planningCoverageModified").toBool();
+    const double thickness =
+        planner->property("sliceThicknessMm").toDouble();
+    const double gap =
+        planner->property("sliceGapMm").toDouble();
+    const int count =
+        planner->property("sliceCount").toInt();
+    const double position =
+        planner->property("slicePosition").toDouble();
+    const double centerX =
+        planner->property("coverageCenterX").toDouble();
+    const double centerY =
+        planner->property("coverageCenterY").toDouble();
+    const double coverageMm =
+        thickness * count + gap * qMax(0, count - 1);
+
+    if (auto* positionSlider = findChild<QSlider*>(
+            QStringLiteral("SlicePositionSlider"))) {
+        const QSignalBlocker blocker(positionSlider);
+        positionSlider->setValue(
+            qRound(position * positionSlider->maximum()));
+    }
+
+    double fovRead = 50.0;
+    double fovPhase = 50.0;
+    double matrixRead = 128.0;
+    double matrixPhase = 128.0;
+    if (auto* fov = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current0"))) {
+        parseDecimalPair(
+            fov->text(), fovRead, fovPhase, true);
+    }
+    if (auto* matrix = findChild<QLineEdit*>(
+            QStringLiteral("ProtocolL2Current1"))) {
+        parseDecimalPair(
+            matrix->text(), matrixRead, matrixPhase, false);
+    }
+
+    if (auto* summary = findChild<QLabel*>(
+            QStringLiteral("LocalizationPlanningSummary"))) {
+        summary->setText(
+            QStringLiteral(
+                "分辨率 %1×%2×%3 mm　|　%4 层　|　覆盖 %5 mm　|　"
+                "层组位置 %6%　|　中心 %7% / %8%　|　%9　|　"
+                "预计未计算　|　SNR 未评估")
+                .arg(fovRead / matrixRead, 0, 'f', 2)
+                .arg(fovPhase / matrixPhase, 0, 'f', 2)
+                .arg(thickness, 0, 'f', 1)
+                .arg(count)
+                .arg(coverageMm, 0, 'f', 1)
+                .arg(qRound(position * 100.0))
+                .arg(qRound(centerX * 100.0))
+                .arg(qRound(centerY * 100.0))
+                .arg(modified
+                         ? QStringLiteral("规划已修改，需重新确认")
+                         : QStringLiteral("推荐规划")));
+        summary->setAccessibleDescription(summary->text());
+    }
+
+    const QString axes = swapped
+        ? QStringLiteral("Phase / Read")
+        : QStringLiteral("Read / Phase");
+    const QString lastChange =
+        planner->property("lastPlanningChange").toString();
+    QString feedbackText;
+    if (lastChange == QStringLiteral("中心已居中")) {
+        feedbackText =
+            QStringLiteral(
+                "定位中心已居中 · %1 · %2 · 层组位置 50%（Mock）")
+                .arg(orientation, axes);
+    } else if (lastChange == QStringLiteral("恢复推荐")) {
+        feedbackText =
+            QStringLiteral(
+                "已恢复推荐：横断 · Read / Phase · "
+                "层厚 3.5 mm · 11 层（Mock）");
+    } else if (!lastChange.isEmpty()) {
+        feedbackText =
+            QStringLiteral(
+                "已调整%1 · %2 · %3 · 中心 %4%/%5% · "
+                "层组位置 %6% · 需重新确认（Mock）")
+                .arg(lastChange, orientation, axes)
+                .arg(qRound(centerX * 100.0))
+                .arg(qRound(centerY * 100.0))
+                .arg(qRound(position * 100.0));
+    } else {
+        feedbackText =
+            QStringLiteral(
+                "当前方位：%1 · %2 · 推荐覆盖（Mock）；"
+                "可拖动中心、覆盖框、右下角手柄或白色切片线")
+                .arg(orientation, axes);
+    }
+    if (orientation != QStringLiteral("横断")) {
+        feedbackText +=
+            QStringLiteral("；v0.1 主路径要求恢复横断位后再确认");
+    }
+    if (auto* feedback = findChild<QLabel*>(
+            QStringLiteral("LocalizationActionFeedback"))) {
+        feedback->setText(feedbackText);
+        feedback->setAccessibleDescription(feedbackText);
+    }
+
+    if (auto* rightPage = findChild<QWidget*>(
+            QStringLiteral("RightPage07"))) {
+        const auto cards = rightPage->findChildren<QWidget*>(
+            QStringLiteral("WorkflowCard"),
+            Qt::FindDirectChildrenOnly);
+        const QStringList values = {
+            QStringLiteral("%1 · %2").arg(orientation, axes),
+            QStringLiteral("%1 / %2")
+                .arg(formatMillimetres(thickness),
+                     formatMillimetres(gap)),
+            QStringLiteral("%1 层 / %2 mm")
+                .arg(count)
+                .arg(coverageMm, 0, 'f', 1),
+            QStringLiteral("%1% / %2%")
+                .arg(qRound(centerX * 100.0))
+                .arg(qRound(position * 100.0)),
+            modified
+                ? QStringLiteral("已修改 · 需重新确认")
+                : QStringLiteral("推荐规划 · 尚未确认"),
+            QStringLiteral("LIVE: BLOCKED")};
+        for (int index = 0;
+             index < cards.size() && index < values.size();
+             ++index) {
+            const auto labels =
+                cards.at(index)->findChildren<QLabel*>(
+                    QString(), Qt::FindDirectChildrenOnly);
+            if (labels.size() >= 2)
+                labels.last()->setText(values.at(index));
+        }
+    }
+
+    if (auto* confirm = findChild<QPushButton*>(
+            QStringLiteral("ConfirmLocalizationButton"))) {
+        const bool axial =
+            orientation == QStringLiteral("横断");
+        const QString reason =
+            axial ? QString()
+                  : QStringLiteral(
+                        "v0.1 主路径要求恢复横断位后再确认");
+        confirm->setEnabled(axial);
+        confirm->setToolTip(reason);
+        confirm->setAccessibleDescription(reason);
+    }
+}
+
 MockParameterDraft MainWindow::currentMockDraft() const
 {
     MockParameterDraft draft;
@@ -2797,6 +3558,7 @@ MockParameterDraft MainWindow::currentMockDraft() const
     if (m_comparisonEnabled)
         draft.protocolChain.append(QStringLiteral("FSE B"));
     draft.orientation = QStringLiteral("横断");
+    draft.imagingTarget = QStringLiteral("均衡");
     draft.trMs = 3000.0;
     draft.teMs = 12.9;
     draft.sliceCount = 11;
@@ -2830,6 +3592,10 @@ MockParameterDraft MainWindow::currentMockDraft() const
             QStringLiteral("ProtocolL2Current4"))) {
         draft.nex = nex->text().trimmed().toInt();
     }
+    if (auto* sliceCount = findChild<QSpinBox*>(
+            QStringLiteral("SliceCountSpinBox"))) {
+        draft.sliceCount = sliceCount->value();
+    }
     if (m_localizationPlanner) {
         const auto* planner =
             static_cast<const LocalizationPlannerView*>(
@@ -2838,6 +3604,10 @@ MockParameterDraft MainWindow::currentMockDraft() const
         const QPointF center = planner->normalizedCenter();
         draft.orientation =
             planner->property("selectedOrientation").toString();
+        const QString appliedTarget =
+            planner->property("appliedImagingTarget").toString();
+        if (!appliedTarget.trimmed().isEmpty())
+            draft.imagingTarget = appliedTarget;
         draft.readPhaseSwapped =
             planner->property("readPhaseSwapped").toBool();
         draft.planningCoverageModified =
@@ -3503,6 +4273,7 @@ void MainWindow::refreshMockWorkflowUi()
 void MainWindow::setWorkflowStep(int step)
 {
     const int nextStep = qBound(1, step, 13);
+    const int previousStep = m_workflowStep;
     if (m_workflowStep == 9 && nextStep != 9 && m_mockAcquisitionTimer) {
         m_mockAcquisitionTimer->stop();
         m_mockAcquisitionRemainingMs = 3200;
@@ -3517,6 +4288,68 @@ void MainWindow::setWorkflowStep(int step)
     }
     if (m_workflowPages) m_workflowPages->setCurrentIndex(m_workflowStep - 1);
     if (m_workflowRightPages) m_workflowRightPages->setCurrentIndex(m_workflowStep - 1);
+    if (m_workflowStep == 8) {
+        if (auto* confirmationTable = findChild<QTableWidget*>(
+                QStringLiteral("RunConfirmationTable"))) {
+            const MockParameterDraft draft = currentMockDraft();
+            const QString protocolChain =
+                draft.protocolChain.join(QStringLiteral(" → "));
+            if (auto* value = confirmationTable->item(1, 1)) {
+                value->setText(
+                    QStringLiteral(
+                        "水模%1位 · %2 · dataSource=MOCK · "
+                        "单次模拟执行")
+                        .arg(draft.orientation, protocolChain));
+            }
+            if (auto* value = confirmationTable->item(2, 1)) {
+                value->setText(
+                    QStringLiteral(
+                        "LOC Mock参考 → 参数快照 → Mock执行 → "
+                        "Mock处理与QC · TR %1 ms · TE %2 ms")
+                        .arg(draft.trMs, 0, 'g', 8)
+                        .arg(draft.teMs, 0, 'g', 8));
+            }
+            if (auto* value = confirmationTable->item(3, 1)) {
+                const QString axes =
+                    draft.readPhaseSwapped
+                        ? QStringLiteral("Phase / Read")
+                        : QStringLiteral("Read / Phase");
+                value->setText(
+                    QStringLiteral(
+                        "%1位 · FOV %2×%3 mm · %4×%5 · 层厚 %6 · "
+                        "层间距 %7 · %8 层 · NEX %9\n"
+                        "层组位置 %10% · 中心 %11% / %12% · "
+                        "覆盖框 %13/%14/%15/%16 · %17 · "
+                        "成像目标 %18")
+                        .arg(draft.orientation)
+                        .arg(draft.fovReadMm, 0, 'g', 6)
+                        .arg(draft.fovPhaseMm, 0, 'g', 6)
+                        .arg(draft.matrixRead)
+                        .arg(draft.matrixPhase)
+                        .arg(formatMillimetres(
+                            draft.sliceThicknessMm))
+                        .arg(formatMillimetres(
+                            draft.sliceGapMm))
+                        .arg(draft.sliceCount)
+                        .arg(draft.nex)
+                        .arg(qRound(draft.slicePosition * 100.0))
+                        .arg(qRound(draft.coverageCenterX * 100.0))
+                        .arg(qRound(draft.coverageCenterY * 100.0))
+                        .arg(draft.coverageX, 0, 'f', 2)
+                        .arg(draft.coverageY, 0, 'f', 2)
+                        .arg(draft.coverageWidth, 0, 'f', 2)
+                        .arg(draft.coverageHeight, 0, 'f', 2)
+                        .arg(axes)
+                        .arg(draft.imagingTarget));
+            }
+        }
+    }
+    if (m_workflowStep == 7 && previousStep == 6)
+        syncLocalizationPlanningFromProtocol();
+    if (m_workflowStep == 5)
+        refreshProtocolCalculationUi();
+    if (m_workflowStep == 7)
+        refreshLocalizationPlanningUi();
     refreshWorkflow();
 }
 
@@ -3766,7 +4599,7 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
         QStringLiteral("设备与安全状态"), QStringLiteral("推荐依据"),
         QStringLiteral("模板边界"), QStringLiteral("预检摘要"),
         QStringLiteral("方案摘要"), QStringLiteral("采集状态"),
-        QStringLiteral("图像质控与输出"), QStringLiteral("运行前状态"),
+        QStringLiteral("定位规划摘要"), QStringLiteral("运行前状态"),
         QStringLiteral("采集状态"), QStringLiteral("处理状态"),
         QStringLiteral("图像质控与输出"), QStringLiteral("完成摘要"),
         QStringLiteral("所选记录")
@@ -3838,15 +4671,23 @@ QWidget* MainWindow::makeWorkflowRightPage(int step)
         addWarningNote(QStringLiteral("当前仅为 Mock 定位规划参考；真实设备 Run 未执行，也没有采集进度。"));
         break;
     case 7:
-        addStatus(QStringLiteral("标准结果"), QStringLiteral("待生成"));
-        addStatus(QStringLiteral("SNR"), QStringLiteral("待计算"));
-        addStatus(QStringLiteral("均匀性"), QStringLiteral("待计算"));
-        addStatus(QStringLiteral("畸变 / 尺寸"), QStringLiteral("待复核"));
-        addStatus(QStringLiteral("重复稳定"), QStringLiteral("需重复扫描"));
-        addStatus(QStringLiteral("结果包"), QStringLiteral("待生成"));
+        addStatus(QStringLiteral("当前方位"),
+                  QStringLiteral("横断 · Read / Phase"));
+        addStatus(QStringLiteral("层厚 / 层间距"),
+                  QStringLiteral("3.5 mm / 1.25 mm"));
+        addStatus(QStringLiteral("层数 / 覆盖"),
+                  QStringLiteral("11 层 / 51.0 mm"));
+        addStatus(QStringLiteral("中心 / 层组位置"),
+                  QStringLiteral("50% / 50%"));
+        addStatus(QStringLiteral("规划状态"),
+                  QStringLiteral("推荐规划 · 尚未确认"));
+        addStatus(QStringLiteral("真实设备映射"),
+                  QStringLiteral("LIVE: BLOCKED"),
+                  QStringLiteral("warning"));
         {
             auto* note = new QLabel(
-                QStringLiteral("完成 Mock 采集与重建后显示质控摘要，由科研用户最终确认。"), page);
+                QStringLiteral("仅调整 Mock 定位草稿；不会写参数、加载 SDK 或触发设备。"),
+                page);
             note->setProperty("class", "evidenceLabel");
             note->setWordWrap(true);
             layout->addWidget(note);

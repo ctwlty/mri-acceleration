@@ -86,6 +86,8 @@ QStringList MockParameterDraft::validationErrors() const
         errors.append(QStringLiteral("协议链为空"));
     if (orientation != QStringLiteral("横断"))
         errors.append(QStringLiteral("主路径方向必须为横断"));
+    if (imagingTarget.trimmed().isEmpty())
+        errors.append(QStringLiteral("成像目标为空"));
     if (!(fovReadMm > 0.0) || !(fovPhaseMm > 0.0))
         errors.append(QStringLiteral("FOV 必须大于零"));
     if (matrixRead <= 0 || matrixPhase <= 0)
@@ -115,6 +117,19 @@ QStringList MockParameterDraft::validationErrors() const
         || slicePosition < 0.0 || slicePosition > 1.0) {
         errors.append(QStringLiteral("定位中心或切片位置无效"));
     }
+    if (std::isfinite(coverageCenterX)
+        && std::isfinite(coverageCenterY)
+        && std::isfinite(coverageX)
+        && std::isfinite(coverageY)
+        && std::isfinite(coverageWidth)
+        && std::isfinite(coverageHeight)
+        && (coverageCenterX < coverageX
+            || coverageCenterX > coverageX + coverageWidth
+            || coverageCenterY < coverageY
+            || coverageCenterY > coverageY + coverageHeight)) {
+        errors.append(
+            QStringLiteral("定位中心必须位于覆盖框内"));
+    }
     if (outputRoot.trimmed().isEmpty())
         errors.append(QStringLiteral("结果根目录为空"));
     return errors;
@@ -133,6 +148,7 @@ QJsonObject MockParameterDraft::toJson() const
         {QStringLiteral("templateName"), templateName},
         {QStringLiteral("protocolChain"), protocols},
         {QStringLiteral("orientation"), orientation},
+        {QStringLiteral("imagingTarget"), imagingTarget},
         {QStringLiteral("fovReadMm"), fovReadMm},
         {QStringLiteral("fovPhaseMm"), fovPhaseMm},
         {QStringLiteral("matrixRead"), matrixRead},

@@ -2,6 +2,7 @@
   <qresource prefix="/">
     <file>app.qss</file>
         <file>mock-localization.png</file>
+        <file>mock-localization-clean.png</file>
         <file>mock-loc-axial.png</file>
         <file>mock-loc-coronal.png</file>
         <file>mock-loc-sagittal.png</file>
