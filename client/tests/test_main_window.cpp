@@ -93,6 +93,9 @@ class MainWindowTest : public QObject {
 
 private slots:
     void sdkCanBeLoadedAndConnectedWithoutFileDialog();
+    void defaultSdkStateIsUnloadedAndRealButtonsDisabled();
+    void configureEggControllerKeepsProxyUnreachableAndReportsHold();
+    void holdHandlersLeaveMockNavigationAndStatusVisible();
     void galleryLayoutUsesStableThreeColumnsAndContextPanels();
     void workflowUsesMockNavigationAndKeepsRealRunOnHold();
     void preparationGuidanceRemainsACompactSingleLineNotice();
@@ -151,6 +154,79 @@ void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
 
     QVERIFY2(result.ok, qPrintable(result.message));
     QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Ready);
+}
+
+void MainWindowTest::defaultSdkStateIsUnloadedAndRealButtonsDisabled()
+{
+    MainWindow window;
+
+    QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
+    for (const QString& objectName : {
+             QStringLiteral("LoadSdkButton"),
+             QStringLiteral("ConnectDeviceButton"),
+             QStringLiteral("RealPrecheckButton"),
+             QStringLiteral("RealRunButton"),
+             QStringLiteral("RealAbortButton")}) {
+        auto* button = window.findChild<QPushButton*>(objectName);
+        QVERIFY2(button, qPrintable(objectName));
+        QVERIFY2(!button->isEnabled(), qPrintable(objectName));
+    }
+}
+
+void MainWindowTest::configureEggControllerKeepsProxyUnreachableAndReportsHold()
+{
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+
+    MainWindow window;
+    auto* process = window.findChild<EggControllerProcess*>();
+    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    auto* mode = window.findChild<QComboBox*>(QStringLiteral("ControlModeCombo"));
+    auto* start = window.findChild<QPushButton*>(QStringLiteral("RealRunButton"));
+    QVERIFY(process);
+    QVERIFY(status);
+    QVERIFY(mode);
+    QVERIFY(start);
+
+    EggControllerLaunchConfig config;
+    config.program = temp.filePath(QStringLiteral("real-eggcontroller-proxy.exe"));
+    config.workingDirectory = temp.path();
+    window.configureEggController(config);
+    QCoreApplication::processEvents();
+
+    QVERIFY(!process->isRunning());
+    QVERIFY(status->text().contains(QStringLiteral("HOLD")));
+    QVERIFY(!mode->isEnabled());
+    QVERIFY(!start->isEnabled());
+}
+
+void MainWindowTest::holdHandlersLeaveMockNavigationAndStatusVisible()
+{
+    MainWindow window;
+    auto* currentStep =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowCurrentStep"));
+    auto* workflowStatus =
+        window.findChild<QLabel*>(QStringLiteral("WorkflowStatusStrip"));
+    auto* next = window.findChild<QPushButton*>(QStringLiteral("WorkflowNextButton"));
+    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
+    QVERIFY(currentStep);
+    QVERIFY(workflowStatus);
+    QVERIFY(next);
+    QVERIFY(status);
+
+    QVERIFY(QMetaObject::invokeMethod(&window, "handleLoadSdk", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&window, "handleConnect", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&window, "handlePrecheck", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&window, "handleStart", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&window, "handleAbort", Qt::DirectConnection));
+
+    QCOMPARE(window.deviceSessionState(), MriSdkSessionState::Unloaded);
+    QVERIFY(status->text().contains(QStringLiteral("未通过真实预检")));
+    QCOMPARE(currentStep->text(), QStringLiteral("01"));
+    QVERIFY(next->isEnabled());
+    next->click();
+    QCOMPARE(currentStep->text(), QStringLiteral("02"));
+    QVERIFY(workflowStatus->text().contains(QStringLiteral("当前")));
 }
 
 void MainWindowTest::mockPresentationAssetsDoNotContainEmbeddedDynamicStatus()
