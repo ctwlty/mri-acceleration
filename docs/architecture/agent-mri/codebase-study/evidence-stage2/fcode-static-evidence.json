@@ -1,0 +1,33 @@
+{
+  "schema": "agent-mri-fcode-static-evidence/v1",
+  "generatedAt": "2026-08-02T16:31:36+08:00",
+  "method": "read PTScan :SRC text, test path existence, and hash same-stem fcode; no loader or MRI program executed",
+  "parameterFiles": [
+    {
+      "path": "C:\\MRIScanner\\Scan\\PTScan.par",
+      "size": 1684,
+      "sha256": "20859C049888A479E23B18C4EA48E80A6753722F917458CCFE98EA09F57FF6C4",
+      "srcField": "C:\\MRIScanner\\FTSpect\\seq_lib\\demo_src\\CSJ_1PULSE_R1.src"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\Desktop\\eggcontrol\\eggcontrollerV2\\Iface\\mriRely\\PTScan.par",
+      "size": 1853,
+      "sha256": "0DF4F238B7EBEB7A5DB9E3F0E3136AEF1FA286897C1F79D5E383F160F0AD4EE6",
+      "srcField": "C:\\MRIScanner\\FTSpect\\seq_lib\\demo_src\\CSJ_1PULSE_R1.src"
+    }
+  ],
+  "srcFieldTarget": {
+    "path": "C:\\MRIScanner\\FTSpect\\seq_lib\\demo_src\\CSJ_1PULSE_R1.src",
+    "exists": false
+  },
+  "sameStemFcodeCandidate": {
+    "path": "C:\\MRIScanner\\FTSpect\\seq_lib\\demo_src\\CSJ_1PULSE_R1.fcode",
+    "exists": true,
+    "size": 55988,
+    "mtime": "2025-03-01T09:31:54+08:00",
+    "sha256": "3264E171F759F67DFB3B77B03A54B1D0D0F285D65185E2796E2A5BFAB85E5948"
+  },
+  "c77ManifestContainsFcodeIdentity": false,
+  "bindingStatus": "UNKNOWN",
+  "bindingReason": "The same stem is only a filename correlation. No current code, vendor contract, immutable manifest, or run log proves which fcode was loaded for either parameter file."
+}

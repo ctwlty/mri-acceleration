@@ -1,0 +1,644 @@
+{"relativePath":".claude/launch.json","size":391,"sha256":"85E1FE9DECDE9FA278007AA92ADBAA65DB5DDD477F509C0BF723FCD014B32D66"}
+{"relativePath":"DEPLOYMENT_CHECKLIST.md","size":5126,"sha256":"551CDDBD003E3333EEABDDC16AADD8D2B7246CF74F60ECB6FA7E4628E6CCC6FD"}
+{"relativePath":"FINAL_SUMMARY.md","size":7331,"sha256":"9134F2E1B6B43D321169C8801034AB26130C8CBA66C9AA48D73BCE2EAF4F9E63"}
+{"relativePath":"HSL/HSLControllerV3_mock.py","size":6994,"sha256":"70053335775504C6A6724F26E9900F16BB045D3B8F320D72383A0B7C82ECAB79"}
+{"relativePath":"HSL/HSLControllerV4.py","size":9235,"sha256":"4F6358355CCC8E509E8545EEA0DC6E46949FD7152BDFB1D7E08F284FA1877867"}
+{"relativePath":"HSL/MotorController.ino","size":7129,"sha256":"15A3DBBDE7A354B1931BE014D5E4AA01FEC8F7FD8889993C72D7FA55342D2D11"}
+{"relativePath":"HSL/motor.md","size":19682,"sha256":"9BD9B05D4F1FA359BF083C83490E064334E2CE68B58AE27475BDF0E9B9A97765"}
+{"relativePath":"HSL/sketch_apr19a.ino","size":3205,"sha256":"CDEAFBA05BE4D6C6805F22FA3D969EA193B2675178B68598C07121507BBCA543"}
+{"relativePath":"INTEGRATION.md","size":3976,"sha256":"CE8785A722DF7BBFDE7B2F7E1690C1A1F512610255E7BA48D205B9E181181CD2"}
+{"relativePath":"Iface/HCController.py","size":1932,"sha256":"70DE8B87C54BE24CB0D8A55F5652A9D6A1B10838985829FA083549F549C5DD5F"}
+{"relativePath":"Iface/console_mock.py","size":3246,"sha256":"4317EA39CD793B7A5DF473D5AA45CECFA995FE669E5156C5A312A4C0974DA0E5"}
+{"relativePath":"Iface/consolev3.py","size":11924,"sha256":"D98F4BC8F36583B290F35255DD7D4BBCAFBC448A9F263103E0B96DBD500334E5"}
+{"relativePath":"Iface/consolev3.py.backup","size":7903,"sha256":"B735AD20A0D523B596DA45F65B7846AF026357E752B80576E26196674497EC1C"}
+{"relativePath":"Iface/mockData.nii.gz","size":19668177,"sha256":"18711D133D9465AF69E214A2A871AA9F5DCBE86A49178AA7A2D545735D8497A9"}
+{"relativePath":"Iface/mriRely/PTScan.par","size":1853,"sha256":"0DF4F238B7EBEB7A5DB9E3F0E3136AEF1FA286897C1F79D5E383F160F0AD4EE6"}
+{"relativePath":"Iface/mriRely/hw_cfg/AFE5808.txt","size":297,"sha256":"D6E30C41C0E33DF9806507F546164B67DAA19A06B27F2F05DC7DB57C3BC94CD5"}
+{"relativePath":"Iface/mriRely/hw_cfg/AuxReg.cfg","size":671,"sha256":"A2583683B314278AE099FDBE7C318C356D16BBE5B7ED071CBF71DB8F3E12D194"}
+{"relativePath":"Iface/mriRely/hw_cfg/AuxReg_master.cfg","size":779,"sha256":"C091CF2F6D5226D59673AFB60F3D1D49A5D5F329597EF15756552FD5D4740D81"}
+{"relativePath":"Iface/mriRely/hw_cfg/AuxReg_mini.cfg","size":677,"sha256":"D7F824154AB89E9E56F8C28D3D3076777F57BCD7E37080A8CB785E280896A3F8"}
+{"relativePath":"Iface/mriRely/hw_cfg/AuxReg_slave.cfg","size":779,"sha256":"190B2CAB7D564B0FE5281F638BE7CB9EFA64FF9FEC04472653F5E709DD81D9B0"}
+{"relativePath":"Iface/mriRely/hw_cfg/box_m_info.hw","size":242,"sha256":"F2EBF76CEF5660DB7B722ED7BEA79B7225305B5FDD9FDE3A80D9168FC43F398D"}
+{"relativePath":"Iface/mriRely/hw_cfg/cali.txt","size":192,"sha256":"0510922460A9A1687FD8DBD6B5C61B787F02B9C9D42AD174F32FECA30096B448"}
+{"relativePath":"Iface/mriRely/hw_cfg/cali_anke.txt","size":192,"sha256":"A98EBE36EC46775DE5C889CBEBAE6E806F52BEEB6D984358C5B20A86DB865ED0"}
+{"relativePath":"Iface/mriRely/hw_cfg/coef_fp0.01_fstp0.1_ap1_as80.fcf","size":2219,"sha256":"EACE55F9BD3A9CD1DE3D9E36BE0A4FCCA1317C4D9669440551FC230A10250C26"}
+{"relativePath":"Iface/mriRely/hw_cfg/coef_fp0.01_fstp0.2_ap1_as80.fcf","size":2204,"sha256":"149804AB51988157CAED2882815225E7EF5EE97F59DF4CB3E2984EF21D5B9A6C"}
+{"relativePath":"Iface/mriRely/hw_cfg/coef_fp0.01_fstp0.3_ap1_as80.fcf","size":2219,"sha256":"1A666AA85063DBB12A4E1A00E028CF9AA06DCC397E7BB296751BB3F01C32A229"}
+{"relativePath":"Iface/mriRely/hw_cfg/coef_fp0.01_fstp0.4_ap1_as80.fcf","size":2219,"sha256":"83C51789367881EF79BEDF82023B82AAB2D0DFB38739B61DA2EC97F191C8FC53"}
+{"relativePath":"Iface/mriRely/hw_cfg/coef_fp0.01_fstp0.5_ap1_as80.fcf","size":2204,"sha256":"E2810451B67C6F36863AB85A9D4A9042D18468A07BB4EF63E4A7DBB6832FC0C6"}
+{"relativePath":"Iface/mriRely/hw_cfg/delaycfg_14bitADC.hw","size":245,"sha256":"F737A3392216A1A6BEFB3EDCA63AF5E45030D555EC96538984767A50771268D6"}
+{"relativePath":"Iface/mriRely/hw_cfg/delaycfg_16bitADC.hw","size":303,"sha256":"F821FC26393C7C98DAC4DC02CDE183AE7B705A96512CCDF56B228BEA3F0CA926"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.04us.dat","size":593,"sha256":"C93835EC5FF25D727BFDADCCB5AD7CF12BC3906DA7AB9DC79C3ECB6AEF88618F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.06us.dat","size":593,"sha256":"E9FF8079C40C346D07BE572DA4D42818079563D89BB212917FC8CD088B918CAA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.08us.dat","size":593,"sha256":"623F3F8C9FBFD1DD3DC70BFD72F080BCC82FE214640F797FB52A41322C044A3B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.12us.dat","size":593,"sha256":"D6C4A6DE7B31809E0128A64DB64E1F64B2B50B8AE0AB28DEA467A3E8C3D6F116"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.14us.dat","size":593,"sha256":"6DBABF05D5CFEEEAA03627FC098DCE7077CE72477C648D49C724BC4DF93166CD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.16us.dat","size":593,"sha256":"DBC1CA6405B9AAB569F02CCCBCC1C234580B6A4D28ED78F144BF1183BFE5D8AF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.18us.dat","size":593,"sha256":"967F452233950BA35A65741C1714505559E895E8AC82106954D5D2388C543666"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.1us.dat","size":593,"sha256":"6F78539097124BED23C341E7145B9303253D19DC6202BDFDF3DCA30A4CC38FE6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.22us.dat","size":594,"sha256":"35B31690C2746BAF358D848A64D47923278E2B58FCAC15B1947F1AE5054B4FE1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.24us.dat","size":594,"sha256":"C1E18805BD3EB3C3E2D896BA507CDA3347853B2E00D294DEA3095B21063225AB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.26us.dat","size":594,"sha256":"0C5F28094C7E0D010C415CAB4A7C24F7B004850FD1ABCFD181D36411DBC853D1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.28us.dat","size":594,"sha256":"7D77542EA990DF224227C05382073C9C3E5190DB9E72E29CB0A24AFE34EEBB0A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.2us.dat","size":594,"sha256":"D4D5068CB128BD6E3B4BF1B55DEC5A133A46D5032A0B3BA239E76BF1F23EB35C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.32us.dat","size":594,"sha256":"F65BA059E1B6C7C9125CF2FA1CA9F2CEAF9FB6D9B9C0E730425DCE87106C44D3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.34us.dat","size":594,"sha256":"C36F6BA925A6314356938505F88EB8A505D40C5B1B87272F31FA73D308996F5F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.36us.dat","size":594,"sha256":"1AEFA6CF588F2F7268FEE9A08AD07618D9296DEBEAD6604D64B26CCC3B732D3B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.38us.dat","size":594,"sha256":"671463C18459FFB0B8D5340B5A5C27EAE2311D4B2DFB3C72885DE237F330A05C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.3us.dat","size":594,"sha256":"3944B01769413218708BF0296EBB107815AEF4A7ACE17B6BD896D7D1905827C8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.42us.dat","size":594,"sha256":"19739929B94D92F9158015A0BE959DF9C3B83CD5E6D51F4F8C37A4C6C241CEF5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.44us.dat","size":594,"sha256":"CC164C902765E6676D76B5C968ECB0173F2AE16B9A98F789E833B61FD1CC8C25"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.46us.dat","size":594,"sha256":"272CD2AEF8603142354BB7C6C3C94CA215D8B5FF5E7054745310E04871521190"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.48us.dat","size":594,"sha256":"5975C00671D54E49657E4D57A9B78E7C6B25FC46E79E629C2162524CE937B07E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.4us.dat","size":594,"sha256":"1251DCE2D43E78307D2061C3AFACE0EEC329C14B77262E53968470950A404547"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.52us.dat","size":594,"sha256":"B966FD752565A418B5162DA2E3EE4F9EB79A4D175A8A0B81520F71648F8681FE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.54us.dat","size":594,"sha256":"CFB35BAF9B58707C36F01557825132EC26101942DA4C2575CD14113360588157"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.56us.dat","size":594,"sha256":"66292754D6A56696D8155D7C86BBAF55C9E5C3111AFC64836D4BFBBD68DBD359"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.58us.dat","size":594,"sha256":"2A3187F16DF9C1081FF184526EF886E009934BEFA1B8A0BCCBA9A950DFB8B2CD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.5us.dat","size":594,"sha256":"AEE0D6A1EC973F7608563B7C435ABBDC77B5B0EFF3FAE8D4B8BABAA0A98740BA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.62us.dat","size":594,"sha256":"63FF3FFED3462E85AF6D6ADA5DB8B82A5FF379305DE3FA2F00287BBA892C8223"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.64us.dat","size":594,"sha256":"305C0E9B5DBB6C6F015C7103118D5273E1CE51DD3AC1FE67D81D356F740C276D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.66us.dat","size":594,"sha256":"830F946E58FDED123A225A289B1B68516333F1C45B3120AC7A70763E7BE135D5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.68us.dat","size":594,"sha256":"37E1720361859BB1186535A0165471F66A98DA642EC6A4F3DC9FAC0A397A93C6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.6us.dat","size":594,"sha256":"0ACA706E8149802D8774CCD85372084B852D09ADA1F45C875A0081EA04D31BF3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.72us.dat","size":594,"sha256":"90B51B7D964FBF7E2CAE21F18656426507DF3B5C8EE381C0BD5A65E3F07A081F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.74us.dat","size":594,"sha256":"3C1DE4F2F6DC72E01ED03679BA5EA44DA20EA6856AAA214807332E1C15631BDC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.76us.dat","size":594,"sha256":"B92F0AD62B23BC1BC5DEECD7EC6B8D6F59CF18122B63342684E7919857902F39"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.78us.dat","size":594,"sha256":"F92825AE12A25CEB6141014C402B5406C93CB77A8BD5344F7797E0F68560AFBA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.7us.dat","size":594,"sha256":"03E23FF2823552A9B21F3E5B9B52140E302F6139A35FCF3D9FADFF8419A01BE0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.82us.dat","size":594,"sha256":"2D6E142DA9D024175F1CB18FB9CD61E4563DAD9B93D38625D558FDE0EB6767D8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.84us.dat","size":594,"sha256":"71B85645CF14619713BD14D840DCBA289B02618999FF7F2ACE859E4F2B1BBF4D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.86us.dat","size":594,"sha256":"FF3B6B020F78682F3D85E0421CFB035D75DBD3AEC7BD83988262AD81DB7E7344"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.88us.dat","size":594,"sha256":"1B2D17A43A166EEB6FD9989C7BFA97FBD0DEDEB12B4CB53775553294A8AD6C46"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.8us.dat","size":594,"sha256":"12174A64862BEB5B390645F53122FCD083B555DD5D7F00589926DEB91AC78A22"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.92us.dat","size":594,"sha256":"8250194A4EB2C0E801F1158550C88485D9316FCD6920B652630E6E4F82A8596C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.94us.dat","size":594,"sha256":"A68C7B6167EB07D750D34E85F6CB49421761F659E2B59D9B1CC5D000DF25A286"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.96us.dat","size":594,"sha256":"2DAFCD9D14097BCD3385E9F1CCCB0474D822E342F6CCBA50927334E5DA769407"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.98us.dat","size":594,"sha256":"A376945E2863F26D91ABD1C14F0FC171174B77A246902214303031511833FE53"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/butterworth_0.9us.dat","size":594,"sha256":"851F45C47F5FB4A3124D75241F8E94C4890193C6E7E089D0CF24F1FE0E23D7F1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.04us.dat","size":592,"sha256":"41ED419CAD27681CFE696543C4735ECA41C0DF81EDC10D6153E1957012CF2445"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.06us.dat","size":593,"sha256":"82B7A2E59E4D76FFD5F22F0F714015170A044B5C8D3CC7EC04BCC26F12B276BB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.08us.dat","size":593,"sha256":"141E62D96085802B36CF04E88CFF303284F68828FBEE29E9A1F12A6BC268F7B5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.12us.dat","size":593,"sha256":"6EE97F909201978898983AEAFD71AB71831CE338BFCEDC24941006A429908CAC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.14us.dat","size":593,"sha256":"B13C520EB60818F4086872D578653D832E1AD960A2CF16D0E0D7AFE7EDE3C288"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.16us.dat","size":593,"sha256":"6FD915FD37715B7D35961F308576BE3F268CB3699FBBCF52384EFDC74F2B9684"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.18us.dat","size":593,"sha256":"474B62B36E0A397A5AED1924337D6F6283CDE19BAAFB842A330915C5329ED5BC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.1us.dat","size":593,"sha256":"367F4962609F0370DA44D75CC4121F65C94E838F72E3FCCC84CEFA89F31ADF70"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.22us.dat","size":594,"sha256":"733406C22A860EAF45531310DBE9E447F60EE372E96316A7537E8C711E560D24"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.24us.dat","size":595,"sha256":"198332DAD0A95701B29D176D908A44F671FE2F97EEA92F4F8DB423AB715E2A35"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.26us.dat","size":595,"sha256":"D749AACA63611BD19F9A212D4103AC3857B4E5CC285AD8BD9C4C9687CA8AE2A5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.28us.dat","size":595,"sha256":"C7F283644B960CBA659964B70797BEDE0755800A729316BC2A190C2DA64E3E65"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.2us.dat","size":594,"sha256":"093FF53B380D6AB0919A4ACB11806465BDE5E225BF1698F30ADB4A9FB4BE895C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.32us.dat","size":596,"sha256":"EAD72F75BB6E129453C20976465E3EBC29BB0271B0F0E9EB1D5782233E953D6E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.34us.dat","size":596,"sha256":"E9600A270558D425930CC8184431415414EA486E472DAEB9F34A5653AA7B9B48"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.36us.dat","size":596,"sha256":"E3CF539BE9D24BE8D0F6F210D80C295339054DECA0DFED5648DF594BC0637313"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.38us.dat","size":596,"sha256":"356B90AAED07B591365051D81703305F489A6C392DD00C8099806BEEC83CDC87"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.3us.dat","size":596,"sha256":"E1E8F51D7FD0CAB3E5FED1C28C8D60FBB5EF3FEFE8D3D062860DCACD02012D3F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.42us.dat","size":596,"sha256":"50FAD35D466D4DAA069B57E555EA2920C3F35E5078E1AFF36FBAF727BFD25139"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.44us.dat","size":597,"sha256":"57DC06EFEF1E5DE51281154B79AC8BCEDC639B12B67E002C68D14CAB26CDAFDF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.46us.dat","size":597,"sha256":"926886F4ECC546F08488C6A677D0E861C693F7CB8E400405180711F3D2AC4805"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.48us.dat","size":597,"sha256":"ECB154F1927BA9DEFF8E4F1E02B7E6FCC2B1728BFF0DB9C8CC084FEEA18F2F27"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.4us.dat","size":596,"sha256":"78B7C811BA66FAFA3A9E6421591010AF6B07DAAFA01351B28ABD6408B090C3D7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.52us.dat","size":597,"sha256":"F6C177B29274B85FE533B1E9B00D80E44C6611DB6DCBBEF399368A09D4E8FE7B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.54us.dat","size":597,"sha256":"AE9AB559057EAC7960819C3D406D7A6C3AEA56F021B85D0C5A8C79BDFF8E4519"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.56us.dat","size":597,"sha256":"B3F53A360CC76754B1FD796020E41375AA3508DC136B8652EE39EBD4DC5D5FB6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.58us.dat","size":597,"sha256":"50A0C69DB108D444931B096F717C540C7B0CB66FEFEC2D9CEA3C358EC9760C6E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.5us.dat","size":597,"sha256":"AB1F3C8637E84F790A28AFB12F9F5B39F5F669D5ECDBE5DDE2C2C0F3A03E8BAA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.62us.dat","size":597,"sha256":"FE228FC890480D3E1BD1609EE497C36742CECD0FECCEF6A8314097751382BE5C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.64us.dat","size":597,"sha256":"186C75056C9A67F088BCD3E3CD3E07C0FB2B68C05F28E401AFAF825E2F1CBA76"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.66us.dat","size":597,"sha256":"06DBE99F2E186D35AC4345E99CCC5C4A952486A5B479392D38471D1AFFFE74EC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.68us.dat","size":597,"sha256":"079CC02CDBA4E43258C076F72F0573247838AA8BE212458E49C088F6CD1887F6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.6us.dat","size":597,"sha256":"EC96745A02A2C87A9C71B6EF550CA50D96B5068026432C33B8C758009E1C065F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.72us.dat","size":597,"sha256":"A511A0304ABFBB421D37C0C581C4092C5A34F4E592B6CFA5D5EB641FA74119F6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.74us.dat","size":597,"sha256":"73B95479CA8E1551C4E2E1F5002F04DE4AEDC70AD3E45721A434C4DFE1EFF522"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.76us.dat","size":597,"sha256":"279F6F14BFB68FE5C10D2CBC6914A298113038E5F62E6428A52A73578A05E625"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.78us.dat","size":597,"sha256":"7EAFAEA58EE4D6040524AFF259823EAF5CC526428BD4D3803DD77BB845E0EF3D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.7us.dat","size":597,"sha256":"3277CA9050D631799802177DF79CCA5E525F2A57F5E2AE7CD8DA01DB3EF4FB52"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.82us.dat","size":597,"sha256":"A97FDD426A3C88352B883FCB7FE9B94CF241CBEAB5B845669E82127C6F191C59"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.84us.dat","size":597,"sha256":"3637F904A7F0C947FBA1D646A65820211449CB14DAD888E5FD22EDA1CFD9AF23"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.86us.dat","size":597,"sha256":"028AE1E17CC620A76F26A5CDB6939A131E9A3A86404E8C7C983332E8DEDBC091"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.88us.dat","size":597,"sha256":"A7AACBE0218E4B4253BF036381132B274CAFFF1B7A983712DF43FC240A1D8E58"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.8us.dat","size":597,"sha256":"4858AE87FF9236B381A7428C82B6AE79D07BB5C29FDBE675D4C4B2FE80F6B711"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.92us.dat","size":597,"sha256":"E96976AB2547C267BA90C7DACAC516B10F930D755C638BC94E18869B6BB91E3E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.94us.dat","size":597,"sha256":"EDEDC331C19AF60BC57065DAC69AD1689042C0DA4439B27E6AA20AF4AC0092F7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.96us.dat","size":597,"sha256":"6910C2D37A974E4440CDF8DC88A9DB8614A1CFBC777892CAEAF60D3AD9A23322"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.98us.dat","size":597,"sha256":"171DC49512A6859339D7E3AAD12BA0F9788090426407FDC14AA6B8502D9C687E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_0.9us.dat","size":597,"sha256":"3820DCF5E0C5ADC9FF6ABEE8F9D8B0FD47FE25D3B769F9DE3B6F76AB2DC38BF8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_100us.dat","size":601,"sha256":"528DF164DFC654BBF087F64C12F41F30D29A993E081AEBA9CB882B133B97FADC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_10us.dat","size":600,"sha256":"F18964DC65E7E1CF435AEE379592D327EA95C003A786B6F928950AED96A816CE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_12.5us.dat","size":601,"sha256":"DDC7B5CB75B81FB5C93A312871AE9DBBEBC26C43AC72B019338849892E91E3A2"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_120us.dat","size":601,"sha256":"EC38F8582D7D494E726B2C3977FBA993C2381E4DE82F2E741433841B6B218398"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_15us.dat","size":600,"sha256":"0384B5668C951F6A847096103207B5B457B78CC805C8695575107C45813603CB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_160us.dat","size":600,"sha256":"283A1C611A7BAC732F12DCD20D213F3D6C310A2DF0ADC4764EC3122845FA0EE2"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_1us.dat","size":597,"sha256":"240A1FC17994BA2D291ACADCC2AA2B566754FDF46F5B9A3D7879C51E8B86456A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_2.4us.dat","size":595,"sha256":"6194467817442F3DD6F11AEB93AD59C28DAC2407DB11D4C5BFDCA423C5814D34"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_200us.dat","size":601,"sha256":"C38ACF91AB3207F304B435D5A873AE58719AB5CD3CCAA9CE4763F206BBEE8D9B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_20us.dat","size":600,"sha256":"164D67C5E84E695D116F82554104E733322B94A96C2E5AA13BFBE63BE704CB3F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_240us.dat","size":600,"sha256":"520B47A7B164F64CE0B69F8974DA634FF93B541A4A6C59915EDEBB82A2BA47FA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_25us.dat","size":600,"sha256":"258F62B4EECDF3AC680F3A4326540E87724FCCB2DBB14898CE5BB851FDB74E9D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_2us.dat","size":596,"sha256":"CE8EE15B789073784F74FAC9DA9648F68D912D11178B93D4536D64B8BFBEFEF0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_3.2us.dat","size":596,"sha256":"B3AD5AC6C48DE7DD8C7D3DA4B7F26F2080F79C4576A8AF016D4008DB27EB9C6C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_30us.dat","size":600,"sha256":"0069713B039FA7E04BCCA151A1B65B9EDFF107874F03058F1EE92E946314244C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_320us.dat","size":600,"sha256":"845B1BC90398BD8BE07C89964E966CF365B34292FF102B411B17BCE8F812B279"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_40us.dat","size":600,"sha256":"7A63981B20CD77543A31AB5E893781CD63FEA7C976B804806CC82F0EACE36643"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_4us.dat","size":600,"sha256":"182981D3BEB3C52BC627D21B938F5B9924011C4DBFE44DCDD45025ACDC989DF5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_500us.dat","size":595,"sha256":"1B559B22CE42DC224A8926D8363FBB50C408F340FD8A921CC2017A90EE046001"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_50us.dat","size":601,"sha256":"6CE8A0755C7F633B0727A1D7BA89A1B7755202987DE302073651EA712B99D5BB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_5us.dat","size":595,"sha256":"E69B0A85B8B4FA0E2F75DFA74DA4E6CF6883B8CED4D756C9281B656F84F56FB5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_60us.dat","size":600,"sha256":"0A99191AE6F4586BDD1E01AD95E16AD1DA7C3628B7F1B8609C5E7898ED0CD10A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_6us.dat","size":600,"sha256":"DC69766EC2D0E7B39CDA037ADCFE62A6F9C71F1C47A7165D60AA02F03E40DB64"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_80us.dat","size":601,"sha256":"24C937AB69D4AF5D958BE6271C3C6B13FC1FF9C2A125224C905ECE3F8FFB4EAE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filter/ellipse_8us.dat","size":600,"sha256":"1D687096378DA32CC00E4999DDAF4A8DA761F0E4786480F3F4571A2CACA6C746"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_10.dat","size":200,"sha256":"365530B9D03A2EB450D3BA30A02B654575573D2EECB24C6392A018D84815A46E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_100.dat","size":197,"sha256":"5843596636608DE623D4F33A62CAFE654D611BA7B4C51B0DA077A422AB27EE8B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_11.dat","size":200,"sha256":"1FAC2359DA7C5D9A5BEDBC0EA768104CCF0EE8241FEC7D01BB00908285241C37"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_12.dat","size":201,"sha256":"3D3CEFF4FF76FDC378C1CFCC34810FCEE7BD976666ABE5D2220C4AF09CA0E7D3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_13.dat","size":201,"sha256":"87380070B0488C393E665A6BEB0EBE30C4EAE1E95CC157279E5E5B853D5B201F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_14.dat","size":201,"sha256":"94FACAF023CB997E3630AD9112859732A7CEDB5397892896C218080E0F21AD19"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_15.dat","size":200,"sha256":"4EDC783476A6A118212A18B86CB227A2E28B117DA569CC10F8CD394FEFFDE770"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_16.dat","size":201,"sha256":"AEA8ADD33206569F99150C905E7C3FBF61B35E5FADBA6155D521CDA2F18703D9"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_17.dat","size":201,"sha256":"ABC159754E04852D9AB4777802223E3F9B33AAD1999935FD15A3A4271E531B2E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_18.dat","size":203,"sha256":"EF4415F71C3DB7B77C190D8F73C6328D43424A2B5E89FAB7F9F6B1FB5920E5CF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_19.dat","size":204,"sha256":"4A7F5A24E774D35F09745B3FE1AF4C92074D25B86A1590E8176C588B48B8931C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_20.dat","size":204,"sha256":"B4ABB56B21F094F73B70098090D95BFCBD352B56964A54B69D327F3AEB3471BF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_21.dat","size":204,"sha256":"80E7DA5B2FD17C87286CA7CA3DE4A0BCDE30B61624E26BD80FDB629F79C74802"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_22.dat","size":204,"sha256":"04B288A6FA14D7CE0FCC337988356DE428CB2EC42D641DF0B5D45CB5E4F981F6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_23.dat","size":204,"sha256":"5D6F0DD877C280A33971F11EB93D271B744ED4297394616C3E9F50B186F529E0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_24.dat","size":204,"sha256":"879CCED208A8EC6352924C319CEB0EF2AD06ABA71D2C34D3B2779058B3670768"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_25.dat","size":204,"sha256":"92AEEB080AEE6410E45EB79EBCE46D358B930CC11DDF0B6FB0D286E27AA0354F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_26.dat","size":204,"sha256":"49D06FC309A9A834ED6413D2D1E5985B1E1AF5B5A3F9F13D96213792ADAEA3B5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_27.dat","size":203,"sha256":"ACC7482C5239ED232DD422F40143B0F54C967801E2DF4D7EC50A8109D8DB6515"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_28.dat","size":203,"sha256":"3584D46A3F7E24DEE9D4E0987BA0F7D8CE4456AC3A7868501EC47DF98BD720A6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_29.dat","size":203,"sha256":"7012AB35FA0DAA47E5161901769F56D48C787BA73E013E12719B494E8CCC8E0A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_3.dat","size":202,"sha256":"A4C0966A69FE16DCCEC58EEBF16CDED6F85C225FC84210AFB481D6D2CA7B449A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_30.dat","size":203,"sha256":"B541EEDCA0D4D18D5382C7FF62215AC56411C83F0742F7ACE5055239B76C4F82"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_31.dat","size":203,"sha256":"CCF9FC72976F5B800E6466EEA132767524E47BB62EBF59F76C71071ACF4447DF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_32.dat","size":203,"sha256":"02DCD9901A62C2621114B791DC901EA1EEE09752DDBB5BAF7418D46291881426"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_33.dat","size":203,"sha256":"8FEB73FA69564330B8F4CA3BA960124F978FA63C465A492EA817C51FFAFCEF96"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_34.dat","size":203,"sha256":"9CC7A4C72A55B15842F0B95255A2FEF8DFFA27B9E4E3EE21AD52BD8866ACAACC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_35.dat","size":203,"sha256":"873F3DAB57AE2A5F7AA0202CCBE7F922B05AB0415A2B2A326D73B2A3BEB9A8A3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_36.dat","size":203,"sha256":"C013861C861435C57F1CD3C40C061028ACDCFEE6DA37E25355B1A18191498975"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_37.dat","size":203,"sha256":"F456FC03EB60D09E3FD346151DCE11D5CAEF0AC702D66CFA59D7033D814447FB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_38.dat","size":203,"sha256":"F52CF008597BD7C7F13F8ACCFBE116590B3D4E9752A26AE79EE7E5E5A559B2F5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_39.dat","size":203,"sha256":"91C7A2928747893ABF5B1BB9AEB254B787A4DB23A3F632F44BEA105599A66A40"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_4.dat","size":202,"sha256":"73ACE76D6990C304EDE92E533B245D2484D9E4D8232CB27965F00B11899D2255"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_40.dat","size":203,"sha256":"6084EB140F1C0E64E430229C2DA2FD2F4656D87DEFEBD021057A4F5B9BB6556F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_41.dat","size":203,"sha256":"2EC5B075AD0AB9C5637D3E62528DAB64472B7C08D4B7C41036B38EF3B027A40D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_42.dat","size":203,"sha256":"5F5491687DB4BAECAA42DE8FFB4DAA5D4E3580352081D0B4D4A16E2DC2E8621C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_43.dat","size":203,"sha256":"7A25A3AC2E85FF0A867B7D3C80E8DC92D6EAEA97105889FFB53B856D78D3DEA8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_44.dat","size":203,"sha256":"323069F90E895A443D0B82596C55ACF0D2D5F501B5302A3DD7DD7089745F7A1B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_45.dat","size":203,"sha256":"70A7431E781DD53B4BE8270F9EC82BEAB3C7946FFDE45EAE2D9D1B5DAB9DF0E7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_46.dat","size":203,"sha256":"6EED42D64D7C5E89C78DFD88693CF63551D9B804BAC9CDFE0256E2A33EB01503"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_47.dat","size":203,"sha256":"29158490AC14D4DAF4B13AE0D05D79A4C8FE09E1DEC3EBDE51837EC66FEFD516"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_48.dat","size":203,"sha256":"EB776DE73B5566E59A8D72C2FC4BC2084A97DBEB7D09F33E05A3830ADE9256BD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_49.dat","size":203,"sha256":"A5C8AF13FD3447AF3CDF5E2CA14AEF98D0F5F326AFA7B4FF9B417F0F33D63DAA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_5.dat","size":202,"sha256":"831427BB1872B7E276D1544D6DF679CC5D057384676950B6F6192DA0629E4C37"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_50.dat","size":203,"sha256":"42B796CB6C4010F3699619EB4463329626820E19D91F3E40966C03950B330EAC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_51.dat","size":203,"sha256":"491F0F3E1EBA79432D29243194F9D9EFCE0B6CB0EC9016F694D892A394E2048F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_52.dat","size":203,"sha256":"B4A6F79DFA6DBCBA80923ACDBC4D72D1187706A8C8156A1CCA84271B7700E2F5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_53.dat","size":203,"sha256":"71C41E47A49F62A4BC092DB7DC5DB4FD07DB0E1DBCD0C2E3A0B209DE6FC3C5FE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_54.dat","size":203,"sha256":"8680EB61199152F567CC982871BC7DB97A3DAF46E44C054C78ADF845CB93150D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_55.dat","size":203,"sha256":"131C3F865BFE439EDA2A63BCBAC30C09CC59D8CB98BD4122FAE953E3914C0DD6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_56.dat","size":203,"sha256":"D5D5C04971ACACDA7EBF5E6798A32FDBD09E727519EBE2530A55C112C18E4752"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_57.dat","size":203,"sha256":"0E9892F7CE268D74C7CDA2CA993321C63AD3B61889687A767FBF88A6A3DA6A2A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_58.dat","size":203,"sha256":"8EACC145AF2CA1849988431E3B65029C5D1E17A457E82E89ABE4B4880C6F0EF4"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_59.dat","size":203,"sha256":"D17184E76BA65AD000AC510162AA0BD2E011CF38BF942EB53F5C806968C3AF03"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_6.dat","size":201,"sha256":"B63B0DD9C380E9AD0B0FDAC4EFE62EC166666D9E2E2544975C06B83B29D809C7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_60.dat","size":203,"sha256":"CED71A7E63AFF9A41B8D2A92F8E910E5FB972A78D1D950948BF66CBE6E5AB256"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_61.dat","size":203,"sha256":"B48DD92B8B5B5B242F191BD6B372A3DDC470D3D16F685C7685FEB3F19DD8EF15"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_62.dat","size":203,"sha256":"C2792227B956D0C9E0DE63656BE09509AF7A9F0A8A186FFB2ED75B0CE8FA0A6A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_63.dat","size":203,"sha256":"F219D78C32526253D4E17E4F03C9565C0FA059F3960E6E1DB27B19203E601427"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_64.dat","size":203,"sha256":"D7B1D5E5C4A239791367B1C39514F0304C0EB727B8144D5458C32FE55363E198"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_65.dat","size":203,"sha256":"FF37CA8FAAFC08EFAA380A9987EF39EB0E48B4D174D5E7C50F465D637C4F65AE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_66.dat","size":203,"sha256":"CDF3614777958E9844B90F6477B5D9C8E24E5C37FC0FB715F43AB36B7374ECDC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_67.dat","size":203,"sha256":"75ACF7481181A79B32EFD21CD746A87D445E598778DD94ABCF4D13DEF081099C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_68.dat","size":203,"sha256":"AA3120F3FFDB715E8A5886818096BF44227A09E9DFAE5B107224A5A577078754"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_69.dat","size":203,"sha256":"5E4B1E8B7AC4A96F286969E4C3F0D7039390B6B3B4BDB49B11EB6006DA598D1D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_7.dat","size":203,"sha256":"660F8105D4E07E08AF9520C037364019C54D54423A34919A14DE04309DE996B6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_70.dat","size":203,"sha256":"1AC7A3FE8271D5546B7A597714D6D6B43D4324416B76DE3AABE82A22FE7F68DA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_71.dat","size":203,"sha256":"F99E57D7C282F9F5285AACA65538109C411971B675240E684EF199EA17459F58"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_72.dat","size":202,"sha256":"974EDC3B4F5E196CAC3DCD2B3D2F073D0ACDFC1F27E325EB33A427C6FC6295A8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_73.dat","size":202,"sha256":"87D72CCE65B903C5485BB44A7137E158DECE45AE961EFB15D84A2921365C0D71"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_74.dat","size":202,"sha256":"7E7C2EBADB4B9CC676ECC74455AC61512DE79606563B1245D4F80BD510DF693D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_75.dat","size":202,"sha256":"B4EC4AAEC739065FC2A75A2E2A4DDF24EC636159A343D5C07FA16211A1FD3569"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_76.dat","size":202,"sha256":"70E5C7CF4AB136D660AAA6E40DB61E981E1D4A6A1D8EB8420D07CF5BA4E650DF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_77.dat","size":202,"sha256":"7E1712EC7136C88D32D89C6FE87A19C5827082F7B4E5B8F6AEDB40EE0AA45248"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_78.dat","size":202,"sha256":"8DAEF5CE1EB59DC233FF907654CDE2C929B7B0BAC030848B7E66BAF7348120D0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_79.dat","size":202,"sha256":"57EE7C5F5E051C2A61023009B068F8B91462D0249C7079FFD48FA33F4C5646FC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_8.dat","size":202,"sha256":"EBE797475BFCC54E0000AB9417E89802EEB75E5EDAB564A9CC02298800AEB2E6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_80.dat","size":202,"sha256":"58A5943D04309D3FF71EDA98E4DC89C1C6F9D27871D491A6E1D432098270CF70"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_81.dat","size":202,"sha256":"887C6632D6F0F1948F8637E163487DB40569B2D5757B34C8D4087B43862ABB5A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_82.dat","size":202,"sha256":"0C667EBCB8FF6D443E2C7100CAE15E062A3C4489DD56C78897A2ABAACAE2D38F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_83.dat","size":202,"sha256":"CC04EBBF8011D0512D3DACE79429E724EEE1323875FAD7F4EBB0E695342A62DC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_84.dat","size":202,"sha256":"3F815F589166A4EE3E2674868DD6FD23B2559BD8C3C00DEB69BBBF77F18D5284"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_85.dat","size":201,"sha256":"30A7D9948FA7296B0AC9F957548119F4DA8E3FF4A9ADD904886B875B06F87487"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_86.dat","size":201,"sha256":"C928970AAAE8C7B1B299E08840115298FBACC344D653D34107B62155802BD5AF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_87.dat","size":201,"sha256":"BFDB470B7269A58C31FBD5E07FD1864F0732B7B0908DEDC43E51FAC214CB8896"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_88.dat","size":201,"sha256":"0FE490D8F834C46FDFA389A4FC94A7314B628CEB613EA30A9A61CD55B89C5C95"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_89.dat","size":201,"sha256":"3CE3591DAD14D7BA265820203AFFF0631132DA354D1AB878BDED53416EC5CFC6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_9.dat","size":202,"sha256":"0C6A6E69FB96F4F4DD03BF07AE4A0132C4F95C1EBD979A6A7CB4524F3067853E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_90.dat","size":201,"sha256":"DCA935485BEA81423E48EB858035FB3F902B61C66F5560FDBF7D2E6146E852CF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_91.dat","size":201,"sha256":"D859C22469CC638443FF5F69A19908E2E9E5055B67FF70E23258419FC3F1D910"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_92.dat","size":200,"sha256":"F6131E35A1C887800F01DF06D4889FF00687C7E09EEDF623269462E6FCAD017D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_93.dat","size":200,"sha256":"99B873E32F6D9423BF71C7E14227631DA40C0299BA67DFEC13701192E0CB6F1B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_94.dat","size":200,"sha256":"4EEE9ED61F00E18E15612FD6871C87F8D6E3D902577EB7159951C17F0A632384"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_95.dat","size":200,"sha256":"21ECB40B0656768E8E73641A7BC0C89A1A625C1172A4A4C897458BD4810FFB40"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_96.dat","size":199,"sha256":"E34B379FE15AF1CFD5929B79CA7420DAFB195F2A4205A958D0B27997910934B8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_97.dat","size":199,"sha256":"1E2F176F15BC211F4FB2BC51E950D137159B24E452DA5BF1CA49A7E515286B4B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_98.dat","size":197,"sha256":"70E65FE4246A41AF29D6261944F83B5F760CFDC37E6ED9BAB8617F4D02303427"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cfir_99.dat","size":197,"sha256":"D439454487F61C841FC31E24D550A9B4483F9AB302486F3D5B389D7349A73DCF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/cicpar.dat","size":3936,"sha256":"330AA1BBEC7EB6C4E810F8324C8F0D7D3DC54C3F5E0A0AD87E6D306515982AEC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_10.dat","size":368,"sha256":"C0D903E9D1D2CB3861CB21AD8864D19936B165AD608A1C8520D50B5373074B08"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_11.dat","size":368,"sha256":"B1177A32EB8098454BD53EA443D9776823630A99C40436425E684345C441438A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_12.dat","size":368,"sha256":"299DB8F2C9CAD04CD7F313F0D15C7F2309D605F977A6974FE5E8BD45A87CB4ED"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_13.dat","size":368,"sha256":"1EF80619A937F4B9138025B8170AB26507814A6E328A212A21511733931CF2DB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_14.dat","size":368,"sha256":"F88F78C7B78C551B5B090FB3B56825DC0F2953CA58AB7C892CB9FD6633441C42"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_15.dat","size":368,"sha256":"E309682D77791A835A3B21A0D2919DCB4AEA2FB1F2942766E01B0D11E9610A4C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_16.dat","size":368,"sha256":"C45BC14D911A03EEE636CB5D9932DD5E3B62AEA675E8B39E4562F1F442DBBB18"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_17.dat","size":368,"sha256":"3383D59F841A6A1EC52D22D50BA67C7B33C12428130A303AE976A8C1DDE688EE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_18.dat","size":368,"sha256":"A1C4C26A46C9A2F5571F8E531BCC5091B029A96A8C0B0C9369EDF2383EFE1C61"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_19.dat","size":368,"sha256":"855C94700F9696ED2E56B6A33302C94B625F251279B9AA5299AF4F52B5898E08"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_20.dat","size":368,"sha256":"E2C071037E0D8ADA54A5026791F7A58554B06D079B2024B571020BEAE3ADCDAE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_21.dat","size":368,"sha256":"EBE09876FEA237A63CEB9B0237E47F60F92F9B7A006EF8C1D53D6992840F9022"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_22.dat","size":368,"sha256":"5237238CE080466438F18E361467ED2484195E3FD86AC4094AEF7CBA4E532DE1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_23.dat","size":368,"sha256":"63571C7360553EB57BC5B26BA1B3276588353848535E9CC2FD774958D0BA9E24"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_24.dat","size":368,"sha256":"EB99A1B16640554E4C2AEC8CE98F60B18A9F27F5D1AA6B1958A084AE7088EE8C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_25.dat","size":368,"sha256":"662700EA459C6E2D69E615E9E62514E9708851E0E15A1B79D39681C84F18E668"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_26.dat","size":368,"sha256":"08202C7BF4E2BC51C6A2EA0F6E395C947B062DE5A632C4A24D7FC24F0761334C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_27.dat","size":368,"sha256":"29D15EFA0E520A3CDA374FD063F8A8FD21381B7F99755DF5F466302A703B601A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_28.dat","size":368,"sha256":"AD841D8A737957607BE08F57B5A4E9347D14062BC5C0287355E325B706C44D13"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_29.dat","size":368,"sha256":"87DD54EBC92E7595AB93D581CF9414C3B5A43645733934230D99CD560528280A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_3.dat","size":363,"sha256":"77152D043A0DF11CE6F95CD37DE94E4C8891FF5F260EADA4A32EF2DE0F8D9DFB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_30.dat","size":368,"sha256":"F4FD536388F9B21FCE25643BF2658141A8FD516B2B2AD6BF95658C57B065C351"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_31.dat","size":368,"sha256":"0D0ADE5AD5757038B88935119051A557F15E4E568D8F4692BE5237EDF72209D3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_32.dat","size":368,"sha256":"D4C93A2D001CFF459749497EBD2D579B095CA3B08323A88D6DE82911821D4091"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_33.dat","size":368,"sha256":"D6D9AC0CCDB4677676B31FD86BE32BC6378AB0CD6146BCBD0CDD25D6C5DBF379"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_34.dat","size":368,"sha256":"30710418C1E1A38F63B41425983D4D1CC18F5659529613B512810A688C68CF64"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_35.dat","size":368,"sha256":"F51023A361674DF21DBD109D3ABC49399F51871F11DE4B9353E7C876962D9B76"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_36.dat","size":368,"sha256":"7885710B3FD8B4C649B461272396683DBA4DF4952A08F1266840C0E11D56D727"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_37.dat","size":368,"sha256":"D1AEF553498EE7B44D02F80790A9DACB60B52CF86DAA257793AE650855D529D3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_38.dat","size":368,"sha256":"3932E7A2335618C2930191EB3D8DDD5BED335A12C9FDD8D003B22AFFE2F18890"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_39.dat","size":368,"sha256":"809D3571113E143137A67B25862B828E7BBF93F8EDF6E7E4175F944128755B14"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_4.dat","size":367,"sha256":"A8806C4C22FB772579B753742B4BDEEEB78F31D96F2C2A17A324BAC26EA37072"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_40.dat","size":368,"sha256":"88E7202872529FC8B609A86FCA34935FDB214F2D6EA55E184ED5E30D71D96CB1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_41.dat","size":368,"sha256":"DE05397FFAD36F32CD37E9E2EDCD2A325E06575FF71B7B4431217A0FBC033E79"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_42.dat","size":368,"sha256":"CA9A9386F4A8264E709EAA2D3BD926365C56B44D2FDFC930A719D64DFA3170BE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_43.dat","size":368,"sha256":"A647EA21CF6EF7CB200C6EEB429CF98CF923B2885CAB89329F6EF47287F0292A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_44.dat","size":368,"sha256":"B2535831DE2D894CFAECE4A28C314E57FD5F3AAEC184BC5C2B8C7A70AE03ECA5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_45.dat","size":368,"sha256":"1C7909E968E64A0245FD0A0360998D3B6BC38FA7243E02887D6925433959BC84"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_46.dat","size":368,"sha256":"EA40A36677058DC905F3A40E99216EF51496D9D0569B182E0EAFC3FFBA2D84B1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_47.dat","size":368,"sha256":"03B1F0B2A58576501C71EDE12C20B21F250077BD66F29326981DEFCECA191B41"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_48.dat","size":368,"sha256":"C672608CE4C1C7A29BD0D24B28AC34CDB8E3A14B4427CA8015E0CD7ED5950150"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_49.dat","size":368,"sha256":"BDE72F810530F09AD22F16AA5B6C613AA156BF11DA245B283B4E9D7C49D0DDB8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_5.dat","size":367,"sha256":"D2D938A6B2ECD8AC41194D6D6DAD58E0C052E862704532ADED4224283DB472D6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_50.dat","size":368,"sha256":"21FD7426330FA277D72CDF8067867EFCCFA5C2928AD4142B75BDEA8EA5DC0666"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_6.dat","size":367,"sha256":"48B2F7282A1E18922A70697D51194BFB52D32C739DA2676D6DEE8BCBDF4D1A71"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_7.dat","size":367,"sha256":"F35B3DFB5203D7057B6C0C3DDD3E228A8D36BEC4FFFB90F3BAFD3781E25B0B84"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_8.dat","size":367,"sha256":"A856D10C5B1AA75954D39F0C307C728A662F2E5343CA43D1ABB3613BFDC424B6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/butterworth/pfir_9.dat","size":367,"sha256":"2CBE997F2FC937A663CDB28727C1D990148B260799694D868DB177E0800C4E2D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_10.dat","size":200,"sha256":"365530B9D03A2EB450D3BA30A02B654575573D2EECB24C6392A018D84815A46E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_100.dat","size":197,"sha256":"5843596636608DE623D4F33A62CAFE654D611BA7B4C51B0DA077A422AB27EE8B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_11.dat","size":200,"sha256":"1FAC2359DA7C5D9A5BEDBC0EA768104CCF0EE8241FEC7D01BB00908285241C37"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_12.dat","size":201,"sha256":"3D3CEFF4FF76FDC378C1CFCC34810FCEE7BD976666ABE5D2220C4AF09CA0E7D3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_13.dat","size":201,"sha256":"87380070B0488C393E665A6BEB0EBE30C4EAE1E95CC157279E5E5B853D5B201F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_14.dat","size":201,"sha256":"94FACAF023CB997E3630AD9112859732A7CEDB5397892896C218080E0F21AD19"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_15.dat","size":200,"sha256":"4EDC783476A6A118212A18B86CB227A2E28B117DA569CC10F8CD394FEFFDE770"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_16.dat","size":201,"sha256":"AEA8ADD33206569F99150C905E7C3FBF61B35E5FADBA6155D521CDA2F18703D9"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_17.dat","size":201,"sha256":"ABC159754E04852D9AB4777802223E3F9B33AAD1999935FD15A3A4271E531B2E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_18.dat","size":203,"sha256":"EF4415F71C3DB7B77C190D8F73C6328D43424A2B5E89FAB7F9F6B1FB5920E5CF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_19.dat","size":204,"sha256":"4A7F5A24E774D35F09745B3FE1AF4C92074D25B86A1590E8176C588B48B8931C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_20.dat","size":204,"sha256":"B4ABB56B21F094F73B70098090D95BFCBD352B56964A54B69D327F3AEB3471BF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_21.dat","size":204,"sha256":"80E7DA5B2FD17C87286CA7CA3DE4A0BCDE30B61624E26BD80FDB629F79C74802"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_22.dat","size":204,"sha256":"04B288A6FA14D7CE0FCC337988356DE428CB2EC42D641DF0B5D45CB5E4F981F6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_23.dat","size":204,"sha256":"5D6F0DD877C280A33971F11EB93D271B744ED4297394616C3E9F50B186F529E0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_24.dat","size":204,"sha256":"879CCED208A8EC6352924C319CEB0EF2AD06ABA71D2C34D3B2779058B3670768"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_25.dat","size":204,"sha256":"92AEEB080AEE6410E45EB79EBCE46D358B930CC11DDF0B6FB0D286E27AA0354F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_26.dat","size":204,"sha256":"49D06FC309A9A834ED6413D2D1E5985B1E1AF5B5A3F9F13D96213792ADAEA3B5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_27.dat","size":203,"sha256":"ACC7482C5239ED232DD422F40143B0F54C967801E2DF4D7EC50A8109D8DB6515"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_28.dat","size":203,"sha256":"3584D46A3F7E24DEE9D4E0987BA0F7D8CE4456AC3A7868501EC47DF98BD720A6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_29.dat","size":203,"sha256":"7012AB35FA0DAA47E5161901769F56D48C787BA73E013E12719B494E8CCC8E0A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_3.dat","size":202,"sha256":"A4C0966A69FE16DCCEC58EEBF16CDED6F85C225FC84210AFB481D6D2CA7B449A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_30.dat","size":203,"sha256":"B541EEDCA0D4D18D5382C7FF62215AC56411C83F0742F7ACE5055239B76C4F82"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_31.dat","size":203,"sha256":"CCF9FC72976F5B800E6466EEA132767524E47BB62EBF59F76C71071ACF4447DF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_32.dat","size":203,"sha256":"02DCD9901A62C2621114B791DC901EA1EEE09752DDBB5BAF7418D46291881426"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_33.dat","size":203,"sha256":"8FEB73FA69564330B8F4CA3BA960124F978FA63C465A492EA817C51FFAFCEF96"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_34.dat","size":203,"sha256":"9CC7A4C72A55B15842F0B95255A2FEF8DFFA27B9E4E3EE21AD52BD8866ACAACC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_35.dat","size":203,"sha256":"873F3DAB57AE2A5F7AA0202CCBE7F922B05AB0415A2B2A326D73B2A3BEB9A8A3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_36.dat","size":203,"sha256":"C013861C861435C57F1CD3C40C061028ACDCFEE6DA37E25355B1A18191498975"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_37.dat","size":203,"sha256":"F456FC03EB60D09E3FD346151DCE11D5CAEF0AC702D66CFA59D7033D814447FB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_38.dat","size":203,"sha256":"F52CF008597BD7C7F13F8ACCFBE116590B3D4E9752A26AE79EE7E5E5A559B2F5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_39.dat","size":203,"sha256":"91C7A2928747893ABF5B1BB9AEB254B787A4DB23A3F632F44BEA105599A66A40"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_4.dat","size":202,"sha256":"73ACE76D6990C304EDE92E533B245D2484D9E4D8232CB27965F00B11899D2255"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_40.dat","size":203,"sha256":"6084EB140F1C0E64E430229C2DA2FD2F4656D87DEFEBD021057A4F5B9BB6556F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_41.dat","size":203,"sha256":"2EC5B075AD0AB9C5637D3E62528DAB64472B7C08D4B7C41036B38EF3B027A40D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_42.dat","size":203,"sha256":"5F5491687DB4BAECAA42DE8FFB4DAA5D4E3580352081D0B4D4A16E2DC2E8621C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_43.dat","size":203,"sha256":"7A25A3AC2E85FF0A867B7D3C80E8DC92D6EAEA97105889FFB53B856D78D3DEA8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_44.dat","size":203,"sha256":"323069F90E895A443D0B82596C55ACF0D2D5F501B5302A3DD7DD7089745F7A1B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_45.dat","size":203,"sha256":"70A7431E781DD53B4BE8270F9EC82BEAB3C7946FFDE45EAE2D9D1B5DAB9DF0E7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_46.dat","size":203,"sha256":"6EED42D64D7C5E89C78DFD88693CF63551D9B804BAC9CDFE0256E2A33EB01503"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_47.dat","size":203,"sha256":"29158490AC14D4DAF4B13AE0D05D79A4C8FE09E1DEC3EBDE51837EC66FEFD516"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_48.dat","size":203,"sha256":"EB776DE73B5566E59A8D72C2FC4BC2084A97DBEB7D09F33E05A3830ADE9256BD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_49.dat","size":203,"sha256":"A5C8AF13FD3447AF3CDF5E2CA14AEF98D0F5F326AFA7B4FF9B417F0F33D63DAA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_5.dat","size":202,"sha256":"831427BB1872B7E276D1544D6DF679CC5D057384676950B6F6192DA0629E4C37"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_50.dat","size":203,"sha256":"42B796CB6C4010F3699619EB4463329626820E19D91F3E40966C03950B330EAC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_51.dat","size":203,"sha256":"491F0F3E1EBA79432D29243194F9D9EFCE0B6CB0EC9016F694D892A394E2048F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_52.dat","size":203,"sha256":"B4A6F79DFA6DBCBA80923ACDBC4D72D1187706A8C8156A1CCA84271B7700E2F5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_53.dat","size":203,"sha256":"71C41E47A49F62A4BC092DB7DC5DB4FD07DB0E1DBCD0C2E3A0B209DE6FC3C5FE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_54.dat","size":203,"sha256":"8680EB61199152F567CC982871BC7DB97A3DAF46E44C054C78ADF845CB93150D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_55.dat","size":203,"sha256":"131C3F865BFE439EDA2A63BCBAC30C09CC59D8CB98BD4122FAE953E3914C0DD6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_56.dat","size":203,"sha256":"D5D5C04971ACACDA7EBF5E6798A32FDBD09E727519EBE2530A55C112C18E4752"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_57.dat","size":203,"sha256":"0E9892F7CE268D74C7CDA2CA993321C63AD3B61889687A767FBF88A6A3DA6A2A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_58.dat","size":203,"sha256":"8EACC145AF2CA1849988431E3B65029C5D1E17A457E82E89ABE4B4880C6F0EF4"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_59.dat","size":203,"sha256":"D17184E76BA65AD000AC510162AA0BD2E011CF38BF942EB53F5C806968C3AF03"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_6.dat","size":201,"sha256":"B63B0DD9C380E9AD0B0FDAC4EFE62EC166666D9E2E2544975C06B83B29D809C7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_60.dat","size":203,"sha256":"CED71A7E63AFF9A41B8D2A92F8E910E5FB972A78D1D950948BF66CBE6E5AB256"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_61.dat","size":203,"sha256":"B48DD92B8B5B5B242F191BD6B372A3DDC470D3D16F685C7685FEB3F19DD8EF15"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_62.dat","size":203,"sha256":"C2792227B956D0C9E0DE63656BE09509AF7A9F0A8A186FFB2ED75B0CE8FA0A6A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_63.dat","size":203,"sha256":"F219D78C32526253D4E17E4F03C9565C0FA059F3960E6E1DB27B19203E601427"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_64.dat","size":203,"sha256":"D7B1D5E5C4A239791367B1C39514F0304C0EB727B8144D5458C32FE55363E198"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_65.dat","size":203,"sha256":"FF37CA8FAAFC08EFAA380A9987EF39EB0E48B4D174D5E7C50F465D637C4F65AE"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_66.dat","size":203,"sha256":"CDF3614777958E9844B90F6477B5D9C8E24E5C37FC0FB715F43AB36B7374ECDC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_67.dat","size":203,"sha256":"75ACF7481181A79B32EFD21CD746A87D445E598778DD94ABCF4D13DEF081099C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_68.dat","size":203,"sha256":"AA3120F3FFDB715E8A5886818096BF44227A09E9DFAE5B107224A5A577078754"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_69.dat","size":203,"sha256":"5E4B1E8B7AC4A96F286969E4C3F0D7039390B6B3B4BDB49B11EB6006DA598D1D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_7.dat","size":203,"sha256":"660F8105D4E07E08AF9520C037364019C54D54423A34919A14DE04309DE996B6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_70.dat","size":203,"sha256":"1AC7A3FE8271D5546B7A597714D6D6B43D4324416B76DE3AABE82A22FE7F68DA"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_71.dat","size":203,"sha256":"F99E57D7C282F9F5285AACA65538109C411971B675240E684EF199EA17459F58"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_72.dat","size":202,"sha256":"974EDC3B4F5E196CAC3DCD2B3D2F073D0ACDFC1F27E325EB33A427C6FC6295A8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_73.dat","size":202,"sha256":"87D72CCE65B903C5485BB44A7137E158DECE45AE961EFB15D84A2921365C0D71"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_74.dat","size":202,"sha256":"7E7C2EBADB4B9CC676ECC74455AC61512DE79606563B1245D4F80BD510DF693D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_75.dat","size":202,"sha256":"B4EC4AAEC739065FC2A75A2E2A4DDF24EC636159A343D5C07FA16211A1FD3569"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_76.dat","size":202,"sha256":"70E5C7CF4AB136D660AAA6E40DB61E981E1D4A6A1D8EB8420D07CF5BA4E650DF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_77.dat","size":202,"sha256":"7E1712EC7136C88D32D89C6FE87A19C5827082F7B4E5B8F6AEDB40EE0AA45248"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_78.dat","size":202,"sha256":"8DAEF5CE1EB59DC233FF907654CDE2C929B7B0BAC030848B7E66BAF7348120D0"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_79.dat","size":202,"sha256":"57EE7C5F5E051C2A61023009B068F8B91462D0249C7079FFD48FA33F4C5646FC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_8.dat","size":202,"sha256":"EBE797475BFCC54E0000AB9417E89802EEB75E5EDAB564A9CC02298800AEB2E6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_80.dat","size":202,"sha256":"58A5943D04309D3FF71EDA98E4DC89C1C6F9D27871D491A6E1D432098270CF70"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_81.dat","size":202,"sha256":"887C6632D6F0F1948F8637E163487DB40569B2D5757B34C8D4087B43862ABB5A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_82.dat","size":202,"sha256":"0C667EBCB8FF6D443E2C7100CAE15E062A3C4489DD56C78897A2ABAACAE2D38F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_83.dat","size":202,"sha256":"CC04EBBF8011D0512D3DACE79429E724EEE1323875FAD7F4EBB0E695342A62DC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_84.dat","size":202,"sha256":"3F815F589166A4EE3E2674868DD6FD23B2559BD8C3C00DEB69BBBF77F18D5284"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_85.dat","size":201,"sha256":"30A7D9948FA7296B0AC9F957548119F4DA8E3FF4A9ADD904886B875B06F87487"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_86.dat","size":201,"sha256":"C928970AAAE8C7B1B299E08840115298FBACC344D653D34107B62155802BD5AF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_87.dat","size":201,"sha256":"BFDB470B7269A58C31FBD5E07FD1864F0732B7B0908DEDC43E51FAC214CB8896"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_88.dat","size":201,"sha256":"0FE490D8F834C46FDFA389A4FC94A7314B628CEB613EA30A9A61CD55B89C5C95"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_89.dat","size":201,"sha256":"3CE3591DAD14D7BA265820203AFFF0631132DA354D1AB878BDED53416EC5CFC6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_9.dat","size":202,"sha256":"0C6A6E69FB96F4F4DD03BF07AE4A0132C4F95C1EBD979A6A7CB4524F3067853E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_90.dat","size":201,"sha256":"DCA935485BEA81423E48EB858035FB3F902B61C66F5560FDBF7D2E6146E852CF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_91.dat","size":201,"sha256":"D859C22469CC638443FF5F69A19908E2E9E5055B67FF70E23258419FC3F1D910"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_92.dat","size":200,"sha256":"F6131E35A1C887800F01DF06D4889FF00687C7E09EEDF623269462E6FCAD017D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_93.dat","size":200,"sha256":"99B873E32F6D9423BF71C7E14227631DA40C0299BA67DFEC13701192E0CB6F1B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_94.dat","size":200,"sha256":"4EEE9ED61F00E18E15612FD6871C87F8D6E3D902577EB7159951C17F0A632384"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_95.dat","size":200,"sha256":"21ECB40B0656768E8E73641A7BC0C89A1A625C1172A4A4C897458BD4810FFB40"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_96.dat","size":199,"sha256":"E34B379FE15AF1CFD5929B79CA7420DAFB195F2A4205A958D0B27997910934B8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_97.dat","size":199,"sha256":"1E2F176F15BC211F4FB2BC51E950D137159B24E452DA5BF1CA49A7E515286B4B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_98.dat","size":197,"sha256":"70E65FE4246A41AF29D6261944F83B5F760CFDC37E6ED9BAB8617F4D02303427"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cfir_99.dat","size":197,"sha256":"D439454487F61C841FC31E24D550A9B4483F9AB302486F3D5B389D7349A73DCF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/cicpar.dat","size":3936,"sha256":"330AA1BBEC7EB6C4E810F8324C8F0D7D3DC54C3F5E0A0AD87E6D306515982AEC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_10.dat","size":371,"sha256":"35C9BFB49D99B3ABCD155B8084B5411324BF2CEA74183D3F0EDD35651C0C12FD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_11.dat","size":371,"sha256":"81515BB6CBC9C699F6AAB81BAE2322ADCD199B268D225938F5C0742A840227C7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_12.dat","size":371,"sha256":"23DB6937291C49953AAB5699EB528107733379046DFF9E4B5F3B71F054659E1B"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_13.dat","size":372,"sha256":"2DC80A8EE4A81DD084EACEFBA68DD45D459D3DD58F3AA5906DCC445861339872"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_14.dat","size":372,"sha256":"90B1C7675D4ECE00EEB9ED229783EE3D821B92665B976F6D0124182616616562"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_15.dat","size":372,"sha256":"7A185FC7C7A6284FA38BFF030D84FCBAE477FD24BE2C6B4A46D8E61A82B74021"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_16.dat","size":372,"sha256":"EA6296857FE05871507370E112F7C4F3DB6705C8292B7914BA9149A3FCF59708"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_17.dat","size":372,"sha256":"925FA2CC1B932D638399A8407FE71A7917ED6BB64C23537991646460718272FC"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_18.dat","size":372,"sha256":"4A2EABA96F82D6A4864DC06C1D772A5F9D11C8716DA1BD71F0FA647EA1D2C928"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_19.dat","size":372,"sha256":"B328C0BBB49D6882AC3D3C5D3DAE3029CD021206BF20C21FDA40FBD0727A5813"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_20.dat","size":372,"sha256":"FF4D7E5FD06D1BC85F0A8CA9C7B03FA48CBED483807596FDF2484426D8601D9C"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_21.dat","size":372,"sha256":"7F5EC4618E862ADD12533697514895C12ED9AF39B2962F69A0E214EA31A397DF"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_22.dat","size":372,"sha256":"BC9911D88DCC56C91559E4E7FBC9DAAEBF714A0C1D4ED92AF5ADC6DA37E5C397"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_23.dat","size":372,"sha256":"A90182FBFFAB468AE3CF95BBCF62E3272D32856F3FF86AD1D98A3B2E09806F1A"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_24.dat","size":372,"sha256":"E8BD3527F5485834E6A25A0C3B75BB95AE5AF3F07FDDD9779780B1BD43966280"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_25.dat","size":372,"sha256":"657AD7948E9199D7808A0298465D89FB5A4D6679756E34502E176875F11A3B93"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_26.dat","size":372,"sha256":"A4D06DA09C354938E0A4DCC4BDB647F4C60CD5F68D93F5119B0C0D286EA0AE3D"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_27.dat","size":372,"sha256":"B59E9C8EA5CA1D1D3A549AB9CC36DBAD7D72A225D4410DF7DEA4392E58A2A113"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_28.dat","size":372,"sha256":"3AA1CE6CDA048594498674F8AEB13D1BCB4D49CE8D750A3F9B12E85A5E507C39"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_29.dat","size":372,"sha256":"BF9CD840F56ACED93F6627CD9E44AC734F622321D7F220CF29841DC5EAE6E8F1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_3.dat","size":368,"sha256":"167C41E2F1217AAF8797FC69064416C671AD2BD13ACBD4FB7C49A2574E9AB403"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_30.dat","size":372,"sha256":"ADB0C4C621177FE17DC50C0AF540CAA2F7CACB4CB66007189213C59A1AF3335E"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_31.dat","size":372,"sha256":"35C1C638789CDDADA3B07824B6B6057D2E4F99FB21ED2D4FA387A2E95690C4C1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_32.dat","size":372,"sha256":"D9498C59CBAE88C6BAF5500DD3A96A38B6F9DD5D8DFAF66ABEEB5B779A8AD947"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_33.dat","size":372,"sha256":"46EDFBD8B0D129A7DCD5B17D43E811045F379AD91759F64667627DC01579F006"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_34.dat","size":372,"sha256":"9810E19EC0D99A0441B33BF3C523389B525009B544731FE954B5E4C132758CC3"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_35.dat","size":372,"sha256":"A86CC53B40C1B464DF0590BDA25164B58B65FA55FADFA7023E11724461547914"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_36.dat","size":372,"sha256":"82AAC160B7CF7EFBADAA46870571710CF6942933F850E513F6D38FFDED14FEA8"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_37.dat","size":372,"sha256":"A8A0755DD8D4654EC20907D829E7892F3823478AE16E47D29B5DC2718650C235"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_38.dat","size":372,"sha256":"DE5C1FEE8632AF08DB84DFE4DCDEA070A2979B5CF5700E8D2C2A30791AB6CAAB"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_39.dat","size":372,"sha256":"AB7DFE854251E434BF7D4F0FCB3E2611CF5C095A7698AE5269B419141B11DE56"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_4.dat","size":369,"sha256":"8276F33F712D03C37483E25DC6A7818F1B60F4BBBC0AD69C2AF0F9A6277327DD"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_40.dat","size":372,"sha256":"7006345F9C729AFE408B2428B17CDF235B34E6224100554BA63478AF95498557"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_41.dat","size":372,"sha256":"EF23423FEDAD80F57BE8ACD306913D0A4BDB2617461B21AC902CF4CAC74F3102"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_42.dat","size":372,"sha256":"5CA5D4E785476DC3FCD23ACA4C019D4939B56208761814B3B8ECE1911533C274"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_43.dat","size":372,"sha256":"89C45ACE22853F2AAA9B4D409E710180B1E58F7ECD9B7727E323F52A1752A0C6"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_44.dat","size":372,"sha256":"27634F42C7701A6188AB5ECC933A8AC6DBEFE613225E6E3B208395814D4EFBD1"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_45.dat","size":372,"sha256":"8F8A5264D1AF5A5F9761CD95E87273705093FC0FEEED6DB784B48D01AE081E3F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_46.dat","size":372,"sha256":"026177BC90F3FAFF259465841DCE2761BB5DE2D0BC0D47A57ACFB9D4A86D7E37"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_47.dat","size":372,"sha256":"28F84599C363D9DC2327DDAED4A00F520F2B07521A6AD5C9385B516C11877562"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_48.dat","size":372,"sha256":"FB4336891338FE59C3975AFEE260527611CC98D23F3D843A8EFF460A24D2C164"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_49.dat","size":372,"sha256":"B96FAE79859A6BFA5BEEF81795B22BF5542B267A41B9BBC279CA0C1D1E552035"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_5.dat","size":370,"sha256":"FD7ED130171706D7F372BF79E515B75F6B29E58704306E6A8D5381DC8AA85350"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_50.dat","size":372,"sha256":"0A3EF29C6ACD189A94500A38B6890FBA429ED27E64C623C40EAAD56816616C4F"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_6.dat","size":370,"sha256":"3100970CEE81F3AB4D678C0C01FFE5623AB1A9CEFD95DA20C2FE4C246E84E9C7"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_7.dat","size":370,"sha256":"91E0CF5BF5D48B8C0DF07974D50B5A07867DC71B301D4B5EEB4C92DE0D68FCD2"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_8.dat","size":370,"sha256":"1FE21696A3C3D942F5B6F3A6B1EF022A6E2FE7CAD79CAA55E77BA46521F970A5"}
+{"relativePath":"Iface/mriRely/hw_cfg/filterparfile/pfir_9.dat","size":370,"sha256":"874C5045A6BC8117B11E4C79271DF1B64C512B11BBAC75C763EAF34EC09B81A0"}
+{"relativePath":"Iface/mriRely/hw_cfg/gra_info.hw","size":248,"sha256":"5CB109D52D2C281832539D36A92342C248D7138E25C741D3619213F8BBC40EF0"}
+{"relativePath":"Iface/mriRely/hw_cfg/highSpeedMode.txt","size":31,"sha256":"237A9B36C348EB1737C68BC437832A39C314949210B3B24E403E1A087F671F0E"}
+{"relativePath":"Iface/mriRely/hw_cfg/init.ini","size":301,"sha256":"644D2F4DAD06E5FD5AC6DF7161C63A4164F5B56F926C66DC77D3892CAD411956"}
+{"relativePath":"Iface/mriRely/hw_cfg/nuclide.txt","size":216,"sha256":"77392C492252BAD56FB9C23CCB84B485D9F51B1D836F83F046BFB12A785784FC"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx1_info.hw","size":16,"sha256":"7BBB5379DFDA379D44B170536261875E5DC68AFB7A1AC683C5076A2633B4C482"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx2_info.hw","size":259,"sha256":"E7542EE78460F34EECF9AF25C862F7B7B737590EAE2DEE97F04BADEA635F253A"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx_adc.hw","size":74,"sha256":"8A439BAB848A2E571742C99D69594A2ECB406509E3511FB737962076EC1EA33D"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx_adc_16bit.hw","size":64,"sha256":"3B71AF7C24A5E1C0EF40CA31FE0A04906F23F68ADB205C9C1E7FE3DE42BDD444"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx_adc_m.hw","size":95,"sha256":"368C69CD89BFEF304A1FF3ACE4D7379150191D0625F4DF7F411C6FD3E1B5459D"}
+{"relativePath":"Iface/mriRely/hw_cfg/rx_info.hw","size":236,"sha256":"C026B2B6DD632390D5F149901542ADFBE2A58AE397F5F73178F2C27ACB6FFCAA"}
+{"relativePath":"Iface/mriRely/hw_cfg/system.hw","size":13665,"sha256":"D48010BCDFBC51FBC98A8F9262FA2EB0BCB2A04CADC8AB4AE50FB418E875BB62"}
+{"relativePath":"Iface/mriRely/hw_cfg/systemBak.hw","size":13356,"sha256":"D5269A9057453F1BBDBCEC3938C141EF881812F56972393E25A1BC7DFBBD0C54"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx1_amp.hw","size":1,"sha256":"5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx1_info.hw","size":17,"sha256":"860239D4D566FD7450A3239FCE3B2EB0AE4AD02D7BD75A4C9F42A0421F11DD0D"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx2_info.hw","size":16,"sha256":"367F8AFDC25A431C5DE954B4D02C5553CC8905940824BAC005F29EA0542EF7FB"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac.hw","size":845,"sha256":"A2743E09AA2B873C5DCF6C8B8B5C86CE4E895836235B69A04B2D1F8BB9E14FB3"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac1.hw","size":919,"sha256":"4FB6F00A1146998A06A5D063EC890F43DCA0C4A03605A51C92569FBFE2ED8D7F"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac1.hw.bak","size":919,"sha256":"E2CA6F15D92BC9FFFB463A6C161D313D9A40AEC58B794EBFCA1CD38A83EE52B1"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac1_3T.hw","size":935,"sha256":"05EB83C1674953E7BDDFAABFFB55CB901348B4ECD8AF593100101960D2E99CE1"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac1_48HR.hw","size":429,"sha256":"1E4C076DF348307F2EB1E65777F51871452F798A48A5F5CEF5908A5F6B3EE1C9"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac1_h.hw","size":470,"sha256":"6D11DC0417516AB09457F8E416778F518F8A815861250F3C0B33279E6391025E"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac2.hw","size":853,"sha256":"E7DE5A906F4C535C0C6D2B22402B5EB1F207327F672B5FAD0224EC43D43117C0"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac3.hw","size":852,"sha256":"85178ED52E8FCBD5E94D51EAC68405E78D7E0697E63AD33E53C54C381D054F36"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_dac4.hw","size":852,"sha256":"85178ED52E8FCBD5E94D51EAC68405E78D7E0697E63AD33E53C54C381D054F36"}
+{"relativePath":"Iface/mriRely/hw_cfg/tx_info.hw","size":474,"sha256":"10DB839A000A6E47A0CAF8EF183686AA719DCE142F27ABFEB0D4B7802CD7278E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -f CUsersAdministratorDesktopeggcontrolmri_software_filesAuxReg_mini.cfg CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":769,"sha256":"7BE6E6D24EA477ACFEFCB697ABF8546AB6E208708A94209C8E8C688E8D46ED42"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -f CUsersAdministratorDesktopeggcontrolmri_software_filesPTScan.par CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRely","size":59,"sha256":"F27F2B1356E1DDF8509E613638713784D4BDF46A6F76B85C88B98749FF82B2E7"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -f CUsersAdministratorDesktopeggcontrolmri_software_filescali.txt CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":64,"sha256":"B321634915C7A91852C55C4728182329132A1A784852450EC4BBBBC37464EF40"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -f CUsersAdministratorDesktopeggcontrolmri_software_filesinit.ini CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":13665,"sha256":"D48010BCDFBC51FBC98A8F9262FA2EB0BCB2A04CADC8AB4AE50FB418E875BB62"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -f CUsersAdministratorDesktopeggcontrolmri_software_filessystemBak.hw CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":769,"sha256":"CEA111910AFA63DE918A572E877E6B9109753FEC51E52F82815801CE867AC78F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.04us.dat","size":593,"sha256":"C93835EC5FF25D727BFDADCCB5AD7CF12BC3906DA7AB9DC79C3ECB6AEF88618F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.06us.dat","size":593,"sha256":"E9FF8079C40C346D07BE572DA4D42818079563D89BB212917FC8CD088B918CAA"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.08us.dat","size":593,"sha256":"623F3F8C9FBFD1DD3DC70BFD72F080BCC82FE214640F797FB52A41322C044A3B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.12us.dat","size":593,"sha256":"D6C4A6DE7B31809E0128A64DB64E1F64B2B50B8AE0AB28DEA467A3E8C3D6F116"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.14us.dat","size":593,"sha256":"6DBABF05D5CFEEEAA03627FC098DCE7077CE72477C648D49C724BC4DF93166CD"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.16us.dat","size":593,"sha256":"DBC1CA6405B9AAB569F02CCCBCC1C234580B6A4D28ED78F144BF1183BFE5D8AF"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.18us.dat","size":593,"sha256":"967F452233950BA35A65741C1714505559E895E8AC82106954D5D2388C543666"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.1us.dat","size":593,"sha256":"6F78539097124BED23C341E7145B9303253D19DC6202BDFDF3DCA30A4CC38FE6"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.22us.dat","size":594,"sha256":"35B31690C2746BAF358D848A64D47923278E2B58FCAC15B1947F1AE5054B4FE1"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.24us.dat","size":594,"sha256":"C1E18805BD3EB3C3E2D896BA507CDA3347853B2E00D294DEA3095B21063225AB"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.26us.dat","size":594,"sha256":"0C5F28094C7E0D010C415CAB4A7C24F7B004850FD1ABCFD181D36411DBC853D1"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.28us.dat","size":594,"sha256":"7D77542EA990DF224227C05382073C9C3E5190DB9E72E29CB0A24AFE34EEBB0A"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.2us.dat","size":594,"sha256":"D4D5068CB128BD6E3B4BF1B55DEC5A133A46D5032A0B3BA239E76BF1F23EB35C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.32us.dat","size":594,"sha256":"F65BA059E1B6C7C9125CF2FA1CA9F2CEAF9FB6D9B9C0E730425DCE87106C44D3"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.34us.dat","size":594,"sha256":"C36F6BA925A6314356938505F88EB8A505D40C5B1B87272F31FA73D308996F5F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.36us.dat","size":594,"sha256":"1AEFA6CF588F2F7268FEE9A08AD07618D9296DEBEAD6604D64B26CCC3B732D3B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.38us.dat","size":594,"sha256":"671463C18459FFB0B8D5340B5A5C27EAE2311D4B2DFB3C72885DE237F330A05C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.3us.dat","size":594,"sha256":"3944B01769413218708BF0296EBB107815AEF4A7ACE17B6BD896D7D1905827C8"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.42us.dat","size":594,"sha256":"19739929B94D92F9158015A0BE959DF9C3B83CD5E6D51F4F8C37A4C6C241CEF5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.44us.dat","size":594,"sha256":"CC164C902765E6676D76B5C968ECB0173F2AE16B9A98F789E833B61FD1CC8C25"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.46us.dat","size":594,"sha256":"272CD2AEF8603142354BB7C6C3C94CA215D8B5FF5E7054745310E04871521190"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.48us.dat","size":594,"sha256":"5975C00671D54E49657E4D57A9B78E7C6B25FC46E79E629C2162524CE937B07E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.4us.dat","size":594,"sha256":"1251DCE2D43E78307D2061C3AFACE0EEC329C14B77262E53968470950A404547"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.52us.dat","size":594,"sha256":"B966FD752565A418B5162DA2E3EE4F9EB79A4D175A8A0B81520F71648F8681FE"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.54us.dat","size":594,"sha256":"CFB35BAF9B58707C36F01557825132EC26101942DA4C2575CD14113360588157"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.56us.dat","size":594,"sha256":"66292754D6A56696D8155D7C86BBAF55C9E5C3111AFC64836D4BFBBD68DBD359"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.58us.dat","size":594,"sha256":"2A3187F16DF9C1081FF184526EF886E009934BEFA1B8A0BCCBA9A950DFB8B2CD"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.5us.dat","size":594,"sha256":"AEE0D6A1EC973F7608563B7C435ABBDC77B5B0EFF3FAE8D4B8BABAA0A98740BA"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.62us.dat","size":594,"sha256":"63FF3FFED3462E85AF6D6ADA5DB8B82A5FF379305DE3FA2F00287BBA892C8223"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.64us.dat","size":594,"sha256":"305C0E9B5DBB6C6F015C7103118D5273E1CE51DD3AC1FE67D81D356F740C276D"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.66us.dat","size":594,"sha256":"830F946E58FDED123A225A289B1B68516333F1C45B3120AC7A70763E7BE135D5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.68us.dat","size":594,"sha256":"37E1720361859BB1186535A0165471F66A98DA642EC6A4F3DC9FAC0A397A93C6"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.6us.dat","size":594,"sha256":"0ACA706E8149802D8774CCD85372084B852D09ADA1F45C875A0081EA04D31BF3"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.72us.dat","size":594,"sha256":"90B51B7D964FBF7E2CAE21F18656426507DF3B5C8EE381C0BD5A65E3F07A081F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.74us.dat","size":594,"sha256":"3C1DE4F2F6DC72E01ED03679BA5EA44DA20EA6856AAA214807332E1C15631BDC"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.76us.dat","size":594,"sha256":"B92F0AD62B23BC1BC5DEECD7EC6B8D6F59CF18122B63342684E7919857902F39"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.78us.dat","size":594,"sha256":"F92825AE12A25CEB6141014C402B5406C93CB77A8BD5344F7797E0F68560AFBA"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.7us.dat","size":594,"sha256":"03E23FF2823552A9B21F3E5B9B52140E302F6139A35FCF3D9FADFF8419A01BE0"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.82us.dat","size":594,"sha256":"2D6E142DA9D024175F1CB18FB9CD61E4563DAD9B93D38625D558FDE0EB6767D8"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.84us.dat","size":594,"sha256":"71B85645CF14619713BD14D840DCBA289B02618999FF7F2ACE859E4F2B1BBF4D"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.86us.dat","size":594,"sha256":"FF3B6B020F78682F3D85E0421CFB035D75DBD3AEC7BD83988262AD81DB7E7344"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.88us.dat","size":594,"sha256":"1B2D17A43A166EEB6FD9989C7BFA97FBD0DEDEB12B4CB53775553294A8AD6C46"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.8us.dat","size":594,"sha256":"12174A64862BEB5B390645F53122FCD083B555DD5D7F00589926DEB91AC78A22"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.92us.dat","size":594,"sha256":"8250194A4EB2C0E801F1158550C88485D9316FCD6920B652630E6E4F82A8596C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.94us.dat","size":594,"sha256":"A68C7B6167EB07D750D34E85F6CB49421761F659E2B59D9B1CC5D000DF25A286"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.96us.dat","size":594,"sha256":"2DAFCD9D14097BCD3385E9F1CCCB0474D822E342F6CCBA50927334E5DA769407"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.98us.dat","size":594,"sha256":"A376945E2863F26D91ABD1C14F0FC171174B77A246902214303031511833FE53"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/butterworth_0.9us.dat","size":594,"sha256":"851F45C47F5FB4A3124D75241F8E94C4890193C6E7E089D0CF24F1FE0E23D7F1"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.04us.dat","size":593,"sha256":"23AE06D51975BE51AC0AD5A6DC9AF956AFFE0C2EB8E0357D544656E694ED1B93"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.06us.dat","size":594,"sha256":"4D91C2AA7EC339378E215EE305574A08922C59CE18950D60624A66681BCF30F5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.08us.dat","size":595,"sha256":"7DB65C19C1F89F2EFF95C98D145A03C1ED97F3C30409002CB8CAB098D9CD9CA4"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.12us.dat","size":596,"sha256":"C33EDB950E2E1525BA92CA82E8081E349CAF0120EF1087C4071711D7381B45C0"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.14us.dat","size":596,"sha256":"F754CD3183AAC7ACCED463DEFE996E9DD47B8550054BD28A23E67A88B92F4A10"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.16us.dat","size":596,"sha256":"A29349EEBC5BDBB6E491B9F9264E2A84C22A743F97E7DDE49897293598A8C7AF"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.18us.dat","size":596,"sha256":"4CFAF85E5ED1E3B9A92A8CDDBBC6EBDDDAB204F7DFBB11C6A02F875F6FA603B0"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.1us.dat","size":596,"sha256":"514B99AA151C626A0D27FD4C285C62F671FD0AB88D148D57CDE701F5AE7CD455"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.22us.dat","size":597,"sha256":"FA6A4DE39DFC743FBB0E4349A0068CFBFFAD2B4A2D4D152C97F8E5CD6EFBE1D6"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.24us.dat","size":597,"sha256":"4203018ED4D287AE9FC09D19A980A11D39D543870E9342C48B62D556E1D6A081"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.26us.dat","size":598,"sha256":"A4DD66F9F06ABDCB5E89BE4D6C2AB085215CE6EEB91277DBA60E2A68F1EF1443"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.28us.dat","size":598,"sha256":"4187583AEEF9AD05747E6B1110097A62EE90D93D9EAE500AB29EC122C829824B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.2us.dat","size":597,"sha256":"517814A2571FFCF6D3642713E25D5EA2081F4C79E531EB1906D539BB58B6E4A4"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.32us.dat","size":598,"sha256":"12B5787332CD5190B862B8A750237670E34CC726A421850B16048EAF88553FCB"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.34us.dat","size":598,"sha256":"C5B199904948DB0A11A0E11B8B5F7823CA340217B8BB272B3DCB705E0BB227ED"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.36us.dat","size":598,"sha256":"CD4DBC7AA8807E0682F5A1D7982FE05704C79794BB10C085B3A38D22941DA7F3"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.38us.dat","size":598,"sha256":"1A68B9209CAFF95EB7F3FCADF2FD9A34DD0EFD626AFD281D42CE3D80B45CA2F4"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.3us.dat","size":598,"sha256":"526A804C8789950919FB837EC93EBCAAF7F591D2242033FF303EF810387E350E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.42us.dat","size":598,"sha256":"B3A827E7A72F402D39874D2D35C4FB73A430B6B8ACA2C10B8DE52A121652BA7E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.44us.dat","size":598,"sha256":"89ADC3E2C966281195C1443DA9146415ED162AF89C4985C70F97AF34B16EF977"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.46us.dat","size":598,"sha256":"5B37662FADB7D5AD3A15C2996827956BFBF6CEF09053930DAF6FC235EF80F6FC"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.48us.dat","size":598,"sha256":"ED25FFADCF5772E1C6F59A4C8C1EAE15D84F5FB8FF465B2FDFE57698EB944637"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.4us.dat","size":598,"sha256":"70645D7A87E59BAC1EE542A1DBED0BABE5FAE6DC4AFB1B72818265567914A0D4"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.52us.dat","size":598,"sha256":"6347EDD966906019C38A679D26D05DD1AA14FCA18BFED643AD083E8F07DE6D80"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.54us.dat","size":598,"sha256":"CD7289C0343A6A994EF88EDD7B29DE3F8733BA7A2E6A01E71EC5BD9F3DE3F3BD"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.56us.dat","size":598,"sha256":"583A87ABDB001D66ADF5A9239BA8C70214D5F975140BF02645F9D87C86AC87CE"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.58us.dat","size":598,"sha256":"8DFCC6BBB2E76400058E99543DD8A053C8061280BE4680B1C2EA97E57E80830E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.5us.dat","size":598,"sha256":"6C4D4D7D7D9773BFEDD6125E48498B24ACEFEB40FF7C5540452EA39C6B17107F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.62us.dat","size":598,"sha256":"E1039946A99F7F8685E7A1C893A5F23D9157ACB0865F3D0D9D6E046514E07FF1"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.64us.dat","size":598,"sha256":"AAF77AEFF3D741310032CFF05BFE4ADA0FDF443BCECD3478D2C4FBF338394A80"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.66us.dat","size":598,"sha256":"A56797D228121BE9ED63EE4E276740B86FDB238AF7EEC06B65D5B7FB825C5830"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.68us.dat","size":598,"sha256":"5755811BC3B620EBFC9EB8ED1605F9185704164E4B9143BF1B150B423B59645C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.6us.dat","size":598,"sha256":"B4FB4FC5B3AE8353FB2906A89DFE200817D4B852C99491E00600782E272A12F8"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.72us.dat","size":598,"sha256":"43E0B6105DD60F9614C82792F5A41C09E39DEF4D65C6C16A707F0DE899E8326E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.74us.dat","size":598,"sha256":"E18B4D0DA0F3495DAB70A775C17029AA4F3A114D43F9C033DD5AB94E817DE6E0"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.76us.dat","size":598,"sha256":"D73D4E9000E7DD75F899E1678A69FBBF1259839D6F9B028F42C3E811A1689E0C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.78us.dat","size":598,"sha256":"3DEF808207FACD8647AFF2645C627606977659811DABC69EA7F1239AB27F009C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.7us.dat","size":598,"sha256":"44A598769BE09FE53D41322C7F7DF3F32F46FD2A148DF639AEB510A2DF5F3189"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.82us.dat","size":598,"sha256":"A5272BBE43E0EC3C49D6579965CC1258EC1F1F93BD6AB8EEA15B45AC6473888D"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.84us.dat","size":598,"sha256":"A0D0ABBA601ED79174974C4B291D9AC3CEC289D1F4CE6223D4058BD8DE23992B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.86us.dat","size":598,"sha256":"292CEF64AA78D0724BCDD766B597F63AF40592BFCEA3977DC188F4C2920B80F5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.88us.dat","size":598,"sha256":"F9120A298808EE35A2937A7592AB635FCFDA1708C71427DFF4300A22F6B9E504"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.8us.dat","size":598,"sha256":"98E614649DDC6DC312E361F776EAC519AEA6CA03611026B14093910F35D81C81"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.92us.dat","size":598,"sha256":"94A88AC6BE855A24C21AE6D86720028D51497B5BB97F34A140596E6DD8EB813B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.94us.dat","size":598,"sha256":"1CE424EE74ADCB974E113147870BE3D113631F1EA1CB53E86B79479A5D7C9173"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.96us.dat","size":598,"sha256":"67B69D63DBB4A27EADCF0A54124FB8D425892B95D971EA4ECF728EA861F3820D"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.98us.dat","size":598,"sha256":"595FC0C3D81A73221212EFE1E8F6933A99A3BD128F1279DDB1C0879838D84A2E"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_0.9us.dat","size":598,"sha256":"DEF98B078B4CE76EFA9E9EFA7FB9875BA466247796854659E86852DC06276507"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_100us.dat","size":601,"sha256":"528DF164DFC654BBF087F64C12F41F30D29A993E081AEBA9CB882B133B97FADC"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_10us.dat","size":600,"sha256":"F18964DC65E7E1CF435AEE379592D327EA95C003A786B6F928950AED96A816CE"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_12.5us.dat","size":601,"sha256":"DDC7B5CB75B81FB5C93A312871AE9DBBEBC26C43AC72B019338849892E91E3A2"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_120us.dat","size":601,"sha256":"EC38F8582D7D494E726B2C3977FBA993C2381E4DE82F2E741433841B6B218398"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_15us.dat","size":600,"sha256":"0384B5668C951F6A847096103207B5B457B78CC805C8695575107C45813603CB"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_160us.dat","size":600,"sha256":"283A1C611A7BAC732F12DCD20D213F3D6C310A2DF0ADC4764EC3122845FA0EE2"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_1us.dat","size":597,"sha256":"240A1FC17994BA2D291ACADCC2AA2B566754FDF46F5B9A3D7879C51E8B86456A"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_2.4us.dat","size":595,"sha256":"6194467817442F3DD6F11AEB93AD59C28DAC2407DB11D4C5BFDCA423C5814D34"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_200us.dat","size":601,"sha256":"C38ACF91AB3207F304B435D5A873AE58719AB5CD3CCAA9CE4763F206BBEE8D9B"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_20us.dat","size":600,"sha256":"164D67C5E84E695D116F82554104E733322B94A96C2E5AA13BFBE63BE704CB3F"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_240us.dat","size":600,"sha256":"520B47A7B164F64CE0B69F8974DA634FF93B541A4A6C59915EDEBB82A2BA47FA"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_25us.dat","size":600,"sha256":"258F62B4EECDF3AC680F3A4326540E87724FCCB2DBB14898CE5BB851FDB74E9D"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_2us.dat","size":596,"sha256":"CE8EE15B789073784F74FAC9DA9648F68D912D11178B93D4536D64B8BFBEFEF0"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_3.2us.dat","size":596,"sha256":"B3AD5AC6C48DE7DD8C7D3DA4B7F26F2080F79C4576A8AF016D4008DB27EB9C6C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_30us.dat","size":600,"sha256":"0069713B039FA7E04BCCA151A1B65B9EDFF107874F03058F1EE92E946314244C"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_320us.dat","size":600,"sha256":"845B1BC90398BD8BE07C89964E966CF365B34292FF102B411B17BCE8F812B279"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_40us.dat","size":600,"sha256":"7A63981B20CD77543A31AB5E893781CD63FEA7C976B804806CC82F0EACE36643"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_4us.dat","size":600,"sha256":"182981D3BEB3C52BC627D21B938F5B9924011C4DBFE44DCDD45025ACDC989DF5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_500us.dat","size":595,"sha256":"1B559B22CE42DC224A8926D8363FBB50C408F340FD8A921CC2017A90EE046001"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_50us.dat","size":601,"sha256":"6CE8A0755C7F633B0727A1D7BA89A1B7755202987DE302073651EA712B99D5BB"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_5us.dat","size":595,"sha256":"E69B0A85B8B4FA0E2F75DFA74DA4E6CF6883B8CED4D756C9281B656F84F56FB5"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_60us.dat","size":600,"sha256":"0A99191AE6F4586BDD1E01AD95E16AD1DA7C3628B7F1B8609C5E7898ED0CD10A"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_6us.dat","size":600,"sha256":"DC69766EC2D0E7B39CDA037ADCFE62A6F9C71F1C47A7165D60AA02F03E40DB64"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_80us.dat","size":601,"sha256":"24C937AB69D4AF5D958BE6271C3C6B13FC1FF9C2A125224C905ECE3F8FFB4EAE"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp -r CUsersAdministratorDesktopeggcontrolmri_software_filesfilterparfile CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg/ellipse_8us.dat","size":600,"sha256":"1D687096378DA32CC00E4999DDAF4A8DA761F0E4786480F3F4571A2CACA6C746"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp CUsersAdministratorDesktopeggcontrolmri_software_fileshighSpeedMode.txt CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":192,"sha256":"0510922460A9A1687FD8DBD6B5C61B787F02B9C9D42AD174F32FECA30096B448"}
+{"relativePath":"Iface/mriRely/hw_cfg && cp CUsersAdministratorDesktopeggcontrolmri_software_filessystemSel.hw CUsersAdministratorDesktopeggcontroleggcontrollerV2IfacemriRelyhw_cfg","size":13665,"sha256":"D48010BCDFBC51FBC98A8F9262FA2EB0BCB2A04CADC8AB4AE50FB418E875BB62"}
+{"relativePath":"Iface/mriRely/mridll.dll","size":34896384,"sha256":"D32AF2B676A4956A3D9AB8707B49F47083328A5CE9236FBB5324E44C28054CE8"}
+{"relativePath":"Iface/mriRely/mridll.dll.backup_20250303","size":35006464,"sha256":"E964A3EBEF019424188DA3AAFA5270626ED15163843C4211DC8C97AA954FFF3C"}
+{"relativePath":"Iface/mriRely/par0422.par","size":32297,"sha256":"C7CCE3152E488A177DF3AE13EE9C3AFBF889A0D24E59EEB434A9511247B08806"}
+{"relativePath":"Iface/mriRely/par0423.par","size":25081,"sha256":"AEE13C45D71732972400E5FC01D8BF9E9B9854B02FBE50686201F0B1B0D7392D"}
+{"relativePath":"Iface/mriRely/par0423_backup.par","size":25081,"sha256":"637BFFA295E446DC977C83DA40BD78E7B15DE8C296DD4A912B23A7B31ADC850F"}
+{"relativePath":"Iface/raw_recon.py","size":8417,"sha256":"86BC669A797433683A328C4337838B1E0858D920B825E378A0BBFFE89EF03FDA"}
+{"relativePath":"Iface/raw_recon_correct.py","size":6587,"sha256":"A6160F169D13FA4880B108050955421C1E6AA6DF626D4444AFC1392470FFFB50"}
+{"relativePath":"Iface/raw_recon_new.py","size":8417,"sha256":"86BC669A797433683A328C4337838B1E0858D920B825E378A0BBFFE89EF03FDA"}
+{"relativePath":"Iface/recon_all.py","size":1979,"sha256":"F376D8D96E89793DAFDF9AA8FA4EE5B8BBE990216E2E5A77DAC8F41FC427036F"}
+{"relativePath":"Iface/reconstruction.py","size":848,"sha256":"2DDD56BBA16046A694BA5BED7DF89C52820772160AAEB79ABF1ADC06033C89C0"}
+{"relativePath":"MainWindow_V3.py","size":49895,"sha256":"4340D339AEEF9FFDCE3A4B63218BE7564F37CA71D80A55E07197E77FD98852A2"}
+{"relativePath":"QUICK_REFERENCE.md","size":3010,"sha256":"0FE456507EB8826FD55FF15CC2107BC39FE8CA9D430A8B8C7210F052B1F7F8E4"}
+{"relativePath":"README.md","size":181,"sha256":"6BA76AE19327B92868F0F171444A4830F844E7F984DA6C8AB076AB79BA2504CD"}
+{"relativePath":"README_NEW.md","size":7213,"sha256":"47A81C7B790448C2A8646E31BCFED79586A40BF275EB58F6A5E3B4BEC33317FB"}
+{"relativePath":"RUN_SUCCESS_REPORT.md","size":5316,"sha256":"E6B6241B9694DB92ED397EFA4ED3FAD561E809DA428AA5E3F7046DB4FB7160C0"}
+{"relativePath":"SMART_DEPLOYMENT.md","size":6478,"sha256":"178A33B35A9C5F2568230C3B96ECE32195CF884A0FB16C818B9A0723801C26E9"}
+{"relativePath":"TEST_REPORT.md","size":5107,"sha256":"080ACE1265A9D43C7218F64C3EC0870A3B0341CA311B3ACC84B673F4C3836863"}
+{"relativePath":"WINDOWS_DEPLOYMENT.md","size":6540,"sha256":"25F8545E968C2917C4FCA2954AA763387B61897B2D3BD684807A7C86CB24D221"}
+{"relativePath":"check_environment.bat","size":957,"sha256":"0E6354753E647116F0F53D04E0B98F733B21BF11D62D2BBF31142497505502ED"}
+{"relativePath":"check_environment.py","size":17029,"sha256":"72AEB228CEB8DD4EF974DB3D27C9611B1EFAB03A9067CEDA52E616A1259951D6"}
+{"relativePath":"environment_report.json","size":977,"sha256":"BC4279717813B85D22D655B60F3F200BA2DFCA9CB2EC56380B02C9065BB2FD95"}
+{"relativePath":"logger/__init__.py","size":93,"sha256":"9EF023996CA5CC4200BD0CD4AEF6BFCF8E225ADD5433E5FE081B5D923CF146AD"}
+{"relativePath":"logger/robot_logger.py","size":578,"sha256":"BCFBA444F3D01E74BA8B772F4B052DCC769B2EE1B4EC3333F1473790D1B6D5E5"}
+{"relativePath":"message/UploadTask.py","size":2466,"sha256":"2F86B519756A403F49B8FC8EF7FEDC2A36E7CFA3BF18D0FE160F85C960B64E9C"}
+{"relativePath":"message/__init__.py","size":93,"sha256":"9EF023996CA5CC4200BD0CD4AEF6BFCF8E225ADD5433E5FE081B5D923CF146AD"}
+{"relativePath":"message/main.py","size":4056,"sha256":"5FC70CA3C2A286ED6F750FD3805B9F1C504169638E92B3E31915D0DA8B0CC1D9"}
+{"relativePath":"message/message.py","size":6285,"sha256":"32013319E500A492EA57FADC5A1A005DA2CECBC620A9A2A2D089370A5AD804A5"}
+{"relativePath":"pdf_text.txt","size":50175,"sha256":"2D571DC3902489F3C8DB9D1FB8236A93106BFF71F2F202CCF01D9FB934F9CBC4"}
+{"relativePath":"reconstruct_ptmri.py","size":7882,"sha256":"5B974653B5A4FDB540EA6E45A1E1F0333DC5757865CBC33334186DCC2B61AEE6"}
+{"relativePath":"request/__init__.py","size":0,"sha256":"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"}
+{"relativePath":"request/request.py","size":3490,"sha256":"83D94138EC89B9DD0123D8CCD1EBE3A3D1066685E66501FF19D44832824D8583"}
+{"relativePath":"requirements.txt","size":167,"sha256":"075A9764BC9EF9DC2E1D17C55D4CA6681C5088350ACB85CA05DD490C019606ED"}
+{"relativePath":"run_reconstruction.py","size":5255,"sha256":"94FE389AECCD828E9E582713A9AE4966AEBF0A6758AEDAE492A92BC920CCD6FC"}
+{"relativePath":"service.py","size":3470,"sha256":"BAC18AAC54E6F6416C6E75B91403D1EA67E5ACA56C7B11766A0FCB14DAD13EB5"}
+{"relativePath":"start_system.bat","size":1389,"sha256":"E0C5D381BB9ACD8DEDFC60D8A668F32898CFC3B69161DED5BCE20E0A02C29BC1"}
+{"relativePath":"test_full_scan.py","size":6680,"sha256":"F0337C8EF5CAAEF5613FC986567059B1A194BE1BEE7F069E9AD20CA50D3A4562"}
+{"relativePath":"test_imports.py","size":1073,"sha256":"7F7B618E66AD94A9D0E2E2FE4649D2099D2E04FEF9CC8406B52BF982563F7221"}
+{"relativePath":"test_integration.py","size":3100,"sha256":"8A60B0863C5B1F70526383DE327A8DA3DDD56FF5C35669CA3DB96FCE0CBB5678"}
+{"relativePath":"test_motor.py","size":1731,"sha256":"E2E71E7571A649F7560FE7D2B24BA808EB8908D89E1DC8B172D03CB6C05762E7"}
+{"relativePath":"test_motor_connection.py","size":2289,"sha256":"833E581F685A594C5FDF9B7AF054B02DEB820CF751EE68C511F31EBE71DDF0EC"}
+{"relativePath":"test_mri_connection.py","size":3063,"sha256":"645418BA52B20654266FD98497FF2313DC07989C7749EEA9E42EC31FA6A78647"}
+{"relativePath":"test_real_data.py","size":5301,"sha256":"46A7342951616D1FB68E29AC7137170E03EA93E3B72200FAD47C812741D42DD6"}
+{"relativePath":"test_recon.py","size":5265,"sha256":"D4C86CA7F717931075206C56F905446594938AAE0DFFE2E27B6B4CDB3121CF83"}
+{"relativePath":"test_reconstruction_contract.py","size":1683,"sha256":"F5A62CFBEB9A41AB71151D45100D03814C29422503D920B29D2EEA58B93A8165"}
+{"relativePath":"webdata/setting/setting_1.json","size":2369,"sha256":"ACFA7458BFA788C8A63CBF715F29F3A2114728C8E91A97D2FFC092BB1DDE5B8D"}
+{"relativePath":"webdata/setting/setting_2.json","size":549,"sha256":"A93D183C8C3C3C1FBBD30AE205AB613B95F7D8DF806C9ED1E8278388BA8DFDF9"}

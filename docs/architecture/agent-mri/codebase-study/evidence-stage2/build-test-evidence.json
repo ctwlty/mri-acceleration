@@ -1,0 +1,223 @@
+{
+  "schema": "agent-mri-offline-build-test-evidence/v2",
+  "generatedAt": "2026-08-02T17:10:00+08:00",
+  "safetyBoundary": {
+    "realDllLoaded": false,
+    "deviceConnected": false,
+    "autoConnectExecuted": false,
+    "verifierScanExecuted": false,
+    "realRunOrAbortExecuted": false,
+    "deviceBridgeFakeRunAbortTestExecuted": false,
+    "userFacingGuiStarted": false,
+    "existingWorkspaceBuildDirectoriesUsed": false
+  },
+  "toolchain": {
+    "cmake": "C:\\msys64\\ucrt64\\bin\\cmake.exe",
+    "ctest": "C:\\msys64\\ucrt64\\bin\\ctest.exe",
+    "ninja": "C:\\msys64\\ucrt64\\bin\\ninja.exe",
+    "compiler": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+    "generator": "Ninja"
+  },
+  "projectA": {
+    "commit": "80b5d853761ead14a8728c0be9c807fda3f75004",
+    "sourceArchive": {
+      "path": "C:\\tmp\\agent-mri-stage2-20260802\\project-a-80b5d85.zip",
+      "size": 757216,
+      "sha256": "2BD5DFB8010D7EEBA33A7EAD46E296B16BA546466AB8BCD67D69FE46DC7150F3"
+    },
+    "failedAmbientToolchainAttempt": {
+      "reason": "CMake selected C:\\cygwin64\\bin\\c++.exe and AUTOMOC failed; no binary was run",
+      "logPath": "C:\\tmp\\agent-mri-stage2-20260802\\a-debug-configure.log",
+      "logSize": 1176,
+      "logSha256": "D9901088933139B6DEDD13B6DC0B5DFB39CCADD1FA812A8E5CB8C52673B5A0BA"
+    },
+    "debugUcrt64": {
+      "buildDirectory": "C:\\tmp\\agent-mri-stage2-20260802\\build-a-debug-ucrt",
+      "configure": {
+        "exitCode": 0,
+        "logPath": "C:\\tmp\\agent-mri-stage2-20260802\\a-debug-ucrt-configure.log",
+        "logSize": 1420,
+        "logSha256": "A678E8D3FEA5BFBDA95B789BF98FC23CB2E0EAF8AC06F6A0B1AE4AEDB48761D9"
+      },
+      "build": {
+        "exitCode": 0,
+        "logPath": "C:\\tmp\\agent-mri-stage2-20260802\\a-debug-ucrt-build.log",
+        "logSize": 1874,
+        "logSha256": "D52DDFA7DC61342805EF978DC9AB3CAC52B9911DFB0A32B12856648E822B62ED"
+      },
+      "ctestList": {
+        "executedTests": 0,
+        "totalRegisteredTests": 0,
+        "logPath": "C:\\tmp\\agent-mri-stage2-20260802\\a-debug-ctest-list.log",
+        "logSize": 170,
+        "logSha256": "C301A5096ECCA2118C22378A4564813A974BB6A4CBBC1B54DE98F534BB2DF091"
+      },
+      "executable": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\build-a-debug-ucrt\\scenario_nmr_client.exe",
+        "started": false,
+        "size": 5090335,
+        "sha256": "A93B2D2831B6BF94A24893D75E71DE20B65AA2E1BD980322BD7C466724556291"
+      }
+    }
+  },
+  "current": {
+    "commit": "70c5607454d661a9b325798b627c1412ed2869ba",
+    "sourceWorktree": "C:\\tmp\\agent-mri-stage2-current-70c5607",
+    "registeredTests": 12,
+    "configureCommandTemplate": "cmake -S <source>/client -B <build> -G Ninja -DCMAKE_BUILD_TYPE=<Debug|Release> -DBUILD_TESTING=ON -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/ninja.exe -DCMAKE_PREFIX_PATH=C:/msys64/ucrt64",
+    "buildCommandTemplate": "cmake --build <build> --parallel 4",
+    "safeCtestCommandTemplate": "ctest --test-dir <build> -R ^(mri_sdk_loader|device_actions|image_quality_evaluator|mock_workflow|mock_result_package|main_window|eggcontroller_process|eggcontroller_proxy_py|gui_automation_mode_fake)$ --output-on-failure",
+    "selectedSafeTests": [
+      "mri_sdk_loader",
+      "device_actions",
+      "image_quality_evaluator",
+      "mock_workflow",
+      "mock_result_package",
+      "main_window",
+      "eggcontroller_process",
+      "eggcontroller_proxy_py",
+      "gui_automation_mode_fake"
+    ],
+    "skippedTests": [
+      {
+        "name": "device_bridge",
+        "reason": "Conservative policy: source invokes fake Run/Abort paths"
+      },
+      {
+        "name": "sdk_verify_fake",
+        "reason": "Command contains verifier --scan"
+      },
+      {
+        "name": "gui_auto_connect_fake",
+        "reason": "Command contains --auto-connect"
+      }
+    ],
+    "qtSubtestsSkippedInsidePassingMainWindowProcess": [
+      {
+        "name": "captureLocalizationPlanningEvidenceWhenRequested",
+        "reason": "LOCALIZATION_QA_CAPTURE_DIR was intentionally unset"
+      },
+      {
+        "name": "captureInteractionQaScreensWhenRequested",
+        "reason": "INTERACTION_QA_CAPTURE_DIR was intentionally unset"
+      }
+    ],
+    "testLimitations": [
+      "The DRY_RUN executable assertion compares only SCENARIO_NMR_MOCK_RESULT_ROOT entries. The current no-file-side-effect conclusion also relies on static proof that MainWindow has no DeviceBridge::dryRunScene caller; this test alone would not catch a future write to applicationDir/dry_run_params."
+    ],
+    "debug": {
+      "buildDirectory": "C:\\tmp\\agent-mri-stage2-20260802\\build-current-debug-70c5607",
+      "configureLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-debug-configure.log",
+        "size": 1632,
+        "sha256": "2BE26D2CEFD68DF8040264A461A5C5AB73BF1AF8F3D8CA3CF1A15899ABFD1948"
+      },
+      "buildLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-debug-build.log",
+        "size": 15728,
+        "sha256": "296C214F819E77C612C7BFFC763ECFD9BCC5AB601C896DD8B7AE4E476E759734"
+      },
+      "ctestListLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-debug-ctest-list.log",
+        "size": 11282,
+        "sha256": "A5EEA4998A5C59BAAECAED7C7757003945F5BE66D1D7E96CF9F45F1A036D8C21"
+      },
+      "safeCtestLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-debug-ctest-safe.log",
+        "size": 2178,
+        "sha256": "3EF7581A6027097BED1C4255C766F3A8D46367B6E96252761D6EB430481D190F"
+      },
+      "safeTestsPassed": 9,
+      "safeTestsFailed": 0,
+      "safeTestSeconds": 22.55,
+      "executable": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\build-current-debug-70c5607\\scenario_nmr_client.exe",
+        "startedByHuman": false,
+        "size": 19055227,
+        "sha256": "37FD281B2424C02591305C9E944BA67271BEE63D412F2577F983CA02C41EA127",
+        "containsExactCommitString": true
+      }
+    },
+    "release": {
+      "buildDirectory": "C:\\tmp\\agent-mri-stage2-20260802\\build-current-release-70c5607",
+      "configureLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-release-configure.log",
+        "size": 1636,
+        "sha256": "03BF51FF0862BBE740A5EE03E7CBEE52E82C3F8D089DEC90B35BE083202433E4"
+      },
+      "buildLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-release-build.log",
+        "size": 15728,
+        "sha256": "55527A798828D230101513231E937A88CCEC089C0D45749166C730657785B911"
+      },
+      "ctestListLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-release-ctest-list.log",
+        "size": 11422,
+        "sha256": "D5D12AF488AF76BFC7981EC600AC0A9D8499546BB40CE9BA03C911783D646959"
+      },
+      "safeCtestLog": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\current-final-release-ctest-safe.log",
+        "size": 2182,
+        "sha256": "D212F6E375E0033F00000CBC440960B862A1106E53CC1841579353CC6E0BC60B"
+      },
+      "safeTestsPassed": 9,
+      "safeTestsFailed": 0,
+      "safeTestSeconds": 21.93,
+      "executable": {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\build-current-release-70c5607\\scenario_nmr_client.exe",
+        "startedByHuman": false,
+        "size": 6811293,
+        "sha256": "7E873A01058E3B2395804D5754CD19730B66B78B263DB36D22D7ACABD03FFEF8",
+        "containsExactCommitString": true
+      }
+    }
+  },
+  "preliminaryRun": {
+    "commit": "7aa2fc84cc4b0a28316d0c6fc6ae5e44ce11874e",
+    "status": "superseded-by-isolated-final-run",
+    "debugSafeTestsPassed": 9,
+    "releaseSafeTestsPassed": 9,
+    "filesystemObservation": {
+      "path": "C:\\Users\\Administrator\\Documents\\ScenarioNmr\\MockRuns",
+      "cause": "A page-8 run-confirmation gate recomputation called mockOutputRootWritable, which created and auto-removed a write probe before a global test result-root override was installed",
+      "persistentNewEntries": 0,
+      "directoryMtimeAfterTouch": "2026-08-02T16:24:57.7424432+08:00",
+      "existingEntries": [
+        "RUN-MOCK-371525A8-2198-43DE-963E-7F3E0AB55AB0",
+        "RUN-MOCK-77FAB0F8-6353-429A-ADFF-EEFF52918107"
+      ],
+      "finalDebugReleaseRunChangedMtimeOrEntries": false
+    }
+  },
+  "unreachableAssertionProbe": {
+    "sourceCopy": "C:\\tmp\\agent-mri-stage2-probe-return",
+    "repositoryFilesModifiedByProbe": false,
+    "logs": [
+      {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\probe-return-direct.stdout.log",
+        "size": 39744,
+        "sha256": "F06899639B92F8AC98F366730B18CC01B6B0FE0F2EB741430451FA1C8C2C6DC0"
+      },
+      {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\probe-return-direct2.stdout.log",
+        "size": 612,
+        "sha256": "1923A1562FA7D4B8F9871893CF93CD9D31A5572C8C436CCA0DCE6B00F70C350A"
+      },
+      {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\probe-return-direct3.stdout.log",
+        "size": 685,
+        "sha256": "F915F2641304C5D33E14EE6E4127BFC3C85B8F9E56A65EF6A75D56F18D51AFB3"
+      },
+      {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\probe-return-direct4.stdout.log",
+        "size": 667,
+        "sha256": "2C032CF5F2DAD106D604074573FF90FEF50DE0F4B889D3EFED351408BF9EA83D"
+      },
+      {
+        "path": "C:\\tmp\\agent-mri-stage2-20260802\\probe-return-direct5.stdout.log",
+        "size": 781,
+        "sha256": "5E8F700DF31ACCFBBC7F0C0D30445A518932CF6F9B9B29F09D2B880001F4431F"
+      }
+    ]
+  }
+}

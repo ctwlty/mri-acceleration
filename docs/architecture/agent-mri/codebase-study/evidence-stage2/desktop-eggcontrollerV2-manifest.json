@@ -1,0 +1,39 @@
+{
+  "schema": "offline-directory-manifest/v1",
+  "generatedBy": "Python os.walk/hashlib static file reads only; no program, SDK, DLL, device, or RAW data was started, loaded, copied, or written",
+  "sourceRoot": "C:\\Users\\Administrator\\Desktop\\eggcontrol\\eggcontrollerV2",
+  "sourceRootIsGitRepository": false,
+  "entryFormat": "JSON Lines in desktop-eggcontrollerV2-files.jsonl: {relativePath,size,sha256}",
+  "includedFileCount": 644,
+  "includedTotalBytes": 90298866,
+  "exclusions": [
+    {
+      "pattern": ".pytest_cache/**",
+      "reason": "test cache"
+    },
+    {
+      "pattern": "**/__pycache__/**",
+      "reason": "Python bytecode cache"
+    },
+    {
+      "pattern": "log_data/**",
+      "reason": "log output directory"
+    },
+    {
+      "pattern": "gui_debug.log",
+      "reason": "log output file"
+    },
+    {
+      "pattern": "webdata/data/**",
+      "reason": "generated reconstruction/image results"
+    },
+    {
+      "pattern": "**/AppData/Local/Temp/wheels/**",
+      "reason": "temporary wheel cache"
+    },
+    {
+      "pattern": "request/kspace.fid",
+      "reason": "potential RAW/run data; deliberately not hashed or copied"
+    }
+  ]
+}
