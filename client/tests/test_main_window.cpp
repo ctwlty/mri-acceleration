@@ -92,6 +92,8 @@ class MainWindowTest : public QObject {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
     void sdkCanBeLoadedAndConnectedWithoutFileDialog();
     void defaultSdkStateIsUnloadedAndRealButtonsDisabled();
     void configureEggControllerKeepsProxyUnreachableAndReportsHold();
@@ -106,7 +108,7 @@ private slots:
     void realActionsExplainWhyTheyAreUnavailable();
     void mockPresentationAssetsDoNotContainEmbeddedDynamicStatus();
     void workflowUsesWaterPhantomTransverseSemantics();
-    void visibleWorkflowControlsHaveNamesAndObservableBehavior();
+    void visibleWorkflowControlsHaveStableObjectNames();
     void selectedTemplateOffersVisibleContinuationFromAnyWorkflowPage();
     void persistentWorkflowNavigationIsVisibleAtCommonWindowSize();
     void mockAcquisitionRequiresAllRunConfirmations();
@@ -134,7 +136,33 @@ private slots:
     void cancelledMockRunKeepsEvidenceAndCreatesNoSuccessfulArtifacts();
     void captureLocalizationPlanningEvidenceWhenRequested();
     void captureInteractionQaScreensWhenRequested();
+
+private:
+    QTemporaryDir m_isolatedMockResultRoot;
+    QByteArray m_previousMockResultRoot;
+    bool m_hadMockResultRoot = false;
 };
+
+void MainWindowTest::initTestCase()
+{
+    QVERIFY(m_isolatedMockResultRoot.isValid());
+    m_hadMockResultRoot =
+        qEnvironmentVariableIsSet("SCENARIO_NMR_MOCK_RESULT_ROOT");
+    m_previousMockResultRoot =
+        qgetenv("SCENARIO_NMR_MOCK_RESULT_ROOT");
+    QVERIFY(qputenv("SCENARIO_NMR_MOCK_RESULT_ROOT",
+                    QFile::encodeName(m_isolatedMockResultRoot.path())));
+}
+
+void MainWindowTest::cleanupTestCase()
+{
+    if (m_hadMockResultRoot) {
+        qputenv("SCENARIO_NMR_MOCK_RESULT_ROOT",
+                m_previousMockResultRoot);
+    } else {
+        qunsetenv("SCENARIO_NMR_MOCK_RESULT_ROOT");
+    }
+}
 
 void MainWindowTest::sdkCanBeLoadedAndConnectedWithoutFileDialog()
 {
@@ -280,179 +308,6 @@ void MainWindowTest::mockPresentationAssetsDoNotContainEmbeddedDynamicStatus()
     QVERIFY(!planning->text().contains(QStringLiteral("3分20秒")));
 }
 
-#if 0 // Superseded by the Mock-only workflow contract.
-void MainWindowTest::precheckViewportDisplaysOnlySdkReturnedStatus()
-{
-    QTemporaryDir temp;
-    QVERIFY(temp.isValid());
-
-    MriSdkConfig config;
-    config.initPath = temp.filePath(QStringLiteral("init.ini"));
-    config.parameterPath = temp.filePath(QStringLiteral("PTScan.par"));
-    config.outputPath = temp.path();
-    writeFile(config.initPath);
-    writeFile(config.parameterPath);
-
-    MainWindow window;
-    QVERIFY(window.loadSdkAndConnect(qEnvironmentVariable("FAKE_MRI_SDK_PATH"), config).ok);
-    auto* precheck = window.findChild<QLabel*>(QStringLiteral("PrecheckStatusLabel"));
-    QVERIFY(precheck);
-    QCOMPARE(precheck->text(), QStringLiteral("真实预检：待执行（未声明通过）"));
-
-    QVERIFY(QMetaObject::invokeMethod(&window, "handlePrecheck", Qt::DirectConnection));
-    QCOMPARE(precheck->text(), QStringLiteral("真实预检：连接码 1；温度 31.4 C；ScanStatus 0"));
-}
-
-void MainWindowTest::automationModeDisplaysBothImagesWithoutSdkRun()
-{
-    QTemporaryDir temp;
-    QVERIFY(temp.isValid());
-    const QString callLog = temp.filePath(QStringLiteral("sdk-calls.log"));
-    qputenv("FAKE_CALL_LOG", QFile::encodeName(callLog));
-
-    EggControllerLaunchConfig config;
-    config.program = qEnvironmentVariable("FAKE_EGGCONTROLLER_PROXY_PATH");
-    config.arguments = {
-        QStringLiteral("--output"), temp.path(),
-        QStringLiteral("--mode"), QStringLiteral("success")
-    };
-    config.workingDirectory = temp.path();
-
-    MainWindow window;
-    window.configureEggController(config);
-
-    auto* mode = window.findChild<QComboBox*>(QStringLiteral("ControlModeCombo"));
-    auto* start = window.findChild<QPushButton*>(QStringLiteral("StartButton"));
-    auto* kspace = window.findChild<QLabel*>(QStringLiteral("KspaceImageView"));
-    auto* finalImage = window.findChild<QLabel*>(QStringLiteral("FinalImageView"));
-    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
-    QVERIFY(mode);
-    QVERIFY(start);
-    QVERIFY(kspace);
-    QVERIFY(finalImage);
-    QVERIFY(status);
-    QCOMPARE(mode->currentData().toString(), QStringLiteral("eggcontroller"));
-    QVERIFY(start->isEnabled());
-
-    start->click();
-
-    QTRY_VERIFY_WITH_TIMEOUT(!kspace->pixmap().isNull(), 3000);
-    QTRY_VERIFY_WITH_TIMEOUT(!finalImage->pixmap().isNull(), 3000);
-    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
-    const QByteArray sdkCalls = [&]() {
-        QFile file(callLog);
-        if (!file.open(QIODevice::ReadOnly)) {
-            return QByteArray{};
-        }
-        return file.readAll();
-    }();
-    QVERIFY(!QString::fromUtf8(sdkCalls).contains(QStringLiteral("Run")));
-
-    qunsetenv("FAKE_CALL_LOG");
-}
-
-void MainWindowTest::automationRunLocksControlModeUntilProcessFinishes()
-{
-    QTemporaryDir temp;
-    QVERIFY(temp.isValid());
-
-    EggControllerLaunchConfig config;
-    config.program = qEnvironmentVariable("FAKE_EGGCONTROLLER_PROXY_PATH");
-    config.arguments = {
-        QStringLiteral("--output"), temp.path(),
-        QStringLiteral("--mode"), QStringLiteral("slow")
-    };
-    config.workingDirectory = temp.path();
-
-    MainWindow window;
-    window.configureEggController(config);
-    auto* mode = window.findChild<QComboBox*>(QStringLiteral("ControlModeCombo"));
-    auto* start = window.findChild<QPushButton*>(QStringLiteral("StartButton"));
-    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
-    QVERIFY(mode);
-    QVERIFY(start);
-    QVERIFY(status);
-
-    start->click();
-    QTRY_VERIFY_WITH_TIMEOUT(!mode->isEnabled(), 200);
-    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
-    QVERIFY(mode->isEnabled());
-}
-
-void MainWindowTest::automationModeEvaluatesTheReturnedImageInExistingMetricCards()
-{
-    QTemporaryDir temp;
-    QVERIFY(temp.isValid());
-
-    EggControllerLaunchConfig config;
-    config.program = qEnvironmentVariable("FAKE_EGGCONTROLLER_PROXY_PATH");
-    config.arguments = {
-        QStringLiteral("--output"), temp.path(),
-        QStringLiteral("--mode"), QStringLiteral("success")
-    };
-    config.workingDirectory = temp.path();
-
-    MainWindow window;
-    window.configureEggController(config);
-    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("MetricCard")).size(), 4);
-
-    auto* start = window.findChild<QPushButton*>(QStringLiteral("StartButton"));
-    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
-    auto* snr = window.findChild<QLabel*>(QStringLiteral("QualitySnrValue"));
-    auto* uniformity = window.findChild<QLabel*>(QStringLiteral("QualityUniformityValue"));
-    auto* size = window.findChild<QLabel*>(QStringLiteral("QualitySizeValue"));
-    auto* stability = window.findChild<QLabel*>(QStringLiteral("QualityStabilityValue"));
-    QVERIFY(start);
-    QVERIFY(status);
-    QVERIFY(snr);
-    QVERIFY(uniformity);
-    QVERIFY(size);
-    QVERIFY(stability);
-
-    start->click();
-
-    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
-    QVERIFY(QRegularExpression(QStringLiteral("^\\d+\\.\\d dB$")).match(snr->text()).hasMatch());
-    QVERIFY(snr->text().chopped(3).toDouble() > 30.0);
-    QVERIFY(QRegularExpression(QStringLiteral("^\\d+\\.\\d %$")).match(uniformity->text()).hasMatch());
-    QVERIFY(uniformity->text().chopped(2).toDouble() > 95.0);
-    QCOMPARE(size->text(), QStringLiteral("21 × 33 px"));
-    QCOMPARE(stability->text(), QStringLiteral("不可评估（需重复）"));
-    QCOMPARE(window.findChildren<QWidget*>(QStringLiteral("MetricCard")).size(), 4);
-}
-
-void MainWindowTest::automationRunPreventsWindowCloseUntilProcessFinishes()
-{
-    QTemporaryDir temp;
-    QVERIFY(temp.isValid());
-
-    EggControllerLaunchConfig config;
-    config.program = qEnvironmentVariable("FAKE_EGGCONTROLLER_PROXY_PATH");
-    config.arguments = {
-        QStringLiteral("--output"), temp.path(),
-        QStringLiteral("--mode"), QStringLiteral("slow")
-    };
-    config.workingDirectory = temp.path();
-
-    MainWindow window;
-    window.configureEggController(config);
-    window.show();
-    auto* start = window.findChild<QPushButton*>(QStringLiteral("StartButton"));
-    auto* status = window.findChild<QLabel*>(QStringLiteral("AutomationStatusLabel"));
-    QVERIFY(start);
-    QVERIFY(status);
-
-    start->click();
-    QTest::qWait(50);
-    QVERIFY(!window.close());
-    QVERIFY(window.isVisible());
-
-    QTRY_COMPARE_WITH_TIMEOUT(status->text(), QStringLiteral("Ready"), 3000);
-    QVERIFY(window.close());
-}
-
-#endif
-
 void MainWindowTest::workflowUsesMockNavigationAndKeepsRealRunOnHold()
 {
     MainWindow window;
@@ -527,10 +382,16 @@ void MainWindowTest::enabledWorkflowActionsExposeVisibleFeedback()
     auto* dryRun = window.findChild<QPushButton*>(QStringLiteral("DryRunButton"));
     QVERIFY(feedback);
     QVERIFY(dryRun);
+    const QDir isolatedRoot(
+        qEnvironmentVariable("SCENARIO_NMR_MOCK_RESULT_ROOT"));
+    const QStringList entriesBeforeDryRun = isolatedRoot.entryList(
+        QDir::AllEntries | QDir::NoDotAndDotDot);
 
     dryRun->click();
     QVERIFY(feedback->text().contains(QStringLiteral("DRY_RUN")));
     QVERIFY(feedback->text().contains(QStringLiteral("未写入 SDK")));
+    QCOMPARE(isolatedRoot.entryList(QDir::AllEntries | QDir::NoDotAndDotDot),
+             entriesBeforeDryRun);
 
     window.setMockWorkflowStep(5);
     auto* useOnce = window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton"));
@@ -672,7 +533,7 @@ void MainWindowTest::workflowUsesWaterPhantomTransverseSemantics()
     QVERIFY(step12Text.contains(QStringLiteral("外部分析\n未配置")));
 }
 
-void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
+void MainWindowTest::visibleWorkflowControlsHaveStableObjectNames()
 {
     MainWindow window;
     window.show();
@@ -745,186 +606,6 @@ void MainWindowTest::visibleWorkflowControlsHaveNamesAndObservableBehavior()
     for (int step = 1; step <= 13; ++step) {
         assertNamedVisibleControls(step);
     }
-    return;
-
-    window.setMockWorkflowStep(1);
-    window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("02"));
-
-    auto* primaryScene = window.findChild<QComboBox*>(QStringLiteral("PrimarySceneCombo"));
-    auto* target = window.findChild<QComboBox*>(QStringLiteral("TargetCombo"));
-    auto* templateSearch = window.findChild<QLineEdit*>(QStringLiteral("TemplateSearchEdit"));
-    auto* templateList = window.findChild<QListWidget*>(QStringLiteral("TemplateList"));
-    QVERIFY(primaryScene);
-    QVERIFY(target);
-    QVERIFY(templateSearch);
-    QVERIFY(templateList);
-    QCOMPARE(primaryScene->currentData().toString(), QStringLiteral("结构与形态成像"));
-    QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
-    QVERIFY(templateList->currentItem());
-    QVERIFY(templateList->currentItem()->text().contains(QStringLiteral("水模横断位")));
-    const QString waterTemplateText = templateList->currentItem()->text();
-
-    QVERIFY(target->count() > 1);
-    target->setCurrentIndex(1);
-    QVERIFY(templateList->count() > 0);
-    QVERIFY(templateList->currentItem());
-    QVERIFY(templateList->currentItem()->text() != waterTemplateText);
-    target->setCurrentIndex(target->findData(QStringLiteral("标准水模")));
-    QCOMPARE(target->currentData().toString(), QStringLiteral("标准水模"));
-
-    QVERIFY(primaryScene->count() > 1);
-    primaryScene->setCurrentIndex(1);
-    QVERIFY(target->count() > 0);
-    QVERIFY(templateList->count() > 0);
-    primaryScene->setCurrentIndex(
-        primaryScene->findData(QStringLiteral("结构与形态成像")));
-    target->setCurrentIndex(target->findData(QStringLiteral("标准水模")));
-
-    templateSearch->setText(QStringLiteral("no-such-template"));
-    QCOMPARE(templateList->count(), 0);
-    templateSearch->setText(QStringLiteral("FSE A"));
-    QCOMPARE(templateList->count(), 1);
-    QVERIFY(templateList->currentItem());
-    QVERIFY(templateList->currentItem()->isSelected());
-    templateSearch->clear();
-
-    auto* repeat =
-        window.findChild<QRadioButton*>(QStringLiteral("RepeatTemplateRecommendationRadio"));
-    auto* repeatCard =
-        window.findChild<QWidget*>(QStringLiteral("RepeatTemplateRecommendation"));
-    QVERIFY(repeat);
-    QVERIFY(repeatCard);
-    repeat->click();
-    QVERIFY(repeat->isChecked());
-    QVERIFY(repeatCard->property("selected").toBool());
-    window.findChild<QPushButton*>(QStringLiteral("SceneSelectionBackButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("01"));
-    window.findChild<QPushButton*>(QStringLiteral("BeginResearchButton"))->click();
-    window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("03"));
-    QVERIFY(window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"))
-                ->text()
-                .contains(QStringLiteral("FSE B")));
-
-    window.findChild<QPushButton*>(QStringLiteral("AddComparisonButton"))->click();
-    QVERIFY(window.findChild<QLabel*>(QStringLiteral("ProtocolChainLabel"))
-                ->text()
-                .contains(QStringLiteral("FSE B")));
-    window.findChild<QPushButton*>(QStringLiteral("TemplateBackButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("02"));
-    window.findChild<QPushButton*>(QStringLiteral("ShowRecommendedTemplateButton"))->click();
-    window.findChild<QPushButton*>(QStringLiteral("AcceptTemplateButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("04"));
-
-    window.findChild<QPushButton*>(QStringLiteral("PreparationBackButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("03"));
-    window.findChild<QPushButton*>(QStringLiteral("AcceptTemplateButton"))->click();
-    window.findChild<QPushButton*>(QStringLiteral("SavePreparationButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("05"));
-    window.findChild<QPushButton*>(QStringLiteral("ProtocolUseOnceButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("仅本次使用")));
-    window.findChild<QPushButton*>(QStringLiteral("ProtocolSaveVersionButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("版本保存待真实接入")));
-    window.findChild<QPushButton*>(QStringLiteral("ContinueProtocolButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("06"));
-
-    auto* stop = window.findChild<QPushButton*>(QStringLiteral("LeftMockStopButton"));
-    QVERIFY(!stop->isEnabled());
-    window.findChild<QPushButton*>(QStringLiteral("OpenLocalizationPlanningButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("07"));
-
-    auto* more = window.findChild<QPushButton*>(QStringLiteral("MoreOrientationButton"));
-    more->click();
-    QVERIFY(more->text().contains(QStringLiteral("自定义斜切")));
-    window.findChild<QPushButton*>(QStringLiteral("ModifyImagingTargetButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("成像目标")));
-    window.findChild<QPushButton*>(QStringLiteral("ResearchParametersButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("L3")));
-    window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("08"));
-
-    auto* check = window.findChild<QCheckBox*>(QStringLiteral("RunConfirmationCheck1"));
-    QVERIFY(check);
-    QVERIFY(!check->isChecked());
-    check->click();
-    QVERIFY(check->isChecked());
-    window.findChild<QPushButton*>(QStringLiteral("RunConfirmationBackButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("07"));
-    window.findChild<QPushButton*>(QStringLiteral("ConfirmLocalizationButton"))->click();
-    for (int index = 1; index <= 3; ++index) {
-        window.findChild<QCheckBox*>(
-            QStringLiteral("RunConfirmationCheck%1").arg(index))->click();
-    }
-    auto* reacquire =
-        window.findChild<QPushButton*>(QStringLiteral("MockAcquireButton"));
-    QVERIFY(reacquire->isEnabled());
-    reacquire->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("09"));
-    QVERIFY(stop->isEnabled());
-    stop->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("08"));
-
-    window.setMockWorkflowStep(10);
-    window.findChild<QPushButton*>(QStringLiteral("CompleteMockProcessingButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("11"));
-    window.findChild<QPushButton*>(QStringLiteral("ReturnToLocalizationButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("07"));
-    window.setMockWorkflowStep(11);
-    window.findChild<QPushButton*>(QStringLiteral("ConfirmResultButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("12"));
-
-    window.findChild<QPushButton*>(QStringLiteral("OpenResultLocationButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("Mock 未生成磁盘结果目录")));
-    window.findChild<QPushButton*>(QStringLiteral("ExternalAnalysisButton"))->click();
-    QVERIFY(feedback->text().contains(QStringLiteral("真实结果生成后")));
-    window.findChild<QPushButton*>(QStringLiteral("OpenHistoryButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("13"));
-
-    auto* actionState = window.findChild<QLabel*>(QStringLiteral("HistoryActionState"));
-    auto* history = window.findChild<QTableWidget*>(QStringLiteral("HistoryReadOnlyTable"));
-    auto* sampleFilter =
-        window.findChild<QComboBox*>(QStringLiteral("HistorySampleFilter"));
-    auto* templateFilter =
-        window.findChild<QComboBox*>(QStringLiteral("HistoryTemplateFilter"));
-    auto* dateFilter =
-        window.findChild<QComboBox*>(QStringLiteral("HistoryDateFilter"));
-    auto* historyFilter = window.findChild<QLineEdit*>(QStringLiteral("HistoryFilter"));
-    QVERIFY(actionState);
-    QVERIFY(history);
-    QVERIFY(sampleFilter);
-    QVERIFY(templateFilter);
-    QVERIFY(dateFilter);
-    QVERIFY(historyFilter);
-
-    sampleFilter->setCurrentText(QStringLiteral("SAMPLE-002"));
-    QVERIFY(history->isRowHidden(0));
-    QVERIFY(!history->isRowHidden(2));
-    sampleFilter->setCurrentIndex(0);
-
-    templateFilter->setCurrentIndex(1);
-    QCOMPARE(templateFilter->currentText(), QStringLiteral("内部结构成像模板"));
-    QVERIFY(!history->isRowHidden(0));
-    templateFilter->setCurrentIndex(0);
-
-    dateFilter->setCurrentText(QStringLiteral("2026-07-22"));
-    QVERIFY(history->isRowHidden(0));
-    QVERIFY(!history->isRowHidden(2));
-    dateFilter->setCurrentIndex(0);
-
-    historyFilter->setText(QStringLiteral("SAMPLE-003"));
-    QVERIFY(history->isRowHidden(0));
-    QVERIFY(!history->isRowHidden(3));
-    historyFilter->clear();
-
-    window.findChild<QPushButton*>(QStringLiteral("HistoryOpenButton"))->click();
-    QVERIFY(actionState->text().contains(QStringLiteral("已打开")));
-    window.findChild<QPushButton*>(QStringLiteral("HistoryCompareButton"))->click();
-    QVERIFY(actionState->text().contains(QStringLiteral("对比参考")));
-    window.findChild<QPushButton*>(QStringLiteral("HistorySourceButton"))->click();
-    QVERIFY(actionState->text().contains(QStringLiteral("来源记录")));
-    window.findChild<QPushButton*>(QStringLiteral("BackToResultsButton"))->click();
-    QCOMPARE(currentStep->text(), QStringLiteral("12"));
 }
 
 void MainWindowTest::selectedTemplateOffersVisibleContinuationFromAnyWorkflowPage()
