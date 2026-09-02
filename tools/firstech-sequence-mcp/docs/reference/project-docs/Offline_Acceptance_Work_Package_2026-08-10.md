@@ -1,4 +1,4 @@
-> **Historical method reference.** Current safety and acceptance rules in `../../00-authority/` govern. Dated actions are context only and do not authorize execution.
+> **Historical method reference.** Current safety and acceptance rules in `../../authority/` govern. Dated actions are context only and do not authorize execution.
 
 ---
 title: 菲特 Slim Pro 离线自动化验收器工作包

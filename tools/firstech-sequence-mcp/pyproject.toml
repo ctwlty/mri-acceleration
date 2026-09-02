@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "firstech-sequence-mcp"
+version = "0.1.0"
+description = "Offline-only MCP tools for Firstech sequence compilation, simulation staging, and logical trajectory analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp[cli]==2.0.0",
+  "pydantic>=2.11,<3.0",
+]
+
+[project.scripts]
+firstech-sequence-mcp = "firstech_sequence_mcp.server:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4,<9",
+  "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/firstech_sequence_mcp"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

@@ -1,6 +1,6 @@
 # Implementation guide
 
-This document records the implementation contract and operating workflow. Source code, runtime dependencies and vendor components are not included in this evidence-only directory.
+This module contains the public-safe implementation, tests, helper scripts and operating contracts for the offline Firstech sequence MCP. Vendor binaries, restricted manuals, device credentials and machine-specific configuration are not included.
 
 ## Architecture
 
@@ -21,7 +21,7 @@ Codex edits sequence files directly inside configured `source_roots`. The MCP ha
 Recommended with `uv`:
 
 ```powershell
-Set-Location .\01-implementation
+Set-Location .\tools\firstech-sequence-mcp
 uv sync --dev --frozen --no-editable
 $env:FIRSTECH_MCP_CONFIG = "<private-config-path>"
 .\.venv\Scripts\pytest.exe
@@ -42,20 +42,20 @@ py -3.11 -m venv .venv
 
 Do not install into the vendor Python/runtime and do not copy files into `<SpectrometerIDE-install-root>`.
 
-## Verify the handoff package
+## Verify a release package
 
-From the package root, run this before dependency installation:
+When a release archive includes a generated `package-manifest.json`, verify it from the extracted module root before dependency installation:
 
 ```powershell
-py -3.11 .\01-implementation\scripts\verify_package.py .\package-manifest.json .
+py -3.11 .\scripts\verify_package.py .\package-manifest.json .
 ```
 
-The manifest intentionally excludes itself so it can describe the rest of the package without a self-hash paradox. Its fixed `package_id` does not depend on the extracted directory name, so the top-level directory may safely be renamed to the recommended short `handoff_v1` path.
+The repository does not track a release manifest because its hashes change with every source revision. Generate one for an immutable release archive with `scripts/build_manifest.py`; the manifest excludes itself to avoid a self-hash cycle.
 
 ## Read-only target probe
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\01-implementation\scripts\probe_toolchain.ps1 `
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe_toolchain.ps1 `
   -ConfigPath "<private-config-path>" `
   -OutputPath ".\evidence\toolchain-probe.json"
 ```
@@ -87,7 +87,7 @@ Every mutating tool creates a fresh `run_root/<run_id>` with `exist_ok=False`. T
 
 ## Simulation bridge status
 
-No vendor bridge binary is shipped. `simulation.backend = "blocked"` is the safe and expected initial state. `02-reference/SIMBRIDGE_CONTRACT.md` defines the narrow JSON process contract Windows Codex may implement only after current DLL/ABI/Socket/safety verification. The bridge may not expose any real-device function.
+No vendor bridge binary is shipped. `simulation.backend = "blocked"` is the safe and expected initial state. `docs/reference/SIMBRIDGE_CONTRACT.md` defines the narrow JSON process contract Windows Codex may implement only after current DLL/ABI/Socket/safety verification. The bridge may not expose any real-device function.
 
 On an Internet-connected Codex host, a normal default route may make the strict `host-no-route` preflight impossible to satisfy. Treat this as an architecture blocker, not a reason to remove the check. A separately isolated worker/VM or pre-approved target-IP egress isolation must first be designed and verified outside this package.
 

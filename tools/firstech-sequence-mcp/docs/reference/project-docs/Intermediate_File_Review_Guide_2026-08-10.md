@@ -1,4 +1,4 @@
-> **Historical method reference.** Current safety and acceptance rules in `../../00-authority/` govern. Dated actions are context only and do not authorize execution.
+> **Historical method reference.** Current safety and acceptance rules in `../../authority/` govern. Dated actions are context only and do not authorize execution.
 
 ---
 title: 菲特 Slim Pro 离线序列开发中间文件审查与判读指南
@@ -769,7 +769,7 @@ RxChannelAcquirePara点数/dwell + RxStart窗口设计
 
 ## 12. 参考资料
 
-- 当前安全边界：`../../00-authority/SCOPE_AND_SAFETY.md`。
-- 当前证据状态：`../../00-authority/CURRENT_EVIDENCE.md`。
-- 当前验收标准：`../../00-authority/ACCEPTANCE.md`。
+- 当前安全边界：`../../authority/SCOPE_AND_SAFETY.md`。
+- 当前证据状态：`../../authority/CURRENT_EVIDENCE.md`。
+- 当前验收标准：`../../authority/ACCEPTANCE.md`。
 - 本证据集索引：`../DOC_INDEX.md`。

@@ -1,0 +1,28 @@
+# Copy the relevant block into the sequence project's .codex/config.toml only
+# after A-C and direct P2F preflight pass. Replace every path with the target path,
+# trust the project, then restart Codex Desktop or open a new task before /mcp verification.
+
+[mcp_servers.firstech_sequence]
+command = "C:\\path\\to\\mri-acceleration\\tools\\firstech-sequence-mcp\\.venv\\Scripts\\python.exe"
+args = ["-m", "firstech_sequence_mcp.server"]
+cwd = "C:\\path\\to\\mri-acceleration\\tools\\firstech-sequence-mcp"
+env = { FIRSTECH_MCP_CONFIG = "C:\\path\\to\\local\\firstech-mcp.toml" }
+enabled = true
+startup_timeout_sec = 20
+tool_timeout_sec = 900
+default_tools_approval_mode = "writes"
+enabled_tools = [
+  "inspect_toolchain",
+  "compile_sequence",
+  "stage_simulation_input",
+  "probe_simulation_backend",
+  "simulate_sequence",
+  "analyze_simulation",
+  "read_channel_slice",
+  "compare_simulations",
+  "compute_logical_gradient_moment",
+]
+
+# Keep simulate_sequence approval at prompt even after compile/stage are trusted.
+[mcp_servers.firstech_sequence.tools.simulate_sequence]
+approval_mode = "prompt"
