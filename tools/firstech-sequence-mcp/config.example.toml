@@ -1,0 +1,40 @@
+# Copy this file outside the repository, then edit the local copy.
+# Never commit machine-specific paths, device addresses or gate evidence.
+
+schema = "firstech-sequence-mcp-config/v1"
+mode = "offline-only"
+
+source_roots = [
+  "C:\\MRISequenceDev\\sequences",
+]
+run_root = "C:\\MRISequenceDev\\mcp-runs"
+vendor_install_roots = [
+  "C:\\Program Files\\SpectrometerIDE",
+]
+
+max_stage_files = 5000
+max_stage_bytes = 536870912
+max_slice_points = 500
+
+[p2f]
+exe = "C:\\Program Files\\SpectrometerIDE\\bin\\P2F_x32.exe"
+include_dir = "C:\\Program Files\\SpectrometerIDE\\include_slimScope"
+system_sel = ""
+timeout_seconds = 180
+
+[inspection]
+current_dll = "C:\\Program Files\\SpectrometerIDE\\bin\\mridll.dll"
+optional_binaries = [
+  "C:\\Program Files\\SpectrometerIDE\\bin\\SeqSimu.exe",
+  "C:\\Program Files\\SpectrometerIDE\\bin\\tcc.exe",
+  "C:\\Program Files\\SpectrometerIDE\\bin\\mri_c.exe",
+]
+forbidden_process_names = ["SpectrometerIDE"]
+spectrometer_targets = ["192.0.2.10:8701"]
+
+[simulation]
+# Keep blocked until ACCEPTANCE.md layer E is separately satisfied.
+backend = "blocked"
+bridge_exe = ""
+gate_file = ""
+timeout_seconds = 900

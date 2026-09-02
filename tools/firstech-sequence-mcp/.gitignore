@@ -1,0 +1,16 @@
+# Local runtime, private configuration and generated evidence.
+.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.ruff_cache/
+runs/
+*-runs/
+*.private.toml
+*gate*.json
+*probe*.json
+*.raw
+*.dcm
+*.nii
+*.nrrd
+!tests/fixtures/simulation_ok/inf.log

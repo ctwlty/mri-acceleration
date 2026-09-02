@@ -2,7 +2,7 @@
 
 ## 1. Object
 
-- Package: `firstech_sequence_mcp_bootstrap_V1.0_2026-08-11`
+- Module: `tools/firstech-sequence-mcp`
 - Target machine / OS:
 - Code location:
 - Local config location (do not paste secret values):

@@ -2,7 +2,7 @@
 
 ## Authority order
 
-1. `../00-authority/`
+1. `../authority/`
 2. This evidence set's implementation/tool/simbridge contract
 3. External vendor manuals as versioned evidence
 4. Historical project documents as background only
@@ -20,7 +20,7 @@ If a copied project document conflicts with current authority, current authority
 
 The referenced PDF files are intentionally excluded from this evidence set. Obtain authorized copies separately when version-specific verification is required.
 
-Not included: sequence manual V1.0.7, hardware manual, Converter manual, system upgrade note, historical DLL/EXE/SDK archives. They are unnecessary for this narrow offline MCP bootstrap and increase confusion or disclosure risk.
+Not included: sequence manual V1.0.7, hardware manual, Converter manual, system upgrade note, historical DLL/EXE/SDK archives. They are unnecessary for this narrow offline MCP module and increase confusion or disclosure risk.
 
 ## Project background — non-authoritative copies
 
@@ -28,7 +28,7 @@ Not included: sequence manual V1.0.7, hardware manual, Converter manual, system 
 |---|---|---|
 | `project-docs/Custom_SRC_Workflow_2026-08-10.md` | SRC minimal-diff and staged validation workflow. | Background method, not a command to run hardware. |
 | `project-docs/Intermediate_File_Review_Guide_2026-08-10.md` | Same-batch evidence chain and conclusion boundaries. | Older experiment examples may be superseded. |
-| `project-docs/Offline_Acceptance_Work_Package_2026-08-10.md` | Manifest/fixture/negative-test design. | `../00-authority/ACCEPTANCE.md` is the active acceptance authority. |
+| `project-docs/Offline_Acceptance_Work_Package_2026-08-10.md` | Manifest/fixture/negative-test design. | `../authority/ACCEPTANCE.md` is the active acceptance authority. |
 
 ## Deliberately excluded assets
 

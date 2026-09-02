@@ -4,7 +4,7 @@
 
 ## A. 包身份
 
-- 在包根运行 `py -3.11 .\01-implementation\scripts\verify_package.py .\package-manifest.json .` 返回 PASS。
+- 对不可变发布包生成清单后，在模块根运行 `py -3.11 .\scripts\verify_package.py .\package-manifest.json .` 返回 PASS。
 - 文件集合、大小和 SHA-256 全部一致；无额外 DLL/EXE/LIB/PDB/RAW/旧 SDK。
 - ZIP 外部 SHA-256 与发送方提供值一致。
 
